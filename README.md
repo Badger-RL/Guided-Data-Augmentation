@@ -1,4 +1,4 @@
-#How to use
+# How to use
 
 First install the virtualenv from requirements.txt
 
