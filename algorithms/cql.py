@@ -8,8 +8,11 @@ import os
 from pathlib import Path
 import random
 import uuid
+import json
+import sys
 
 import d4rl
+import h5py
 import gym
 import numpy as np
 import pyrallis
@@ -19,29 +22,34 @@ import torch.nn as nn
 import torch.nn.functional as F
 import wandb
 
+sys.path.append("..")
+
+from envs.push_ball_to_goal import PushBallToGoalEnv
+
 TensorBatch = List[torch.Tensor]
 
 
 @dataclass
 class TrainConfig:
     # Experiment
-    device: str = "cuda"
-    env: str = "halfcheetah-medium-expert-v2"  # OpenAI gym environment name
+    device: str = "cpu"
+    env: str = "maze2d-umaze-v1"  # OpenAI gym environment name
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
-    eval_freq: int = int(5e3)  # How often (time steps) we evaluate
-    n_episodes: int = 10  # How many episodes run during evaluation
-    max_timesteps: int = int(1e6)  # Max time steps to run environment
-    checkpoints_path: Optional[str] = None  # Save path
+    eval_freq: int = int(5e2)  # How often (time steps) we evaluate
+    n_episodes: int = 100  # How many episodes run during evaluation
+    max_timesteps: int = int(10000)  # Max time steps to run environment
+    checkpoints_path: Optional[str] = "./policy"  # Save path
     load_model: str = ""  # Model load file name, "" doesn't load
     # CQL
     buffer_size: int = 2_000_000  # Replay buffer size
     batch_size: int = 256  # Batch size for all networks
     discount: float = 0.99  # Discount factor
     alpha_multiplier: float = 1.0  # Multiplier for alpha in loss
+    dataset_name: str = ""
     use_automatic_entropy_tuning: bool = True  # Tune entropy
     backup_entropy: bool = False  # Use backup entropy
     policy_lr: float = 3e-5  # Policy learning rate
-    qf_lr: float = 3e-4  # Critics learning rate
+    qf_lr: float = 0.0003  # Critics learning rate
     soft_target_update_rate: float = 5e-3  # Target network update rate
     bc_steps: int = int(0)  # Number of BC steps at start
     target_update_period: int = 1  # Frequency of target nets updates
@@ -63,7 +71,7 @@ class TrainConfig:
     name: str = "CQL"
 
     def __post_init__(self):
-        self.name = f"{self.name}-{self.env}-{str(uuid.uuid4())[:8]}"
+        self.name = f"{self.name}-{self.dataset_name}-{str(uuid.uuid4())[:8]}"
         if self.checkpoints_path is not None:
             self.checkpoints_path = os.path.join(self.checkpoints_path, self.name)
 
@@ -806,13 +814,30 @@ class ContinuousCQL:
 
 
 @pyrallis.wrap()
-def train(config: TrainConfig):
-    env = gym.make(config.env)
+def train( config: TrainConfig):
+
+
+    #if not len(sys.argv) == 2:
+    #    print("usage: python3 ./algorithms/cql.py <dataset name>")
+    #    exit(1)
+
+    #dataset_name = sys.argv[1]
+
+    env = PushBallToGoalEnv()
+    
+    gym.make(config.env)
 
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
-    dataset = d4rl.qlearning_dataset(env)
+    #dataset = d4rl.qlearning_dataset(env)
+    dataset = {}
+    data_hdf5 = h5py.File(f"./datasets/{config.dataset_name}", "r")
+    for key in data_hdf5.keys():
+        dataset[key] = np.array(data_hdf5[key])
+
+    #with open("./saved.json", "w") as json_file:
+        #json.dump(dataset, json_file)
 
     if config.normalize_reward:
         modify_reward(dataset, config.env)
@@ -924,8 +949,8 @@ def train(config: TrainConfig):
                 seed=config.seed,
             )
             eval_score = eval_scores.mean()
-            normalized_eval_score = env.get_normalized_score(eval_score) * 100.0
-            evaluations.append(normalized_eval_score)
+            normalized_eval_score = eval_score#env.get_normalized_score(eval_score) * 100.0
+            evaluations.append(eval_score)
             print("---------------------------------------")
             print(
                 f"Evaluation over {config.n_episodes} episodes: "
