@@ -143,7 +143,7 @@ class BaseEnv(gym.Env):
 
     def calculate_reward(self):
         reward = None
-        if not self.check_facing_ball() or not self.contacted_ball:
+        if not self.check_facing_ball():# or not self.contacted_ball:
             reward = 0
         else:
             reward = 1 / self.get_distance_target_goal()
