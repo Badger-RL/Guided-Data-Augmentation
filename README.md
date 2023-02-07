@@ -1,3 +1,31 @@
+# How to use
+
+First install the virtualenv from requirements.txt
+
+To generate datasets, run the script `generate/generate_d4rl_dataset.py` with appropriate parameters
+
+To run CQL on the generate data set, run the command
+
+````
+python3 ./algorithms/cql.py --dataset_name <dataset name>
+````
+where the dataset is a `.hdf5` formatted dataset in the datasets folder.
+
+Checkpoints, including policies, will be saved to a folder in the `policy` folder.
+
+In order to visualize the real-time performance of a policy from a checkpoint, run the following command:
+
+````
+python3 ./try_policy.py <dataset> <checkpoint>
+````
+note that here the dataset is necessary because the normalization params used when training with CQL need to be reconstructed to use the policy
+
+
+
+
+
+
+
 # CORL (Clean Offline Reinforcement Learning)
 
 [<img src="https://img.shields.io/badge/license-Apache_2.0-blue">](https://github.com/tinkoff-ai/CORL/blob/main/LICENSE)
