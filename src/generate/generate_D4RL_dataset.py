@@ -47,8 +47,8 @@ def main():
     parser.add_argument('--num_samples', type=int, default=int(1e4), help='Num samples to collect')
     parser.add_argument('--path', type=str, default='push_ball_to_goal', help='file_name')
     parser.add_argument('--max_episode_steps', default=1000, type=int)
-    parser.add_argument('--use_policy', default=True, type=bool)
-
+    parser.add_argument('--use_policy', action ='store_true')
+    parser.set_defaults(use_policy = False)
     parser.add_argument('--random_actions', action='store_true')
     parser.set_defaults(feature = False)
     parser.add_argument('--render', action='store_true')
@@ -57,8 +57,8 @@ def main():
 
     args = parser.parse_args()
 
-    policy_path = f"../expert_policies/{args.path}/policy"
-    normalization_path = f"../expert_policies/{args.path}/vector_normalize"
+    policy_path = f"./expert_policies/{args.path}/policy"
+    normalization_path = f"./expert_policies/{args.path}/vector_normalize"
 
     #model.save(f"./Models/{params['path']}/policy")
     #env.save(f"./Models/{params['path']}/vector_normalize")
