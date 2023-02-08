@@ -1,20 +1,22 @@
+import argparse
+
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecNormalize, VecMonitor
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.evaluation import evaluate_policy
 
-from envs.walk_to_goal import WalkToGoalEnv
-from envs.walk_to_ball import WalkToBallEnv
-from envs.push_ball_to_goal import PushBallToGoalEnv
-from envs.goalkeeper import GoalKeeperEnv
-from envs.dummy_defenders import DummyDefendersEnv
-from envs.goalie import GoalieEnv
-from envs.base import BaseEnv
-from envs.keepaway import KeepawayEnv
-from envs.kick_to_goal import KickToGoalEnv
-from envs.defender import DefenderEnv
+from src.envs.walk_to_goal import WalkToGoalEnv
+from src.envs.walk_to_ball import WalkToBallEnv
+from src.envs.push_ball_to_goal import PushBallToGoalEnv
+from src.envs.goalkeeper import GoalKeeperEnv
+from src.envs.dummy_defenders import DummyDefendersEnv
+from src.envs.goalie import GoalieEnv
+from src.envs.base import BaseEnv
+from src.envs.keepaway import KeepawayEnv
+from src.envs.kick_to_goal import KickToGoalEnv
+from src.envs.defender import DefenderEnv
 
-from utils.utils import save_vec_normalize_data
+from src.utils.utils import save_vec_normalize_data
 import sys
 
 
@@ -88,7 +90,12 @@ models = {
 
 if __name__ == "__main__":
     # Get the model name from the command line
-    model_name = sys.argv[1]
+    # model_name = sys.argv[1]
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model-name', type=str, default='push_ball_to_goal')
+    args = parser.parse_args()
+
+    model_name = args.model_name
 
     # Check model name is valid
     if model_name not in models:

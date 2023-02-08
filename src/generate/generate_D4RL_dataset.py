@@ -3,21 +3,15 @@
 #https://github.com/Farama-Foundation/D4RL/blob/master/LICENSE
 
 import numpy as np
-import pickle
-import gzip
 import h5py
 import argparse
-import torch
-import os
 
 
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecMonitor
 from stable_baselines3.common.env_util import make_vec_env
 
-
-
-from envs.push_ball_to_goal import PushBallToGoalEnv
+from src.envs.push_ball_to_goal import PushBallToGoalEnv
 
 
 models = {"push_ball_to_goal": {"env": PushBallToGoalEnv}}
@@ -53,17 +47,18 @@ def main():
     parser.add_argument('--num_samples', type=int, default=int(1e4), help='Num samples to collect')
     parser.add_argument('--path', type=str, default='push_ball_to_goal', help='file_name')
     parser.add_argument('--max_episode_steps', default=1000, type=int)
-    
+    parser.add_argument('--use_policy', default=True, type=bool)
+
     parser.add_argument('--random_actions', action='store_true')
     parser.set_defaults(feature = False)
     parser.add_argument('--render', action='store_true')
-    parser.set_defaults(render = False)
+    parser.set_defaults(render = True)
 
 
     args = parser.parse_args()
 
-    policy_path = f"./expert_policies/{args.path}/policy"
-    normalization_path = f"./expert_policies/{args.path}/vector_normalize"
+    policy_path = f"../expert_policies/{args.path}/policy"
+    normalization_path = f"../expert_policies/{args.path}/vector_normalize"
 
     #model.save(f"./Models/{params['path']}/policy")
     #env.save(f"./Models/{params['path']}/vector_normalize")
@@ -85,10 +80,6 @@ def main():
     "clip_range": lambda x: .02
     }   
     policy = PPO.load(policy_path, custom_objects = custom_objects, env= env)
-
-   
-
-   
 
     data = reset_data()
 
@@ -132,8 +123,6 @@ def main():
         else:
             s = ns
             s_o = ns_o
-
-    
 
     fname = f'dataset_{"expert" if args.use_policy else "random"}_{args.num_samples}.hdf5'
     dataset = h5py.File(fname, 'w')

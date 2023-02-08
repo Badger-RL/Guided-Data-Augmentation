@@ -5,7 +5,6 @@ import numpy as np
 import torch
 import time
 import sys
-sys.path.append(sys.path[0] + "/..")
 
 from gym import spaces
 from stable_baselines3 import PPO
@@ -13,21 +12,24 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecMonit
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.evaluation import evaluate_policy
 
-from envs.base import BaseEnv
+from src.envs.base import BaseEnv
 
 import warnings
-from utils.utils import save_vec_normalize_data
+from src.utils.utils import save_vec_normalize_data
 
 warnings.filterwarnings("ignore")
 
 LENGTH = 500
 TRAINING_STEPS = 1000000
-BALL_SPEED = 50
 
 
-class DefenderEnv(BaseEnv):
+class KickToGoalEnv(BaseEnv):
     def __init__(self):
         super().__init__()
+
+        action_space_low = np.array([-np.pi / 2, -1, -1, 0])
+        action_space_high = np.array([np.pi / 2, 1, 1, 1])
+        self.action_space = gym.spaces.Box(action_space_low, action_space_high)
 
         """
         OBSERVATION SPACE:
@@ -46,107 +48,6 @@ class DefenderEnv(BaseEnv):
 
         self.reset()
 
-
-
-    def move_robot(self, action):
-            # Find location policy is trying to reach
-        policy_target_x = self.robot_x + (
-            (
-                (np.cos(self.robot_angle) * np.clip(action[1], -1, 1))
-                + (np.cos(self.robot_angle + np.pi / 2) * np.clip(action[2], -1, 1))
-            )
-            * 200
-        )  # the x component of the location targeted by the high level action
-        policy_target_y = self.robot_y + (
-            (
-                (np.sin(self.robot_angle) * np.clip(action[1], -1, 1))
-                + (np.sin(self.robot_angle + np.pi / 2) * np.clip(action[2], -1, 1))
-            )
-            * 200
-        )  # the y component of the location targeted by the high level action
-
-        # Update robot position
-        self.robot_x = (
-            self.robot_x * (1 - self.displacement_coef)
-            + policy_target_x * self.displacement_coef
-        )  # weighted sums based on displacement coefficient
-        self.robot_y = (
-            self.robot_y * (1 - self.displacement_coef)
-            + policy_target_y * self.displacement_coef
-        )  # the idea is we move towards the target position and angle
-
-        self.position_rule()
-
-        # Find distance between robot and target
-        robot_location = np.array([self.robot_x, self.robot_y])
-        target_location = np.array([self.target_x, self.target_y])
-        distance_robot_target = np.linalg.norm(target_location - robot_location)
-
-
-
-        self.ball_x_offset = self.target_x - self.ball_target_x
-        self.ball_y_offset = self.target_y - self.ball_target_y
-
-        direction_vector = np.array([self.ball_x_offset, self.ball_y_offset])
-        ball_target_location = np.array([self.ball_target_x, self.ball_target_y])
-
-        distance_ball_ball_target = np.linalg.norm(target_location - ball_target_location)
-
-        self.ball_x_displacement = self.ball_x_offset / distance_ball_ball_target
-        self.ball_y_displacement = self.ball_y_offset / distance_ball_ball_target
-
-        self.target_x = self.target_x - self.ball_x_displacement * BALL_SPEED
-        self.target_y = self.target_y - self.ball_y_displacement * BALL_SPEED
-
-
-
-
-        # push ball, if collision with robot
-        if distance_robot_target < (self.robot_radius + self.target_radius) * 5:
-            # changed to reached reward mode
-            self.contacted_ball = True
-
-            self.target_x = np.random.uniform(-1000,1000)
-            self.target_y = np.random.uniform(-3000,3000)
-            self.ball_target_y = np.random.uniform(-300,300)
-        else:
-            self.contacted_ball = False
-
-
-
-
-        #check if robot in defense areas
-
-        if self.robot_x >= -4500 and self.robot_x <= 0 and self.robot_y >= -3000 and self.robot_y <= 3000 :
-            self.in_defense_area = True
-        else:
-            self.in_defense_area = False
-
-        # Turn towards the target as suggested by the policy
-        self.robot_angle = self.robot_angle + self.displacement_coef * action[0] 
-
-        # reset ball location if it reaches the goal
-        if self.target_x <= -4500 and self.target_y >= -750 and self.target_y <= 750:
-            self.reached_goal = True
-            self.target_x = np.random.uniform(-1000,1000)
-            self.target_y = np.random.uniform(-3000,3000)
-            self.ball_target_y = np.random.uniform(-300,300)
-        else:
-            self.reached_goal = False
-
-
-    def calculate_reward(self):
-        reward = 0
-        if not self.check_facing_ball():
-            reward += -.01
-        if  self.contacted_ball:
-            reward += 1
-        if self.reached_goal:
-            reward -=1
-        return reward
-
-
-
     def reset(self):
         self.time = 0
 
@@ -154,17 +55,14 @@ class DefenderEnv(BaseEnv):
 
         self.contacted_ball = False
 
-        self.robot_x = -2250
-        self.robot_y = 0
-        self.robot_angle = 0
+        self.robot_x = np.random.uniform(-3500, 3500)
+        self.robot_y = np.random.uniform(-2500, 2500)
+        self.robot_angle = np.random.uniform(0, 2 * np.pi)
 
-        self.target_x = np.random.uniform(-1000,1000)
-        self.target_y = np.random.uniform(-3000,3000)
+        self.target_x = np.random.uniform(-2500, 2500)
+        self.target_y = np.random.uniform(-2000, 2000)
 
-        self.ball_target_x = -4510
-        self.ball_target_y = np.random.uniform(-300,300)
-
-        self.goal_x = 4800
+        self.goal_x = -4500
         self.goal_y = 0
 
         self.dummy1_x = (self.target_x + self.goal_x) / 2
@@ -218,6 +116,27 @@ class DefenderEnv(BaseEnv):
             np.cos(self.robot_angle),
         ]
 
+    def step(self, action):
+        self.time += 1
+
+        # Attempt to kick ball
+        if action[3] > 0.95:
+            self.kick_ball()       
+        # If not kicking, move robot
+        else:
+           self.move_robot(action)
+
+        self.update_target_value()
+        self.update_goal_value()
+
+        done = self.time > BaseEnv.EPISODE_LENGTH
+
+        reward = self.calculate_reward()
+
+        new_obs = self._observe_state()
+
+        return (new_obs, reward, done, {})
+
     def set_abstract_state(self, abstract_state):
 
         self.robot_x = abstract_state[0] * 9000
@@ -243,12 +162,12 @@ if __name__ == "__main__":
     normalization_path = sys.argv[1] + "/vector_normalize"
 
     env = VecNormalize.load(
-        normalization_path, make_vec_env(DefenderEnv, n_envs=1)
+        normalization_path, make_vec_env(KickToGoalEnv, n_envs=12)
     )
     env.norm_obs = True
-    env.norm_reward = False
+    env.norm_reward = True
     env.clip_obs = 1.0
-    env.training = False
+    env.training = True
 
     # #derived from https://github.com/DLR-RM/rl-baselines3-zoo/blob/75afd65fa4a1f66814777d43bd14e4bba18d96db/enjoy.py#L171
     #     newer_python_version = sys.version_info.major == 3 and sys.version_info.minor >= 8
@@ -259,13 +178,17 @@ if __name__ == "__main__":
     }   
     model = PPO.load(policy_path, custom_objects = custom_objects, env= env)
 
-   
+    mean_reward, std_reward = evaluate_policy(
+        model, model.get_env(), n_eval_episodes=10
+    )
+    print(mean_reward, std_reward)
+
     it = 0
 
     obs = env.reset()
 
     while True:
-        action = model.predict(obs, deterministic = True)
+        action = model.predict(obs)
         obs, reward, done, _ = env.step(action[0])
         env.envs[0].render()
         it = it + 1

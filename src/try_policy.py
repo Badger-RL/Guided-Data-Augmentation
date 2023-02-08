@@ -14,7 +14,7 @@ import d4rl
 import gym
 import h5py
 import numpy as np
-import pyrallis
+# import pyrallis
 import torch
 from torch.distributions import Normal, TanhTransform, TransformedDistribution
 import torch.nn as nn

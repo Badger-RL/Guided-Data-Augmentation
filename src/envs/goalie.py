@@ -1,10 +1,11 @@
+from cmath import rect
 import gym
 import pygame
 import numpy as np
 import torch
 import time
 import sys
-sys.path.append(sys.path[0] + "/..")
+from pygame.rect import *
 
 from gym import spaces
 from stable_baselines3 import PPO
@@ -12,16 +13,16 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecMonit
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.evaluation import evaluate_policy
 
-from envs.base import BaseEnv
+from src.envs.base import BaseEnv
 
 import warnings
-from utils.utils import save_vec_normalize_data
+from src.utils.utils import save_vec_normalize_data
 
-LENGTH = 600
+LENGTH = 500
 TRAINING_STEPS = 2000000
 
 
-class DummyDefendersEnv(BaseEnv):
+class GoalieEnv(BaseEnv):
 
     EPISODE_LENGTH = LENGTH
 
@@ -41,7 +42,6 @@ class DummyDefendersEnv(BaseEnv):
         )
 
     def _observe_state(self):
-
         self.update_target_value()
         self.update_goal_value()
 
@@ -62,8 +62,6 @@ class DummyDefendersEnv(BaseEnv):
             ]
         )
 
-        # returns the state of the environment, with global angles and coordinates.
-
     def _observe_global_state(self):
         return [
             self.robot_x / 9000,
@@ -78,100 +76,45 @@ class DummyDefendersEnv(BaseEnv):
             np.cos(self.robot_angle),
         ]
 
-    def reset(self):
-        self.time = 0
-
-        self.displacement_coef = 0.2
-
-        self.contacted_ball = False
-
-        self.robot_x = np.random.uniform(-3500, 3500)
-        self.robot_y = np.random.uniform(-2500, 2500)
-        self.robot_angle = np.random.uniform(0, 2 * np.pi)
-
-        self.target_x = np.random.uniform(-2500, 2500)
-        self.target_y = np.random.uniform(-2000, 2000)
-
-        self.goal_x = -4500
-        self.goal_y = 0
-
-        self.dummy1_x = (self.target_x + self.goal_x) / 2
-        self.dummy1_y = (self.target_y + self.goal_y) / 2
-
-        self.dummy2_x = (self.target_x + self.robot_x) / 2
-        self.dummy2_y = (self.target_y + self.robot_y) / 2
-
-        self.update_target_value()
-        self.update_goal_value()
-
-        robot_location = np.array([self.robot_x, self.robot_y])
-        target_location = np.array([self.target_x, self.target_y])
-        self.initial_distance = np.linalg.norm(target_location - robot_location)
-
-        return self._observe_state()
-
-    def calculate_reward(self):
-        target_location = np.array([self.target_x, self.target_y])
-        goal_location = np.array([self.goal_x, self.goal_y])
-        distance_target_goal = np.linalg.norm(goal_location - target_location)
-        reward = 0
-        if self.defender_collision:
-            reward -= 0.001
-
-        if self.contacted_ball:
-            reward += 1 / distance_target_goal
-        return reward
-
     def step(self, action):
         self.time += 1
         self.defender_collision = False
-
-        # Find location policy is trying to reach
-        policy_target_x = self.robot_x + (
-            (
-                (np.cos(self.robot_angle) * np.clip(action[1], -1, 1))
-                + (np.cos(self.robot_angle + np.pi / 2) * np.clip(action[2], -1, 1))
-            )
-            * 200
-        )  # the x component of the location targeted by the high level action
-        policy_target_y = self.robot_y + (
-            (
-                (np.sin(self.robot_angle) * np.clip(action[1], -1, 1))
-                + (np.sin(self.robot_angle + np.pi / 2) * np.clip(action[2], -1, 1))
-            )
-            * 200
-        )  # the y component of the location targeted by the high level action
-
-        # Update robot position
-        self.robot_x = (
-            self.robot_x * (1 - self.displacement_coef)
-            + policy_target_x * self.displacement_coef
-        )  # weighted sums based on displacement coefficient
-        self.robot_y = (
-            self.robot_y * (1 - self.displacement_coef)
-            + policy_target_y * self.displacement_coef
-        )  # the idea is we move towards the target position and angle
-
-        self.position_rule()
-
-        self.collision_dummy(self.dummy1_x, self.dummy1_y)
-        self.collision_dummy(self.dummy2_x, self.dummy2_y)
-
-        self.collision_ball()
-        self.collision_ball_dummy_1()
-        self.collision_ball_dummy_2()
-
-        # Turn towards the target as suggested by the policy
-        self.robot_angle = self.robot_angle + self.displacement_coef * action[0]
+    
+        self.move_robot(action)
 
         self.update_target_value()
         self.update_goal_value()
 
+        if self.ball_move == False:
+
+            self.goalie_logic()
+            # enable robot collision with dummy defenders
+            self.collision_dummy(self.dummy1_x, self.dummy1_y)
+            self.collision_ball()
+            self.position_rule()
+
+            # Turn towards the target as suggested by the policy
+            self.robot_angle = self.robot_angle + self.displacement_coef * action[0]
+
+            self.update_target_value()
+            self.update_goal_value()
+
+            self.goalie_logic()
+
+        # by goal kick, goalie,attacker get little puase during ball moving.
+        elif self.ball_move == True:
+            self.ball_move = False
+
+            self.speed = [self.ball_go_x, self.ball_go_y]
+            self.rect2 = self.rect2.move(self.speed)
+            self.target_x = self.rect2.centerx
+            self.target_y = self.rect2.centery
+
         new_obs = self._observe_state()
         # done = (self.time > PushBallToGoalEnv.EPISODE_LENGTH) or distance_robot_target < self.target_radius
-        done = self.time > DummyDefendersEnv.EPISODE_LENGTH
+        done = self.time > GoalieEnv.EPISODE_LENGTH
 
-        reward = self.calculate_reward()
+        reward = self.calculate_goalie_reward()
 
         return (new_obs, reward, done, {})
 
@@ -223,13 +166,6 @@ class DummyDefendersEnv(BaseEnv):
             self.robot_radius,
             width=4,
         )
-        pygame.draw.circle(
-            self.field,
-            pygame.Color(0, 32, 96),
-            (render_dummy2_x, render_dummy2_y),
-            self.robot_radius,
-            width=4,
-        )
 
         pygame.draw.circle(
             self.field,
@@ -252,6 +188,63 @@ class DummyDefendersEnv(BaseEnv):
         pygame.display.update()
 
         self.clock.tick(60)
+
+    def calculate_goalie_reward(self):
+
+        reward = self.calculate_reward()
+        if self.defender_collision:
+            reward -= 0.01
+
+        return reward
+
+    def reset(self):
+        self.time = 0
+        self.displacement_coef = 0.2
+
+        self.ball_move = False
+
+        self.contacted_ball = False
+        self.ball_go_x = np.random.uniform(500, 1500)
+        self.ball_go_y = np.random.uniform(-500, 500)
+
+        self.robot_x = np.random.uniform(-3500, 3500)
+        self.robot_y = np.random.uniform(-2500, 2500)
+        self.robot_angle = np.random.uniform(0, 2 * np.pi)
+
+        # Experimental values for RL
+        # self.robot_x = 2500
+        # self.robot_y = 0
+        # self.robot_angle = 0
+
+        self.target_x = np.random.uniform(-2500, 2500)
+        self.target_y = np.random.uniform(-2000, 2000)
+
+        # Experimental values for RL
+        # self.target_x = 1000
+        # self.target_y = 0
+
+        # for animation effect for keeper kick
+        self.rect2 = Rect(self.target_x, self.target_y, 0, 0)
+
+        self.goal_x = -4500  # center of goal area_x
+        self.goal_y = 0  # center of goal area_y
+
+        self.dummy1_x = -4000
+        self.dummy1_y = 0
+
+        self.dummy2_x = 5000
+        self.dummy2_y = 3400
+
+        self.speed = [0, 10]
+
+        self.update_target_value()
+        self.update_goal_value()
+
+        robot_location = np.array([self.robot_x, self.robot_y])
+        target_location = np.array([self.target_x, self.target_y])
+        self.initial_distance = np.linalg.norm(target_location - robot_location)
+
+        return self._observe_state()
 
     def collision_dummy(self, dummy_x, dummy_y):
         # Find distance between dummy defender 1 and robot
@@ -302,65 +295,73 @@ class DummyDefendersEnv(BaseEnv):
                 * 5
             )
 
-    def collision_ball_dummy_1(self):
-        # Find distance between robot and target
-        robot_location = np.array([self.dummy1_x, self.dummy1_y])
+    def goalie_logic(self):
+        # goalie position : make rect to use pygmae- speed function
+        rect1 = Rect(self.dummy1_x, self.dummy1_y, 0, 0)
+
+        # goalie can move inside goali area
+        if (
+            rect1.centerx > -4450
+            and rect1.centerx < -3500
+            and rect1.centery > -1100
+            and rect1.centery < 1100
+        ):
+            # goalie goes btw ball and goaline
+            x_toward = (self.target_x - 3750) * (7 / 12) - self.dummy1_x
+
+            # goalie movement for Y
+            if self.target_y < -750:
+                y_toward = -700 - self.dummy1_y
+            elif self.target_y > 750:
+                y_toward = 700 - self.dummy1_y
+            else:
+                y_toward = self.target_y - self.dummy1_y
+
+            # get goalie direction vector
+            self.speed = [x_toward, y_toward]
+            _size = np.linalg.norm(self.speed)
+            self.speed = [x_toward / _size * 20, y_toward / _size * 20]
+
+            # this range check help goalie doesn;t go out the goalie area
+            if (
+                rect1.centerx + self.speed[0] > -4350
+                and rect1.centerx + self.speed[0] < -3700
+                and rect1.centery + self.speed[1] > -1000
+                and rect1.centery + self.speed[1] < 1000
+            ):
+                rect1 = rect1.move(self.speed)
+
+        # update goali position
+        self.dummy1_y = rect1.centery
+        self.dummy1_x = rect1.centerx
+
+        # goalie kick : if ball and goalie close enough can kick
+        goalie_location = np.array([rect1.centerx, rect1.centery])
         target_location = np.array([self.target_x, self.target_y])
-        distance_robot_target = np.linalg.norm(target_location - robot_location)
+        distance_dummy_target = np.linalg.norm(target_location - goalie_location)
 
-        # push ball, if collision with robot
-        if distance_robot_target < (self.robot_radius + self.target_radius) * 5:
-            # changed to reached reward mode
-            self.contacted_ball = True
+        if distance_dummy_target < (self.robot_radius + self.target_radius) * 8:
+            self.ball_move = True
 
-            # Update Relative Angle
-            delta_x = self.target_x - self.dummy1_x
-            delta_y = self.target_y - self.dummy1_y
-            theta_radians = np.arctan2(delta_y, delta_x)
-            self.target_x = (
-                self.target_x
-                + np.cos(theta_radians) * (self.robot_radius + self.target_radius) * 5
-            )
-            self.target_y = (
-                self.target_y
-                + np.sin(theta_radians) * (self.robot_radius + self.target_radius) * 5
-            )
+            self.rect2.centerx = self.target_x
+            self.rect2.centery = self.target_y
 
-    def collision_ball_dummy_2(self):
-        # Find distance between robot and target
-        robot_location = np.array([self.dummy2_x, self.dummy2_y])
-        target_location = np.array([self.target_x, self.target_y])
-        distance_robot_target = np.linalg.norm(target_location - robot_location)
-
-        # push ball, if collision with robot
-        if distance_robot_target < (self.robot_radius + self.target_radius) * 5:
-            # changed to reached reward mode
-            self.contacted_ball = True
-
-            # Update Relative Angle
-            delta_x = self.target_x - self.dummy2_x
-            delta_y = self.target_y - self.dummy2_y
-            theta_radians = np.arctan2(delta_y, delta_x)
-            self.target_x = (
-                self.target_x
-                + np.cos(theta_radians) * (self.robot_radius + self.target_radius) * 5
-            )
-            self.target_y = (
-                self.target_y
-                + np.sin(theta_radians) * (self.robot_radius + self.target_radius) * 5
-            )
+            self.speed = [self.ball_go_x, self.ball_go_y]
+            self.rect2 = self.rect2.move(self.speed)
+            self.target_x = self.rect2.centerx
+            self.target_y = self.rect2.centery
 
 
 if __name__ == "__main__":
     if not len(sys.argv) == 2:
-        print("usage: python ./dummy_defenders.py <policy and vector path folder>")
+        print("usage: python ./goalie.py <policy and vector path folder>")
         exit(1)
 
     policy_path = sys.argv[1] + "/policy.zip"
     normalization_path = sys.argv[1] + "/vector_normalize"
 
     env = VecNormalize.load(
-        normalization_path, make_vec_env(DummyDefendersEnv, n_envs=12)
+        normalization_path, make_vec_env(GoalieEnv, n_envs=12)
     )
     env.norm_obs = True
     env.norm_reward = True

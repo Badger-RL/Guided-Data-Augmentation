@@ -24,7 +24,7 @@ import wandb
 
 sys.path.append("..")
 
-from envs.push_ball_to_goal import PushBallToGoalEnv
+from src.envs.push_ball_to_goal import PushBallToGoalEnv
 
 TensorBatch = List[torch.Tensor]
 

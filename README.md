@@ -1,6 +1,10 @@
 # How to use
 
-First install the virtualenv from requirements.txt
+First install the virtualenv from requirements.txt, and then run
+```commandline
+cd GuidedDataAugmentationForRobotics
+pip install -e .
+```
 
 To generate datasets, run the script `generate/generate_d4rl_dataset.py` with appropriate parameters
 
