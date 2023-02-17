@@ -36,7 +36,7 @@ def main():
 
     for _ in range(1000):
 
-        s, ns, a, r, terminated, truncated = f.augment(s_o[0], ns_o[0], act, r, done, done)
+        s, ns, a, r, done = f.augment(s_o[0], ns_o[0], act, r, done)
         env.envs[0].set_abstract_state(s)
         env.render()
         time.sleep(0.5)

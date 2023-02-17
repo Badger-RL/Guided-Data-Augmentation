@@ -14,33 +14,32 @@ class BaseAugmentationFunction:
             next_obs: np.ndarray,
             action: np.ndarray,
             reward: np.ndarray,
-            terminated: np.ndarray,
-            truncated: np.ndarray,
+            done: np.ndarray,
     ):
         copy_obs = obs.copy()
         copy_next_obs = next_obs.copy()
         copy_action = action.copy()
         copy_reward = reward.copy()
-        copy_termianted = terminated.copy()
-        copy_truncated = truncated.copy()
+        copy_done = done.copy()
 
-        return copy_obs, copy_next_obs, copy_action, copy_reward, copy_termianted, copy_truncated
+        return copy_obs, copy_next_obs, copy_action, copy_reward, copy_done
 
     def augment(self,
                  obs: np.ndarray,
                  next_obs: np.ndarray,
                  action: np.ndarray,
                  reward: np.ndarray,
-                 terminated: np.ndarray,
-                 truncated: np.ndarray,
+                 done: np.ndarray,
+                 # terminated: np.ndarray,
+                 # truncated: np.ndarray,
                  **kwargs,):
 
         # copy input transition
-        aug_obs, aug_next_obs, aug_action, aug_reward, aug_terminated, aug_truncated = \
-            self._deepcopy_transition(obs, next_obs, action, reward, terminated, truncated)
+        aug_obs, aug_next_obs, aug_action, aug_reward, aug_done = \
+            self._deepcopy_transition(obs, next_obs, action, reward, done)
 
         # augment input copy of input transition in-place
-        return self._augment(aug_obs, aug_next_obs, aug_action, aug_reward, terminated, truncated,  **kwargs)
+        return self._augment(aug_obs, aug_next_obs, aug_action, aug_reward, done, **kwargs)
 
     def _augment(self,
                  obs: np.ndarray,
@@ -153,8 +152,7 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
                  next_obs: np.ndarray,
                  action: np.ndarray,
                  reward: np.ndarray,
-                 terminated: np.ndarray,
-                 truncated: np.ndarray,
+                 done: np.ndarray,
                  p=None,
                  **kwargs,
                  ):
@@ -169,7 +167,7 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
 
         # assert np.allclose(target_delta, np.zeros_like(target_delta))
         if not np.allclose(target_delta, np.zeros_like(target_delta)):
-            return None, None, None, None, None, None
+            return None, None, None, None, None
 
 
         scale = np.array([9000, 6000])
@@ -193,8 +191,7 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
         aug_next_obs = self._convert_to_relative_obs(absolute_next_obs)
         aug_action = action
         aug_reward = reward
-        aug_terminated = terminated
-        aug_truncated = truncated
+        aug_done = done
 
         # print(aug_obs - obs)
         # print(aug_next_obs - next_obs)
@@ -202,7 +199,7 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
         # assert np.allclose(aug_obs, obs)
         # assert np.allclose(aug_next_obs, next_obs)
 
-        return aug_obs, aug_next_obs, aug_action, aug_reward, aug_terminated, aug_truncated
+        return aug_obs, aug_next_obs, aug_action, aug_reward, aug_done
 
         # change in robot position won't change reward nor done
 
