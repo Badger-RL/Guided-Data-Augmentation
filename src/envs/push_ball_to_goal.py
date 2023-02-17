@@ -98,7 +98,7 @@ class PushBallToGoalEnv(BaseEnv):
             ]
         )
 
-    def _observe_global_state(self):
+    def observe_global_state(self):
         return [
             self.robot_x / 9000,
             self.robot_y / 6000,
@@ -112,19 +112,32 @@ class PushBallToGoalEnv(BaseEnv):
             np.cos(self.robot_angle),
         ]
 
-    def set_abstract_state(self, abstract_state):
+    def set_abstract_state(self, obs):
 
-        self.robot_x = abstract_state[0] * 9000
-        self.robot_y = abstract_state[1] * 6000
-        self.target_x = abstract_state[2] * 9000
-        self.target_y = abstract_state[3] * 6000
+        self.target_x = self.goal_x - obs[6]*9000
+        self.target_y = self.goal_y - obs[7]*6000
+        self.robot_x = self.target_x - obs[4]*9000
+        self.robot_y = self.target_y - obs[5]*6000
 
-        self.dummy1_x = abstract_state[4] * 9000
-        self.dummy1_y = abstract_state[5] * 6000
-        self.dummy2_x = abstract_state[6] * 9000
-        self.dummy2_y = abstract_state[7] * 6000
+        relative_x = self.target_x - self.robot_x
+        relative_y = self.target_y - self.robot_y
+        relative_angle = np.arctan2(relative_y*6000, relative_x*9000)
+        if relative_angle < 0:
+            relative_angle += 2*np.pi
 
-        self.robot_angle = np.arctan2(abstract_state[8], abstract_state[9])
+        relative_angle_minus_robot_angle = np.arctan2(obs[8], obs[9])
+        if relative_angle_minus_robot_angle < 0:
+            relative_angle_minus_robot_angle += 2*np.pi
+
+        self.robot_angle = relative_angle - relative_angle_minus_robot_angle
+        if self.robot_angle < 0:
+            self.robot_angle += 2*np.pi
+
+        # dummy is FIXED throughout an episode
+        self.dummy1_x = obs[0] + self.robot_x
+        self.dummy1_y = obs[1] + self.robot_y
+        self.dummy2_x = obs[2] + self.robot_x
+        self.dummy2_y = obs[3] + self.robot_y
 
 
 
