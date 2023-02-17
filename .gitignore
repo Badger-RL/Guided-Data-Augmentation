@@ -146,3 +146,7 @@ wandb
 assets/
 
 policy
+
+/credentials.json
+/wandb_credentials.json
+bundle.zip

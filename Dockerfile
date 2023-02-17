@@ -5,6 +5,7 @@ WORKDIR /workspace
 RUN apt-get update -q \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     python3-pip \
+    python3-venv \
     build-essential \
     patchelf \
     curl \
@@ -19,6 +20,8 @@ RUN apt-get update -q \
     virtualenv \
     wget \
     xpra \
+    zip \
+    unzip \
     xserver-xorg-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -34,6 +37,6 @@ ENV LD_LIBRARY_PATH /root/.mujoco/mujoco210/bin:${LD_LIBRARY_PATH}
 # installing poetry & env setup, mujoco_py compilation
 COPY requirements/requirements.txt requirements.txt
 RUN pip install -r requirements.txt
-RUN python -c "import mujoco_py"
+RUN python3 -c "import mujoco_py"
 
-COPY . /workspace/CORL/
+#COPY . /workspace/CORL/
