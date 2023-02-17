@@ -11,7 +11,6 @@ import uuid
 import json
 import sys
 
-import d4rl
 import h5py
 import gym
 import numpy as np
@@ -71,7 +70,7 @@ class TrainConfig:
     name: str = "CQL"
 
     def __post_init__(self):
-        self.name = f"{self.name}-{self.dataset_name}-{str(uuid.uuid4())[:8]}"
+        self.name = self.name
         if self.checkpoints_path is not None:
             self.checkpoints_path = os.path.join(self.checkpoints_path, self.name)
 
@@ -825,7 +824,7 @@ def train( config: TrainConfig):
 
     env = PushBallToGoalEnv()
     
-    gym.make(config.env)
+    #gym.make(config.env)
 
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
@@ -969,4 +968,12 @@ def train( config: TrainConfig):
 
 
 if __name__ == "__main__":
+
+
+    key = None
+    with open("../wandb_credentials.json", 'r') as json_file:
+        credential_json = json.load(json_file)
+        key = credential_json["wandb_key"]
+
+    wandb.login(key = key)
     train()
