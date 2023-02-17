@@ -172,9 +172,17 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
             return None, None, None, None, None, None
 
 
-        new_robot_pos = self._sample_robot_pos()
+        scale = np.array([9000, 6000])
+        dist_to_ball = 0
+        next_dist_to_ball = 0
+
+        while dist_to_ball < 30 and next_dist_to_ball < 30:
+            new_robot_pos = self._sample_robot_pos()
+            new_next_robot_pos = new_robot_pos + robot_delta
+
+            dist_to_ball = np.linalg.norm((new_robot_pos - absolute_obs[2:4]) * scale)
+            next_dist_to_ball = np.linalg.norm((new_next_robot_pos[:2] - absolute_next_obs[2:4]) * scale)
         # new_robot_pos = absolute_obs[:2]
-        new_next_robot_pos = new_robot_pos + robot_delta
 
         absolute_obs[:2] = new_robot_pos
         absolute_next_obs[:2] = new_next_robot_pos
