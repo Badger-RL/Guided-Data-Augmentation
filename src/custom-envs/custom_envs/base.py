@@ -56,10 +56,10 @@ class BaseEnv(gym.Env):
 
         return np.array(
             [
-                (self.target_x - self.robot_x) / 9000,
-                (self.target_y - self.robot_y) / 6000,
-                (self.goal_x - self.target_x) / 9000,
-                (self.goal_y - self.target_y) / 6000,
+                (self.target_x - self.robot_x),
+                (self.target_y - self.robot_y),
+                (self.goal_x - self.target_x),
+                (self.goal_y - self.target_y),
                 np.sin(self.relative_angle - self.robot_angle),
                 np.cos(self.relative_angle - self.robot_angle),
                 np.sin(self.goal_relative_angle - self.robot_angle),
@@ -190,6 +190,7 @@ class BaseEnv(gym.Env):
                 D = self.Point(-4500, 750)
 
                 # Put ball at goal location (-4500, 0)
+                # ?
                 if self.intersect(A, B, C, D):
                     self.target_x = -4501
                     self.target_y = 0
@@ -287,8 +288,8 @@ class BaseEnv(gym.Env):
 
     def _observe_global_state(self):
         return [
-            self.robot_x / 9000,
-            self.robot_y / 6000,
+            self.robot_x,
+            self.robot_y,
             np.sin(self.robot_angle),
             np.cos(self.robot_angle),
         ]
@@ -298,15 +299,15 @@ class BaseEnv(gym.Env):
 
     def set_abstract_state(self, abstract_state):
 
-        self.robot_x = abstract_state[0] * 9000
-        self.robot_y = abstract_state[1] * 6000
-        self.target_x = abstract_state[2] * 9000
-        self.target_y = abstract_state[3] * 6000
+        self.robot_x = abstract_state[0]
+        self.robot_y = abstract_state[1]
+        self.target_x = abstract_state[2]
+        self.target_y = abstract_state[3]
 
-        self.dummy1_x = abstract_state[4] * 9000
-        self.dummy1_y = abstract_state[5] * 6000
-        self.dummy2_x = abstract_state[6] * 9000
-        self.dummy2_y = abstract_state[7] * 6000
+        self.dummy1_x = abstract_state[4]
+        self.dummy1_y = abstract_state[5]
+        self.dummy2_x = abstract_state[6]
+        self.dummy2_y = abstract_state[7]
 
         self.robot_angle = np.arctan2(abstract_state[8], abstract_state[9])
 
@@ -369,6 +370,7 @@ class BaseEnv(gym.Env):
     def position_rule(self):
         # Ball out : 3 case
         # 1) corner kick : right side of field
+        # do we want corner kicks in pushballtogoal?
         if self.target_x > 4500:
             if self.target_y > 750:
                 self.target_x = 4500
@@ -391,17 +393,6 @@ class BaseEnv(gym.Env):
         if self.target_y < -3000:
             self.target_y = -3000
 
-        # Robot movement : 2 case
-        # checking robot out of bounds (700 additional units past field line)
-        if self.robot_x > 4500 + 700:
-            self.robot_x = 4500
-        if self.robot_x < -4500 - 700:
-            self.robot_x = -4500
-        if self.robot_y > 3000 + 700:
-            self.robot_y = 3000
-        if self.robot_y < -3000 - 700:
-            self.robot_y = -3000
-
         # disallow robot pass through goal-net
         if self.robot_x < -4500 or self.robot_x > 4500:
             if abs(-750 - self.robot_y) < 20:
@@ -414,6 +405,17 @@ class BaseEnv(gym.Env):
                     self.robot_y = 900
                 else:
                     self.robot_y = 700
+
+        # out of bounds
+        if self.robot_x > 4500:
+            self.robot_x = 4500
+        if self.robot_x < -4500:
+            self.robot_x = -4500
+        if self.robot_y > 3000:
+            self.robot_y = 3000
+        if self.robot_y < -3000:
+            self.robot_y = -3000
+
 
     def update_target_value(self):
         # Update Relative Angle
