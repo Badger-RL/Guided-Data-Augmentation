@@ -141,14 +141,40 @@ class BaseEnv(gym.Env):
 
 
     def calculate_reward(self):
-        reward = None
-        if not self.check_facing_ball():# or not self.contacted_ball:
-            reward = 0
-        else:
-            reward = 1 / self.get_distance_target_goal()
+        robot_location = np.array([self.robot_x, self.robot_y])
+        target_location = np.array([self.target_x, self.target_y])
+        # Find distance between robot and target
+        distance_robot_target = np.linalg.norm(target_location - robot_location)
+        reward_dist_to_ball = 0
+        reward = -1
+
+        max_dist = np.sqrt(9000**2 + 6000**2)
+        if self.check_facing_ball():
+            reward_dist_to_ball = np.exp(-distance_robot_target/max_dist)
+            reward_dist_to_goal = np.exp(-self.get_distance_target_goal()/max_dist)
+            reward = (reward_dist_to_goal + reward_dist_to_ball)/2 - 1
+
+        # reward = 0
+
+        # if self.check_facing_ball():
+        #     reward_dist_to_ball = 1/distance_robot_target
+        #     reward_dist_to_goal = 1/self.get_distance_target_goal()
+        #     reward = (reward_dist_to_goal + reward_dist_to_ball)
+
+        # reward_dist_to_ball = 1/distance_robot_target
+        # reward_dist_to_goal = 1/self.get_distance_target_goal()
+        # reward = (reward_dist_to_goal + reward_dist_to_ball)
+
         return reward
 
-    
+    def at_goal(self):
+        at_goal = False
+        if self.target_x > 4500:
+            if self.target_y < 750 and self.target_y > -750:
+                at_goal = True
+
+        return at_goal
+
     class Point:
         def __init__(self, x, y):
             self.x = x
@@ -282,13 +308,16 @@ class BaseEnv(gym.Env):
         self.update_target_value()
         self.update_goal_value()
 
-        done = self.time > BaseEnv.EPISODE_LENGTH
+        truncated = self.time >= BaseEnv.EPISODE_LENGTH
+        terminated = self.at_goal()
+        # terminated = False
+        done = terminated | truncated
 
         reward = self.calculate_reward()
 
         new_obs = self._observe_state()
 
-        return (new_obs, reward, done, {})
+        return (new_obs, reward, done, {'TimeLimit.truncated': truncated})
 
 
     # returns the state of the environment, with global angles and coordinates.
@@ -399,17 +428,6 @@ class BaseEnv(gym.Env):
         if self.target_y < -3000:
             self.target_y = -3000
 
-        # Robot movement : 2 case
-        # checking robot out of bounds (700 additional units past field line)
-        if self.robot_x > 4500 + 700:
-            self.robot_x = 4500
-        if self.robot_x < -4500 - 700:
-            self.robot_x = -4500
-        if self.robot_y > 3000 + 700:
-            self.robot_y = 3000
-        if self.robot_y < -3000 - 700:
-            self.robot_y = -3000
-
         # disallow robot pass through goal-net
         if self.robot_x < -4500 or self.robot_x > 4500:
             if abs(-750 - self.robot_y) < 20:
@@ -422,6 +440,16 @@ class BaseEnv(gym.Env):
                     self.robot_y = 900
                 else:
                     self.robot_y = 700
+
+        # out of bounds
+        if self.robot_x > 4500:
+            self.robot_x = 4500
+        if self.robot_x < -4500:
+            self.robot_x = -4500
+        if self.robot_y > 3000:
+            self.robot_y = 3000
+        if self.robot_y < -3000:
+            self.robot_y = -3000
 
     def update_target_value(self):
         # Update Relative Angle
