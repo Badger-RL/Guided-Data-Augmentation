@@ -227,7 +227,7 @@ class BaseEnv(gym.Env):
         policy_target_x = self.robot_x + (
             (
                 (np.cos(self.robot_angle) * np.clip(x, -1, 1))
-                + (np.cos(self.robot_angle + np.pi / 2) * np.clip(x, -1, 1))
+                + (np.cos(self.robot_angle + np.pi / 2) * np.clip(y, -1, 1))
             )
             * 200
         )  # the x component of the location targeted by the high level action
