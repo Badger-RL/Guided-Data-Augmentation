@@ -35,8 +35,8 @@ class BaseEnv(gym.Env):
             - Translation along x-axis
             - Translation along y-axis
         """
-        action_space_low = np.array([-np.pi / 2, -1, -1])
-        action_space_high = np.array([np.pi / 2, 1, 1])
+        action_space_low = np.array([-np.pi / 2, 0, -np.pi])
+        action_space_high = np.array([np.pi / 2, 1, np.pi])
         self.action_space = gym.spaces.Box(action_space_low, action_space_high)
         """
         OBSERVATION SPACE:
@@ -145,7 +145,6 @@ class BaseEnv(gym.Env):
         target_location = np.array([self.target_x, self.target_y])
         # Find distance between robot and target
         distance_robot_target = np.linalg.norm(target_location - robot_location)
-        reward_dist_to_ball = 0
         reward = -1
 
         max_dist = np.sqrt(9000**2 + 6000**2)
@@ -153,17 +152,6 @@ class BaseEnv(gym.Env):
             reward_dist_to_ball = np.exp(-distance_robot_target/max_dist)
             reward_dist_to_goal = np.exp(-self.get_distance_target_goal()/max_dist)
             reward = (reward_dist_to_goal + reward_dist_to_ball)/2 - 1
-
-        # reward = 0
-
-        # if self.check_facing_ball():
-        #     reward_dist_to_ball = 1/distance_robot_target
-        #     reward_dist_to_goal = 1/self.get_distance_target_goal()
-        #     reward = (reward_dist_to_goal + reward_dist_to_ball)
-
-        # reward_dist_to_ball = 1/distance_robot_target
-        # reward_dist_to_goal = 1/self.get_distance_target_goal()
-        # reward = (reward_dist_to_goal + reward_dist_to_ball)
 
         return reward
 
@@ -230,17 +218,23 @@ class BaseEnv(gym.Env):
  
     def move_robot(self, action):
             # Find location policy is trying to reach
+
+        r = action[1]
+        theta = action[2]
+        x = r*np.cos(theta)
+        y = r*np.sin(theta)
+
         policy_target_x = self.robot_x + (
             (
-                (np.cos(self.robot_angle) * np.clip(action[1], -1, 1))
-                + (np.cos(self.robot_angle + np.pi / 2) * np.clip(action[2], -1, 1))
+                (np.cos(self.robot_angle) * np.clip(x, -1, 1))
+                + (np.cos(self.robot_angle + np.pi / 2) * np.clip(x, -1, 1))
             )
             * 200
         )  # the x component of the location targeted by the high level action
         policy_target_y = self.robot_y + (
             (
-                (np.sin(self.robot_angle) * np.clip(action[1], -1, 1))
-                + (np.sin(self.robot_angle + np.pi / 2) * np.clip(action[2], -1, 1))
+                (np.sin(self.robot_angle) * np.clip(x, -1, 1))
+                + (np.sin(self.robot_angle + np.pi / 2) * np.clip(y, -1, 1))
             )
             * 200
         )  # the y component of the location targeted by the high level action

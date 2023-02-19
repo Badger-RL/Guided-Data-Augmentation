@@ -27,8 +27,8 @@ class BaseEnv(gym.Env):
             - Translation along x-axis
             - Translation along y-axis
         """
-        action_space_low = np.array([-np.pi / 2, -1, -1])
-        action_space_high = np.array([np.pi / 2, 1, 1])
+        action_space_low = np.array([-np.pi / 2, 0, -np.pi])
+        action_space_high = np.array([np.pi / 2, 1, np.pi])
         self.action_space = gym.spaces.Box(action_space_low, action_space_high)
         """
         OBSERVATION SPACE:
@@ -210,33 +210,29 @@ class BaseEnv(gym.Env):
                 if self.intersect(A, B, C, D):
                     self.target_x = -4501
                     self.target_y = 0
- 
+
     def move_robot(self, action):
-            # Find location policy is trying to reach
+        # Find location policy is trying to reach
+
+        r = action[1]
+        theta = action[2]
+        x = r * np.cos(theta)
+        y = r * np.sin(theta)
+
         policy_target_x = self.robot_x + (
-            (
-                (np.cos(self.robot_angle) * np.clip(action[1], -1, 1))
-                + (np.cos(self.robot_angle + np.pi / 2) * np.clip(action[2], -1, 1))
-            )
-            * 200
+                (
+                        (np.cos(self.robot_angle) * np.clip(x, -1, 1))
+                        + (np.cos(self.robot_angle + np.pi / 2) * np.clip(x, -1, 1))
+                )
+                * 200
         )  # the x component of the location targeted by the high level action
         policy_target_y = self.robot_y + (
-            (
-                (np.sin(self.robot_angle) * np.clip(action[1], -1, 1))
-                + (np.sin(self.robot_angle + np.pi / 2) * np.clip(action[2], -1, 1))
-            )
-            * 200
+                (
+                        (np.sin(self.robot_angle) * np.clip(x, -1, 1))
+                        + (np.sin(self.robot_angle + np.pi / 2) * np.clip(y, -1, 1))
+                )
+                * 200
         )  # the y component of the location targeted by the high level action
-
-        # Update robot position
-        self.robot_x = (
-            self.robot_x * (1 - self.displacement_coef)
-            + policy_target_x * self.displacement_coef
-        )  # weighted sums based on displacement coefficient
-        self.robot_y = (
-            self.robot_y * (1 - self.displacement_coef)
-            + policy_target_y * self.displacement_coef
-        )  # the idea is we move towards the target position and angle
 
         self.position_rule()
 
