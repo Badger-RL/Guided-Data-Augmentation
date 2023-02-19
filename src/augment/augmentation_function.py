@@ -133,6 +133,11 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
             np.cos(goal_relative_angle - robot_angle),]
         ])
 
+
+class TranslateRobot(AbstractSimAugmentationFunction):
+    def __init__(self, env, **kwargs):
+        super().__init__(env=env, **kwargs)
+
     def _augment(self,
                  obs: np.ndarray,
                  next_obs: np.ndarray,
@@ -142,7 +147,6 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
                  p=None,
                  **kwargs,
                  ):
-
 
         # random robot position
         absolute_obs = self._convert_to_absolute_obs(obs)
@@ -154,7 +158,6 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
         # assert np.allclose(target_delta, np.zeros_like(target_delta))
         if not np.allclose(target_delta, np.zeros_like(target_delta)):
             return None, None, None, None, None
-
 
         dist_to_ball = 0
         next_dist_to_ball = 0
@@ -169,8 +172,6 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
 
         absolute_obs[:2] = new_robot_pos
         absolute_next_obs[:2] = new_next_robot_pos
-
-        # absolute_next_obs[6:8] = (new_next_robot_pos - absolute_next_obs[:2])/2
 
         aug_obs = self._convert_to_relative_obs(absolute_obs)
         aug_next_obs = self._convert_to_relative_obs(absolute_next_obs)
