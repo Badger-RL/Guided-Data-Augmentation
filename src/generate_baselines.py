@@ -65,7 +65,7 @@ models = {
     "keepaway": {
         "env": KeepawayEnv,
         "path": "keepaway",
-        "training_steps": 15000000,
+        "training_steps": 5000000,
         "starter_model": None,
     },
     "kick_to_goal": {
@@ -122,7 +122,7 @@ if __name__ == "__main__":
         )
 
         # model = PPO("MlpPolicy", env, verbose=1, learning_rate=1e-3, batch_size=128)
-        model = PPO("MlpPolicy", env, verbose=1, learning_rate=1e-3, batch_size=64)
+        model = PPO("MlpPolicy", env, verbose=1, learning_rate=1e-3, batch_size=512)
         # model = PPO("MlpPolicy", env, verbose=1)
 
     else:
