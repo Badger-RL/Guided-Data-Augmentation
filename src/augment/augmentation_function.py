@@ -57,14 +57,14 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
         super().__init__(env=env, **kwargs)
         self.ball_pos_mask = None
         self.robot_pos_mask = None
-        self.goal_x = 4800/9000
-        self.goal_y = 0/6000
+        self.goal_x = 4800
+        self.goal_y = 0
         self.goal = np.array([self.goal_x, self.goal_y])
         self.displacement_coef = 0.2
 
     def _sample_robot_pos(self, n=1):
-        x = np.random.uniform(-3500, 3500) / 9000
-        y = np.random.uniform(-2500, 2500) / 6000
+        x = np.random.uniform(-3500, 3500)
+        y = np.random.uniform(-2500, 2500)
         return np.array([x, y])
 
     def _sample_robot_angle(self, n=1):
@@ -72,18 +72,18 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
 
     def _convert_to_absolute_obs(self, obs):
 
-        target_x = self.goal_x - obs[6]
-        target_y = self.goal_y - obs[7]
-        robot_x = target_x - obs[4]
-        robot_y = target_y - obs[5]
+        target_x = self.goal_x - obs[2]
+        target_y = self.goal_y - obs[3]
+        robot_x = target_x - obs[0]
+        robot_y = target_y - obs[1]
 
         relative_x = target_x - robot_x
         relative_y = target_y - robot_y
-        relative_angle = np.arctan2(relative_y*6000, relative_x*9000)
+        relative_angle = np.arctan2(relative_y, relative_x)
         if relative_angle < 0:
             relative_angle += 2*np.pi
 
-        relative_angle_minus_robot_angle = np.arctan2(obs[8], obs[9])
+        relative_angle_minus_robot_angle = np.arctan2(obs[4], obs[5])
         if relative_angle_minus_robot_angle < 0:
             relative_angle_minus_robot_angle += 2*np.pi
 
@@ -91,21 +91,11 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
         if robot_angle < 0:
             robot_angle += 2*np.pi
 
-        # dummy is FIXED throughout an episode
-        dummy1_x = obs[0] + robot_x
-        dummy1_y = obs[1] + robot_y
-        dummy2_x = obs[2] + robot_x
-        dummy2_y = obs[3] + robot_y
-
         return np.array([
             robot_x,
             robot_y,
             target_x,
             target_y,
-            dummy1_x,
-            dummy1_y,
-            dummy2_x,
-            dummy2_y,
             np.sin(robot_angle),
             np.cos(robot_angle)
         ])
@@ -114,8 +104,6 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
 
         robot_pos = obs[:2]
         target_pos = obs[2:4]
-        dummy1_pos = obs[4:6]
-        dummy2_pos = obs[6:8]
 
         robot_x = obs[0]
         robot_y = obs[1]
@@ -123,22 +111,20 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
         target_y = obs[3]
         relative_x = target_x - robot_x
         relative_y = target_y - robot_y
-        relative_angle = np.arctan2(relative_y*6000, relative_x*9000)
+        relative_angle = np.arctan2(relative_y, relative_x)
         if relative_angle < 0:
             relative_angle += 2*np.pi
 
-        robot_angle = np.arctan2(obs[8], obs[9])
+        robot_angle = np.arctan2(obs[4], obs[5])
         if robot_angle < 0:
             robot_angle += 2*np.pi
 
         goal_delta = self.goal - robot_pos
-        goal_relative_angle = np.arctan2(goal_delta[1]*6000, goal_delta[0]*9000)
+        goal_relative_angle = np.arctan2(goal_delta[1], goal_delta[0])
         if goal_relative_angle < 0:
             goal_relative_angle += 2*np.pi
 
         return np.concatenate([
-            dummy1_pos - robot_pos,
-            dummy2_pos - robot_pos,
             target_pos - robot_pos,
             self.goal - target_pos,
             [np.sin(relative_angle - robot_angle),
@@ -170,17 +156,16 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
             return None, None, None, None, None
 
 
-        scale = np.array([9000, 6000])
         dist_to_ball = 0
         next_dist_to_ball = 0
 
         while dist_to_ball < 30 and next_dist_to_ball < 30:
             new_robot_pos = self._sample_robot_pos()
+            # new_robot_pos = absolute_obs[:2]
             new_next_robot_pos = new_robot_pos + robot_delta
 
-            dist_to_ball = np.linalg.norm((new_robot_pos - absolute_obs[2:4]) * scale)
-            next_dist_to_ball = np.linalg.norm((new_next_robot_pos[:2] - absolute_next_obs[2:4]) * scale)
-        # new_robot_pos = absolute_obs[:2]
+            dist_to_ball = np.linalg.norm((new_robot_pos - absolute_obs[2:4]))
+            next_dist_to_ball = np.linalg.norm((new_next_robot_pos[:2] - absolute_next_obs[2:4]))
 
         absolute_obs[:2] = new_robot_pos
         absolute_next_obs[:2] = new_next_robot_pos
@@ -203,7 +188,3 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
 
         # change in robot position won't change reward nor done
 
-
-# two guided augs:
-# 1: move robot to some location between it s current pos and the ball pos
-# 2: move robot to an arbitrary location but rotate it so it faces the ball
