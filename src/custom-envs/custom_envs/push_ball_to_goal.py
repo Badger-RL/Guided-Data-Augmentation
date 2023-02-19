@@ -86,10 +86,13 @@ class PushBallToGoalEnv(BaseEnv):
 
     def set_abstract_state(self, obs):
 
-        self.target_x = self.goal_x - obs[6]
-        self.target_y = self.goal_y - obs[7]
-        self.robot_x = self.target_x - obs[4]
-        self.robot_y = self.target_y - obs[5]
+        # obs[0] = tx - rx --> rx = tx - obs[0]
+        # obs[2] = gx - tx --> tx = gx - obs[2]
+
+        self.target_x = self.goal_x - obs[2]
+        self.target_y = self.goal_y - obs[3]
+        self.robot_x = self.target_x - obs[0]
+        self.robot_y = self.target_y - obs[1]
 
         relative_x = self.target_x - self.robot_x
         relative_y = self.target_y - self.robot_y
@@ -97,7 +100,7 @@ class PushBallToGoalEnv(BaseEnv):
         if relative_angle < 0:
             relative_angle += 2*np.pi
 
-        relative_angle_minus_robot_angle = np.arctan2(obs[8], obs[9])
+        relative_angle_minus_robot_angle = np.arctan2(obs[4], obs[5])
         if relative_angle_minus_robot_angle < 0:
             relative_angle_minus_robot_angle += 2*np.pi
 

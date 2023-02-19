@@ -11,19 +11,23 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecMonitor
 from stable_baselines3.common.env_util import make_vec_env
 
-from src.envs.push_ball_to_goal import PushBallToGoalEnv
 
-from GuidedDataAugmentationForRobotics.src.augment.augmentation_function import AbstractSimAugmentationFunction
+from GuidedDataAugmentationForRobotics.src.augment.augmentation_function import AbstractSimAugmentationFunction, \
+    TranslateRobot, TranslateRobotAndBall
+from custom_envs.push_ball_to_goal import PushBallToGoalEnv
 
 models = {"push_ball_to_goal": {"env": PushBallToGoalEnv}}
 
 def main():
 
     path = 'push_ball_to_goal'
-    normalization_path = f"../expert_policies/{path}/vector_normalize"
+    normalization_path = f"../expert_policies/{path}/vector_normalize.pkl"
+    normalization_path = f"../checkpoints/rl_model_vecnormalize_120000_steps.pkl"
+
     env = VecNormalize.load(
         normalization_path, make_vec_env(models[path]["env"], n_envs=1)
     )
+    env.norm_reward=False
 
     env.reset()
     s_o = env.get_original_obs()
@@ -32,12 +36,13 @@ def main():
     ns, r, done, info = env.step([act])
     ns_o = env.get_original_obs()
 
-    f = AbstractSimAugmentationFunction(env=None)
+    f = TranslateRobot(env=None)
+    f = TranslateRobotAndBall(env=None)
 
     for _ in range(1000):
 
-        s, ns, a, r, done = f.augment(s_o[0], ns_o[0], act, r, done)
-        env.envs[0].set_abstract_state(s)
+        aug_s, _, _, _, _ = f.augment(s_o[0], ns_o[0], act, r, done)
+        env.envs[0].set_abstract_state(aug_s)
         env.render()
         time.sleep(0.5)
 
