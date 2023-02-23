@@ -21,9 +21,7 @@ models = {"push_ball_to_goal": {"env": PushBallToGoalEnv}}
 def main():
 
     path = 'push_ball_to_goal'
-    normalization_path = f"../expert_policies/{path}/vector_normalize.pkl"
-    normalization_path = f"../checkpoints/rl_model_vecnormalize_120000_steps.pkl"
-
+    normalization_path = f"../expert_policies/{path}/vector_normalize"
     env = VecNormalize.load(
         normalization_path, make_vec_env(models[path]["env"], n_envs=1)
     )
