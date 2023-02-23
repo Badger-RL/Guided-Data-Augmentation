@@ -47,7 +47,7 @@ models = {
     "push_ball_to_goal": {
         "env": PushBallToGoalEnv,
         "path": "push_ball_to_goal",
-        "training_steps": 10000000,
+        "training_steps": 50000000,
         "starter_model": None,
     },
     "dummy_defenders": {

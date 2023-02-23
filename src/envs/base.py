@@ -35,8 +35,8 @@ class BaseEnv(gym.Env):
             - Translation along x-axis
             - Translation along y-axis
         """
-        action_space_low = np.array([-np.pi / 2, 0, -np.pi])
-        action_space_high = np.array([np.pi / 2, 1, np.pi])
+        action_space_low = np.array([-np.pi / 2, -1, -1])
+        action_space_high = np.array([np.pi / 2, 1, 1])
         self.action_space = gym.spaces.Box(action_space_low, action_space_high)
         """
         OBSERVATION SPACE:
@@ -219,10 +219,11 @@ class BaseEnv(gym.Env):
     def move_robot(self, action):
             # Find location policy is trying to reach
 
-        r = action[1]
-        theta = action[2]
-        x = r*np.cos(theta)
-        y = r*np.sin(theta)
+        r = np.linalg.norm(action[1:])
+        if r > 1:
+            action[1:] /= r
+        x = action[1]
+        y = action[2]
 
         policy_target_x = self.robot_x + (
             (
