@@ -1,8 +1,21 @@
+from re import A
 import gym
+import pygame
 import numpy as np
-import warnings
+import torch
+import time
+import sys
 
-from custom_envs.base import BaseEnv
+from gym import spaces
+from stable_baselines3 import PPO
+from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecMonitor
+from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.evaluation import evaluate_policy
+
+from src.envs.base import BaseEnv
+
+import warnings
+from src.utils.utils import save_vec_normalize_data
 
 warnings.filterwarnings("ignore")
 
@@ -13,17 +26,18 @@ TRAINING_STEPS = 1000000
 class PushBallToGoalEnv(BaseEnv):
     def __init__(self):
         super().__init__()
-        observation_space_low = np.array([
-            -4800,
-            -3000,
-            -4800,
-            -3000,
-            -1,
-            -1,
-            -1,
-            -1
-        ])
-        observation_space_high = -observation_space_low.copy()
+
+        """
+        OBSERVATION SPACE:
+            - x-cordinate of robot with respect to target
+            - y-cordinate of robot with respect to target
+            - sin(Angle between robot and target)
+            - cos(Angle between robot and target)
+        """
+        observation_space_size = 8
+
+        observation_space_low = -1 * np.ones(observation_space_size)
+        observation_space_high = np.ones(observation_space_size)
         self.observation_space = gym.spaces.Box(
             observation_space_low, observation_space_high
         )
@@ -55,18 +69,16 @@ class PushBallToGoalEnv(BaseEnv):
 
         return self._observe_state()
 
-
     def _observe_state(self):
-
         self.update_target_value()
         self.update_goal_value()
 
         return np.array(
             [
-                (self.target_x - self.robot_x),
-                (self.target_y - self.robot_y),
-                (self.goal_x - self.target_x),
-                (self.goal_y - self.target_y),
+                (self.target_x - self.robot_x) / 9000,
+                (self.target_y - self.robot_y) / 6000,
+                (self.goal_x - self.target_x) / 9000,
+                (self.goal_y - self.target_y) / 6000,
                 np.sin(self.relative_angle - self.robot_angle),
                 np.cos(self.relative_angle - self.robot_angle),
                 np.sin(self.goal_relative_angle - self.robot_angle),
@@ -74,12 +86,12 @@ class PushBallToGoalEnv(BaseEnv):
             ]
         )
 
-    def observe_global_state(self):
+    def _observe_global_state(self):
         return [
-            self.robot_x,
-            self.robot_y,
-            self.target_x,
-            self.target_y,
+            self.robot_x / 9000,
+            self.robot_y / 6000,
+            self.target_x / 9000,
+            self.target_y / 6000,
             np.sin(self.robot_angle),
             np.cos(self.robot_angle),
         ]

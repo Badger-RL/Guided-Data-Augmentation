@@ -2,9 +2,17 @@ import math
 import gym
 import pygame
 import numpy as np
+import torch
 import time
+import sys
+
+from stable_baselines3 import PPO
+from stable_baselines3.common.vec_env import VecNormalize
+from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.evaluation import evaluate_policy
 
 import warnings
+from src.utils.utils import save_vec_normalize_data
 
 warnings.filterwarnings("ignore")
 
@@ -46,7 +54,6 @@ class BaseEnv(gym.Env):
 
         self.target_radius = 10
         self.robot_radius = 20
-        self.max_dist = np.sqrt(9000**2 + 6000**2)
 
         self.reset()
 
@@ -57,10 +64,10 @@ class BaseEnv(gym.Env):
 
         return np.array(
             [
-                (self.target_x - self.robot_x),
-                (self.target_y - self.robot_y),
-                (self.goal_x - self.target_x),
-                (self.goal_y - self.target_y),
+                (self.target_x - self.robot_x) / 9000,
+                (self.target_y - self.robot_y) / 6000,
+                (self.goal_x - self.target_x) / 9000,
+                (self.goal_y - self.target_y) / 6000,
                 np.sin(self.relative_angle - self.robot_angle),
                 np.cos(self.relative_angle - self.robot_angle),
                 np.sin(self.goal_relative_angle - self.robot_angle),
@@ -132,7 +139,6 @@ class BaseEnv(gym.Env):
         else:
             return False
 
-
     def calculate_reward(self):
         robot_location = np.array([self.robot_x, self.robot_y])
         target_location = np.array([self.target_x, self.target_y])
@@ -140,10 +146,11 @@ class BaseEnv(gym.Env):
         distance_robot_target = np.linalg.norm(target_location - robot_location)
         reward = -1
 
+        max_dist = np.sqrt(9000 ** 2 + 6000 ** 2)
         if self.check_facing_ball():
-            reward_dist_to_ball = np.exp(-distance_robot_target/self.max_dist)
-            reward_dist_to_goal = np.exp(-self.get_distance_target_goal()/self.max_dist)
-            reward = (reward_dist_to_goal + reward_dist_to_ball)/2 - 1
+            reward_dist_to_ball = np.exp(-distance_robot_target / max_dist)
+            reward_dist_to_goal = np.exp(-self.get_distance_target_goal() / max_dist)
+            reward = (reward_dist_to_goal + reward_dist_to_ball) / 2 - 1
 
         return reward
 
@@ -155,8 +162,6 @@ class BaseEnv(gym.Env):
 
         return at_goal
 
-
-    
     class Point:
         def __init__(self, x, y):
             self.x = x
@@ -206,7 +211,6 @@ class BaseEnv(gym.Env):
                 D = self.Point(-4500, 750)
 
                 # Put ball at goal location (-4500, 0)
-                # ?
                 if self.intersect(A, B, C, D):
                     self.target_x = -4501
                     self.target_y = 0
@@ -214,13 +218,11 @@ class BaseEnv(gym.Env):
     def move_robot(self, action):
         # Find location policy is trying to reach
 
-        # normalize action if the displacement is > 1
         r = np.linalg.norm(action[1:])
         if r > 1:
             action[1:] /= r
         x = action[1]
         y = action[2]
-
 
         policy_target_x = self.robot_x + (
                 (
@@ -278,7 +280,7 @@ class BaseEnv(gym.Env):
                 * 5
             )
 
-                # Check if line of ball intersects goal line
+            # Check if line of ball intersects goal line
             A = self.Point(self.target_x, self.target_y)
             B = self.Point(self.robot_x, self.robot_y)
             C = self.Point(-4500, -750)
@@ -291,6 +293,7 @@ class BaseEnv(gym.Env):
 
         # Turn towards the target as suggested by the policy
         self.robot_angle = self.robot_angle + self.displacement_coef * action[0]
+
     def step(self, action):
 
         self.time += 1
@@ -311,13 +314,12 @@ class BaseEnv(gym.Env):
 
         return (new_obs, reward, done, {'TimeLimit.truncated': truncated})
 
-
     # returns the state of the environment, with global angles and coordinates.
 
     def _observe_global_state(self):
         return [
-            self.robot_x,
-            self.robot_y,
+            self.robot_x / 9000,
+            self.robot_y / 6000,
             np.sin(self.robot_angle),
             np.cos(self.robot_angle),
         ]
@@ -327,15 +329,10 @@ class BaseEnv(gym.Env):
 
     def set_abstract_state(self, abstract_state):
 
-        self.robot_x = abstract_state[0]
-        self.robot_y = abstract_state[1]
-        self.target_x = abstract_state[2]
-        self.target_y = abstract_state[3]
-
-        self.dummy1_x = abstract_state[4]
-        self.dummy1_y = abstract_state[5]
-        self.dummy2_x = abstract_state[6]
-        self.dummy2_y = abstract_state[7]
+        self.robot_x = abstract_state[0] * 9000
+        self.robot_y = abstract_state[1] * 6000
+        self.target_x = abstract_state[2] * 9000
+        self.target_y = abstract_state[3] * 6000
 
         self.robot_angle = np.arctan2(abstract_state[8], abstract_state[9])
 

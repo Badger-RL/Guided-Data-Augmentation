@@ -139,7 +139,6 @@ class BaseEnv(gym.Env):
         else:
             return False
 
-
     def calculate_reward(self):
         robot_location = np.array([self.robot_x, self.robot_y])
         target_location = np.array([self.target_x, self.target_y])
@@ -280,7 +279,7 @@ class BaseEnv(gym.Env):
                 * 5
             )
 
-                # Check if line of ball intersects goal line
+            # Check if line of ball intersects goal line
             A = self.Point(self.target_x, self.target_y)
             B = self.Point(self.robot_x, self.robot_y)
             C = self.Point(-4500, -750)
