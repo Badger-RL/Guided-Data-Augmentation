@@ -101,10 +101,10 @@ class PushBallToGoalEnv(BaseEnv):
         # obs[0] = tx - rx --> rx = tx - obs[0]
         # obs[2] = gx - tx --> tx = gx - obs[2]
 
-        self.target_x = self.goal_x - obs[2]
-        self.target_y = self.goal_y - obs[3]
-        self.robot_x = self.target_x - obs[0]
-        self.robot_y = self.target_y - obs[1]
+        self.target_x = self.goal_x - obs[2]*9000
+        self.target_y = self.goal_y - obs[3]*6000
+        self.robot_x = self.target_x - obs[0]*9000
+        self.robot_y = self.target_y - obs[1]*6000
 
         relative_x = self.target_x - self.robot_x
         relative_y = self.target_y - self.robot_y

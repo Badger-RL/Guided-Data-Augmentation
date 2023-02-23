@@ -57,11 +57,16 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
         super().__init__(env=env, **kwargs)
         self.ball_pos_mask = None
         self.robot_pos_mask = None
+
+        self.x_scale = 9000
+        self.y_scale = 6000
+        self.scale = np.array([self.x_scale, self.y_scale])
+
         self.goal_x = 4800
         self.goal_y = 0
         self.goal = np.array([self.goal_x, self.goal_y])
         self.displacement_coef = 0.2
-        self.max_dist = np.sqrt(9000**2 + 6000**2)
+        self.max_dist = np.sqrt(self.x_scale**2 + self.y_scale**2)
 
     def _sample_robot_pos(self, n=1):
         x = np.random.uniform(-3500, 3500)
@@ -73,10 +78,10 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
 
     def _convert_to_absolute_obs(self, obs):
 
-        target_x = self.goal_x - obs[2]
-        target_y = self.goal_y - obs[3]
-        robot_x = target_x - obs[0]
-        robot_y = target_y - obs[1]
+        target_x = (self.goal_x - obs[2]*self.x_scale)
+        target_y = (self.goal_y - obs[3]*self.y_scale)
+        robot_x = (target_x - obs[0]*self.x_scale)
+        robot_y = (target_y - obs[1]*self.y_scale)
 
         relative_x = target_x - robot_x
         relative_y = target_y - robot_y
@@ -126,8 +131,8 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
             goal_relative_angle += 2*np.pi
 
         return np.concatenate([
-            target_pos - robot_pos,
-            self.goal - target_pos,
+            (target_pos - robot_pos) / self.scale,
+            (self.goal - target_pos) / self.scale,
             [np.sin(relative_angle - robot_angle),
             np.cos(relative_angle - robot_angle),
             np.sin(goal_relative_angle - robot_angle),
