@@ -1,3 +1,5 @@
+from typing import Dict
+
 import numpy as np
 
 from GuidedDataAugmentationForRobotics.src.augment.augmentation_function import AbstractSimAugmentationFunction
@@ -16,13 +18,15 @@ class TranslateRobotAndBall(AbstractSimAugmentationFunction):
                  action: np.ndarray,
                  reward: np.ndarray,
                  done: np.ndarray,
-                 p=None,
                  **kwargs,
                  ):
 
         # random robot position
         absolute_obs = self._convert_to_absolute_obs(obs)
         absolute_next_obs = self._convert_to_absolute_obs(next_obs)
+
+        if self.at_goal(absolute_obs[2], absolute_obs[3]):
+            return None, None, None, None, None
 
         xmin = np.min([absolute_obs[0], absolute_next_obs[0], absolute_obs[2], absolute_next_obs[2]])
         ymin = np.min([absolute_obs[1], absolute_next_obs[1], absolute_obs[3], absolute_next_obs[3]])
@@ -62,5 +66,3 @@ class TranslateRobotAndBall(AbstractSimAugmentationFunction):
         # assert np.isclose(aug_reward, reward, atol=1e-6)
 
         return aug_obs, aug_next_obs, aug_action, aug_reward, aug_done
-
-        # change in robot position won't change reward nor done
