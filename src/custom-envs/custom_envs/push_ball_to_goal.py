@@ -1,21 +1,10 @@
-from re import A
 import gym
-import pygame
 import numpy as np
-import torch
-import time
-import sys
 
-from gym import spaces
-from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecMonitor
-from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.evaluation import evaluate_policy
-
-from src.envs.base import BaseEnv
 
 import warnings
-from src.utils.utils import save_vec_normalize_data
+
+from custom_envs.base import BaseEnv
 
 warnings.filterwarnings("ignore")
 
