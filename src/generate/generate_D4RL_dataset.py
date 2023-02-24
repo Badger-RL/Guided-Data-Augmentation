@@ -11,7 +11,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecMonitor
 from stable_baselines3.common.env_util import make_vec_env
 
-from src.envs.push_ball_to_goal import PushBallToGoalEnv
+from custom_envs.push_ball_to_goal import PushBallToGoalEnv
 
 
 models = {"push_ball_to_goal": {"env": PushBallToGoalEnv}}
@@ -52,7 +52,7 @@ def main():
     parser.add_argument('--random_actions', action='store_true')
     parser.set_defaults(feature = False)
     parser.add_argument('--render', action='store_true')
-    parser.set_defaults(render = True)
+    parser.set_defaults(render = 0)
 
 
     args = parser.parse_args()
@@ -60,10 +60,8 @@ def main():
     policy_path = f"./expert_policies/{args.path}/policy"
     normalization_path = f"./expert_policies/{args.path}/vector_normalize"
 
-    #model.save(f"./Models/{params['path']}/policy")
-    #env.save(f"./Models/{params['path']}/vector_normalize")
     env = VecNormalize.load(
-    normalization_path, make_vec_env(models[args.path]["env"], n_envs=1)
+        normalization_path, make_vec_env(models[args.path]["env"], n_envs=1)
     )
     env.norm_obs = True
     env.norm_reward = False
@@ -72,8 +70,6 @@ def main():
 
     s = env.reset()
     s_o = env.get_original_obs()
-    act = env.action_space.sample()
-    done = False
 
     custom_objects = {
     "lr_schedule": lambda x: .003,
@@ -86,12 +82,8 @@ def main():
     ts = 0
     num_episodes = 0
     for _ in range(args.num_samples):
-
-
-        act = None
         if not args.random_actions:
             act = policy.predict(s)[0]
-            #print(act)
         else:
             act = [env.action_space.sample()]
           
@@ -113,18 +105,15 @@ def main():
         ts += 1
 
         if done or timeout:
-            done = False
             ts = 0
             s = env.reset()
             s_o = env.get_original_obs()
-            
             num_episodes += 1
-            frames = []
         else:
             s = ns
             s_o = ns_o
 
-    fname = f'dataset_{"expert" if args.use_policy else "random"}_{args.num_samples}.hdf5'
+    fname = f'datasets/{"expert" if args.use_policy else "random"}/{args.num_samples}.hdf5'
     dataset = h5py.File(fname, 'w')
     npify(data)
     for k in data:

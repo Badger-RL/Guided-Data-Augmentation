@@ -57,9 +57,8 @@ def main():
     args = parser.parse_args()
 
     policy_path = f"../expert_policies/{args.path}/policy.zip"
-    normalization_path = f"../expert_policies/{args.path}/vector_normalize.pkl"
-    # model.save(f"./Models/{params['path']}/policy")
-    # env.save(f"./Models/{params['path']}/vector_normalize")
+    normalization_path = f"../expert_policies/{args.path}/vector_normalize"
+
     env = VecNormalize.load(
         normalization_path, make_vec_env(models[args.path]["env"], n_envs=1)
     )
@@ -70,8 +69,6 @@ def main():
 
     s = env.reset()
     s_o = env.get_original_obs()
-    act = env.action_space.sample()
-    done = False
 
     custom_objects = {
         "lr_schedule": lambda x: .003,
@@ -84,11 +81,8 @@ def main():
     ts = 0
     num_episodes = 0
     for _ in range(args.num_samples):
-
-        act = None
         if not args.random_actions:
             act = policy.predict(s)[0]
-            # print(act)
         else:
             act = [env.action_space.sample()]
 
@@ -108,13 +102,11 @@ def main():
         ts += 1
 
         if done or timeout:
-            done = False
             ts = 0
             s = env.reset()
             s_o = env.get_original_obs()
 
             num_episodes += 1
-            frames = []
         else:
             s = ns
             s_o = ns_o
