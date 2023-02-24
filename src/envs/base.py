@@ -139,16 +139,29 @@ class BaseEnv(gym.Env):
         else:
             return False
 
-
     def calculate_reward(self):
-        reward = None
-        if not self.check_facing_ball():# or not self.contacted_ball:
-            reward = 0
-        else:
-            reward = 1 / self.get_distance_target_goal()
+        robot_location = np.array([self.robot_x, self.robot_y])
+        target_location = np.array([self.target_x, self.target_y])
+        # Find distance between robot and target
+        distance_robot_target = np.linalg.norm(target_location - robot_location)
+        reward = -1
+
+        max_dist = np.sqrt(9000**2 + 6000**2)
+        if self.check_facing_ball():
+            reward_dist_to_ball = np.exp(-distance_robot_target/max_dist)
+            reward_dist_to_goal = np.exp(-self.get_distance_target_goal()/max_dist)
+            reward = (reward_dist_to_goal + reward_dist_to_ball)/2 - 1
+
         return reward
 
-    
+    def at_goal(self):
+        at_goal = False
+        if self.target_x > 4500:
+            if self.target_y < 750 and self.target_y > -750:
+                at_goal = True
+
+        return at_goal
+
     class Point:
         def __init__(self, x, y):
             self.x = x
@@ -204,17 +217,24 @@ class BaseEnv(gym.Env):
  
     def move_robot(self, action):
             # Find location policy is trying to reach
+
+        r = np.linalg.norm(action[1:])
+        if r > 1:
+            action[1:] /= r
+        x = action[1]
+        y = action[2]
+
         policy_target_x = self.robot_x + (
             (
-                (np.cos(self.robot_angle) * np.clip(action[1], -1, 1))
-                + (np.cos(self.robot_angle + np.pi / 2) * np.clip(action[2], -1, 1))
+                (np.cos(self.robot_angle) * np.clip(x, -1, 1))
+                + (np.cos(self.robot_angle + np.pi / 2) * np.clip(y, -1, 1))
             )
             * 200
         )  # the x component of the location targeted by the high level action
         policy_target_y = self.robot_y + (
             (
-                (np.sin(self.robot_angle) * np.clip(action[1], -1, 1))
-                + (np.sin(self.robot_angle + np.pi / 2) * np.clip(action[2], -1, 1))
+                (np.sin(self.robot_angle) * np.clip(x, -1, 1))
+                + (np.sin(self.robot_angle + np.pi / 2) * np.clip(y, -1, 1))
             )
             * 200
         )  # the y component of the location targeted by the high level action
@@ -259,7 +279,7 @@ class BaseEnv(gym.Env):
                 * 5
             )
 
-                # Check if line of ball intersects goal line
+            # Check if line of ball intersects goal line
             A = self.Point(self.target_x, self.target_y)
             B = self.Point(self.robot_x, self.robot_y)
             C = self.Point(-4500, -750)
@@ -282,13 +302,16 @@ class BaseEnv(gym.Env):
         self.update_target_value()
         self.update_goal_value()
 
-        done = self.time > BaseEnv.EPISODE_LENGTH
+        truncated = self.time >= BaseEnv.EPISODE_LENGTH
+        terminated = self.at_goal()
+        # terminated = False
+        done = terminated | truncated
 
         reward = self.calculate_reward()
 
         new_obs = self._observe_state()
 
-        return (new_obs, reward, done, {})
+        return (new_obs, reward, done, {'TimeLimit.truncated': truncated})
 
 
     # returns the state of the environment, with global angles and coordinates.
@@ -399,17 +422,6 @@ class BaseEnv(gym.Env):
         if self.target_y < -3000:
             self.target_y = -3000
 
-        # Robot movement : 2 case
-        # checking robot out of bounds (700 additional units past field line)
-        if self.robot_x > 4500 + 700:
-            self.robot_x = 4500
-        if self.robot_x < -4500 - 700:
-            self.robot_x = -4500
-        if self.robot_y > 3000 + 700:
-            self.robot_y = 3000
-        if self.robot_y < -3000 - 700:
-            self.robot_y = -3000
-
         # disallow robot pass through goal-net
         if self.robot_x < -4500 or self.robot_x > 4500:
             if abs(-750 - self.robot_y) < 20:
@@ -422,6 +434,16 @@ class BaseEnv(gym.Env):
                     self.robot_y = 900
                 else:
                     self.robot_y = 700
+
+        # out of bounds
+        if self.robot_x > 4500:
+            self.robot_x = 4500
+        if self.robot_x < -4500:
+            self.robot_x = -4500
+        if self.robot_y > 3000:
+            self.robot_y = 3000
+        if self.robot_y < -3000:
+            self.robot_y = -3000
 
     def update_target_value(self):
         # Update Relative Angle
