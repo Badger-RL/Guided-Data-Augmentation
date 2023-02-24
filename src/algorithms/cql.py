@@ -968,9 +968,9 @@ if __name__ == "__main__":
 
 
     key = None
-    # with open("../wandb_credentials.json", 'r') as json_file:
-    #     credential_json = json.load(json_file)
-    #     key = credential_json["wandb_key"]
+    with open("../wandb_credentials.json", 'r') as json_file:
+        credential_json = json.load(json_file)
+        key = credential_json["wandb_key"]
 
-    # wandb.login(key = key)
+    wandb.login(key = key)
     train()
