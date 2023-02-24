@@ -51,14 +51,15 @@ class TranslateRobotAndBall(AbstractSimAugmentationFunction):
         aug_obs = self._convert_to_relative_obs(absolute_obs)
         aug_next_obs = self._convert_to_relative_obs(absolute_next_obs)
         aug_action = action
-        aug_reward = reward
+        aug_reward, _ = self.calculate_reward(absolute_next_obs)
         aug_done = done
 
         # print(aug_obs - obs)
         # print(aug_next_obs - next_obs)
-        #
-        # assert np.allclose(aug_obs, obs)
-        # assert np.allclose(aug_next_obs, next_obs)
+        # print(aug_reward, reward)
+        # assert np.allclose(aug_obs, obs, atol=1e-6)
+        # assert np.allclose(aug_next_obs, next_obs, atol=1e-6)
+        # assert np.isclose(aug_reward, reward, atol=1e-6)
 
         return aug_obs, aug_next_obs, aug_action, aug_reward, aug_done
 
