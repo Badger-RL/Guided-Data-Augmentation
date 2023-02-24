@@ -23,10 +23,7 @@ import wandb
 
 sys.path.append("..")
 
-from src.envs.push_ball_to_goal import PushBallToGoalEnv
-
 TensorBatch = List[torch.Tensor]
-
 
 @dataclass
 class TrainConfig:
@@ -34,7 +31,7 @@ class TrainConfig:
     device: str = "cpu"
     env: str = "PushBalltoGoal-v0"  # OpenAI gym environment name
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
-    eval_freq: int = int(5e2)  # How often (time steps) we evaluate
+    eval_freq: int = int(2e3)  # How often (time steps) we evaluate
     n_episodes: int = 100  # How many episodes run during evaluation
     max_timesteps: int = int(100000)  # Max time steps to run environment
     checkpoints_path: Optional[str] = "./policy"  # Save path
