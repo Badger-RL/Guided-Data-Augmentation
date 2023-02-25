@@ -163,8 +163,8 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
             distance_robot_target = np.linalg.norm(target_location - robot_location)
             distance_target_goal = np.linalg.norm(goal_location - target_location)
 
-            reward_dist_to_ball = np.exp(-distance_robot_target/self.max_dist)
-            reward_dist_to_goal = np.exp(-distance_target_goal/self.max_dist)
+            reward_dist_to_ball = 1/distance_robot_target
+            reward_dist_to_goal = 1/distance_target_goal
             reward = 1/reward_dist_to_goal + 1/reward_dist_to_ball
 
 
