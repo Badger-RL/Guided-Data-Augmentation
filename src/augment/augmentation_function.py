@@ -153,6 +153,8 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
         angle_robot_ball = np.degrees(angle_robot_ball)
         is_facing_ball = abs(angle_robot_ball - robot_angle) < 30
 
+        reward = 0
+
         if is_facing_ball:
             robot_location = np.array([robot_x, robot_y])
             target_location = np.array([target_x, target_y])
@@ -163,9 +165,8 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
 
             reward_dist_to_ball = np.exp(-distance_robot_target/self.max_dist)
             reward_dist_to_goal = np.exp(-distance_target_goal/self.max_dist)
-            reward = (reward_dist_to_goal + reward_dist_to_ball)/2 - 1
-        else:
-            reward = -1
+            reward = 1/reward_dist_to_goal + 1/reward_dist_to_ball
+
 
         return reward, at_goal
 
