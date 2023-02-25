@@ -144,13 +144,12 @@ class BaseEnv(gym.Env):
         target_location = np.array([self.target_x, self.target_y])
         # Find distance between robot and target
         distance_robot_target = np.linalg.norm(target_location - robot_location)
-        reward = -1
+        reward = 0
 
-        max_dist = np.sqrt(9000 ** 2 + 6000 ** 2)
         if self.check_facing_ball():
-            reward_dist_to_ball = np.exp(-distance_robot_target / max_dist)
-            reward_dist_to_goal = np.exp(-self.get_distance_target_goal() / max_dist)
-            reward = (reward_dist_to_goal + reward_dist_to_ball) / 2 - 1
+            reward_dist_to_ball = 1/distance_robot_target
+            reward_dist_to_goal = 1/self.get_distance_target_goal()
+            reward = reward_dist_to_goal + reward_dist_to_ball
 
         return reward
 

@@ -135,7 +135,7 @@ if __name__ == '__main__':
     parser.add_argument('--observed-dataset-size', type=int, default=int(10e3), help='Size of original dataset to load')
     parser.add_argument('--policy', type=str, default='expert', help='Type of policy used to generate the observed dataset')
 
-    parser.add_argument('--augmentation-ratio', '-aug-ratio', type=int, default=2, help='Number of augmentations per observed transition')
+    parser.add_argument('--augmentation-ratio', '-aug-ratio', type=int, default=1, help='Number of augmentations per observed transition')
     args = parser.parse_args()
 
     dataset_size = args.observed_dataset_size
@@ -172,10 +172,9 @@ if __name__ == '__main__':
     new_dataset = h5py.File(fname, 'w')
     # npify(aug_data)
     for k in aug_dataset:
-        observed = aug_dataset[k]
+        observed = observed_dataset[k]
         aug = np.array(aug_dataset[k])
         data = np.concatenate([observed, aug])
         new_dataset.create_dataset(k, data=data, compression='gzip')
 
-    x = 0
-    # main()
+        # print(len(aug), n)
