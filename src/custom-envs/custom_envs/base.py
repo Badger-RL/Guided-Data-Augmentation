@@ -302,14 +302,12 @@ class BaseEnv(gym.Env):
         self.update_target_value()
         self.update_goal_value()
 
-        truncated = self.time >= BaseEnv.EPISODE_LENGTH
-        # terminated = self.at_goal()
-        done = truncated
+        done = False
         reward = self.calculate_reward()
 
         new_obs = self._observe_state()
 
-        return (new_obs, reward, done, {'is_success': self.at_goal(), 'truncated': truncated})
+        return new_obs, reward, done, {'is_success': self.at_goal()}
 
     # returns the state of the environment, with global angles and coordinates.
 
