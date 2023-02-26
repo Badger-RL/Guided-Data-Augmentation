@@ -55,7 +55,7 @@ def main():
     normalization_path = f"../expert_policies/push_ball_to_goal/vector_normalize"
 
     env = VecNormalize.load(
-    normalization_path, make_vec_env(models["push_ball_to_goal"]["env"], n_envs=1)
+    normalization_path, make_vec_env('PushBallToGoal-v0', n_envs=1)
     )
     # env = PushBallToGoalEnv()
     env.norm_obs = True
@@ -91,10 +91,7 @@ def main():
 
         if done or timeout:
             print(ts)
-            if ts < 500:
-                succeses.append(1)
-            else:
-                succeses.append(0)
+            succeses.append(info[0]['is_success'])
             ts = 0
             s = env.reset()
 
