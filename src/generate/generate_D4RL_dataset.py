@@ -1,6 +1,7 @@
 #Derived from D4RL
 #https://github.com/Farama-Foundation/D4RL/blob/master/scripts/generation/generate_ant_maze_datasets.py
 #https://github.com/Farama-Foundation/D4RL/blob/master/LICENSE
+import os
 
 import numpy as np
 import h5py
@@ -113,7 +114,9 @@ def main():
             s = ns
             s_o = ns_o
 
-    fname = f'datasets/{"expert" if args.use_policy else "random"}/{args.num_samples}.hdf5'
+    save_dir = f'datasets/{"expert" if args.use_policy else "random"}'
+    os.makedirs(save_dir, exist_ok=True)
+    fname = f'{save_dir}/{args.num_samples}.hdf5'
     dataset = h5py.File(fname, 'w')
     npify(data)
     for k in data:

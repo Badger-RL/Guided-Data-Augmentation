@@ -149,7 +149,7 @@ class BaseEnv(gym.Env):
         if self.check_facing_ball():
             reward_dist_to_ball = 1/distance_robot_target
             reward_dist_to_goal = 1/self.get_distance_target_goal()
-            reward = reward_dist_to_goal + reward_dist_to_ball
+            reward = 0.9*reward_dist_to_goal + 0.1*reward_dist_to_ball
 
         return reward
 
