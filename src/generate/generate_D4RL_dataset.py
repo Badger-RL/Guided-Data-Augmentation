@@ -13,6 +13,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecMonit
 from stable_baselines3.common.env_util import make_vec_env
 
 from custom_envs.push_ball_to_goal import PushBallToGoalEnv
+import custom_envs
 
 
 models = {"push_ball_to_goal": {"env": PushBallToGoalEnv}}
@@ -48,12 +49,9 @@ def main():
     parser.add_argument('--num_samples', type=int, default=int(1e4), help='Num samples to collect')
     parser.add_argument('--path', type=str, default='push_ball_to_goal', help='file_name')
     parser.add_argument('--max_episode_steps', default=1000, type=int)
-    parser.add_argument('--use_policy', action ='store_true')
     parser.set_defaults(use_policy = False)
-    parser.add_argument('--random_actions', action='store_true')
-    parser.set_defaults(feature = False)
-    parser.add_argument('--render', action='store_true')
-    parser.set_defaults(render = 0)
+    parser.add_argument('--random_actions', type=int, default=0)
+    parser.add_argument('--render', type=bool, default=False)
 
 
     args = parser.parse_args()
@@ -62,7 +60,7 @@ def main():
     normalization_path = f"./expert_policies/{args.path}/vector_normalize"
 
     env = VecNormalize.load(
-        normalization_path, make_vec_env(models[args.path]["env"], n_envs=1)
+        normalization_path, make_vec_env('PushBallToGoal-v0', n_envs=1)
     )
     env.norm_obs = True
     env.norm_reward = False
@@ -82,14 +80,16 @@ def main():
 
     ts = 0
     num_episodes = 0
+    ret = 0
     for _ in range(args.num_samples):
-        if not args.random_actions:
-            act = policy.predict(s)[0]
-        else:
+        if args.random_actions:
             act = [env.action_space.sample()]
+        else:
+            act = policy.predict(s)[0]
           
 
         ns, r, done, info = env.step(act)
+        ret += r
         ns_o = env.get_original_obs()
         if args.render:
             env.render()
@@ -110,11 +110,13 @@ def main():
             s = env.reset()
             s_o = env.get_original_obs()
             num_episodes += 1
+            print(ret)
+            ret = 0
         else:
             s = ns
             s_o = ns_o
 
-    save_dir = f'datasets/{"expert" if args.use_policy else "random"}'
+    save_dir = f'datasets/{"random" if args.random_actions else "expert"}'
     os.makedirs(save_dir, exist_ok=True)
     fname = f'{save_dir}/{args.num_samples}.hdf5'
     dataset = h5py.File(fname, 'w')
