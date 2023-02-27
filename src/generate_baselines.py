@@ -6,6 +6,7 @@ from stable_baselines3.common.vec_env import VecNormalize, VecMonitor
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.evaluation import evaluate_policy
 
+from custom_envs.push_ball_to_goal import PushBallToGoalEnv
 from src.envs.walk_to_goal import WalkToGoalEnv
 from src.envs.walk_to_ball import WalkToBallEnv
 from src.envs.goalkeeper import GoalKeeperEnv
@@ -23,7 +24,7 @@ import sys
 # This file is provided to generate all the baselines models and vector-normalization parameters and save them in their
 # respective subfolders of the vectornormalization folder. You can validate that these models are performing acceptably well
 # using validate_baselines.py
-from custom_envs.push_ball_to_goal import PushBallToGoalEnv
+import gym, custom_envs
 
 models = {
     "base": {
@@ -109,7 +110,7 @@ if __name__ == "__main__":
 
     if params["starter_model"] == None:
         env = VecNormalize(
-            make_vec_env(params["env"], n_envs=12),
+            make_vec_env('PushBallToGoal-v0', n_envs=12),
             norm_obs=True,
             norm_reward=True,
             clip_obs=1.0,
@@ -122,7 +123,7 @@ if __name__ == "__main__":
         )
 
         # model = PPO("MlpPolicy", env, verbose=1, learning_rate=1e-3, batch_size=128)
-        model = PPO("MlpPolicy", env, verbose=1, learning_rate=1e-3, batch_size=512)
+        model = PPO("MlpPolicy", env, verbose=1, learning_rate=3e-4, batch_size=512)
         # model = PPO("MlpPolicy", env, verbose=1)
 
     else:
@@ -142,7 +143,7 @@ if __name__ == "__main__":
         )
 
     env = VecMonitor(venv=env, filename=f"./expert_policies/{params['path']}/")
-    eval_callback = CheckpointCallback(save_freq=10000, save_path='./checkpoints', save_vecnormalize=True, verbose=1)
+    eval_callback = CheckpointCallback(save_freq=10000, save_path='./checkpoints2', save_vecnormalize=True, verbose=1)
     model.learn(total_timesteps=params["training_steps"], callback=eval_callback)
     model.save(f"./expert_policies/{params['path']}/policy")
     env.save(f"./expert_policies/{params['path']}/vector_normalize")
