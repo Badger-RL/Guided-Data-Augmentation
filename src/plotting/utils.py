@@ -20,29 +20,30 @@ def get_paths(results_dir, key, **kwargs):
 
 
 
-def load_data(paths):
+def load_data(paths, success_rate=False):
     t = None
-    avg_returns = []
+    avgs = []
 
     for path in paths:
         data = np.load(path, allow_pickle=True).item()
-        # t = np.array(data['t'])
-        r = data['r']
-        print(t)
+        if success_rate:
+            avg = data['success_rate']
+        else:
+            avg = data['r']
 
-        if r is not None:
-            avg_returns.append(r)
+        if avg is not None:
+            avgs.append(avg)
         else:
             print(f'Could not load data at {path}. Skipping.')
 
-    return t, np.array(avg_returns)
+    return t, np.array(avgs)
 
-def plot(path_dict):
+def plot(path_dict, success_rate=False):
 
     for agent, info in path_dict.items():
         paths = info['paths']
 
-        t, avgs = load_data(paths)
+        t, avgs = load_data(paths, success_rate=success_rate)
         assert len(avgs) > 0
 
         avg_of_avgs = np.average(avgs, axis=0)
