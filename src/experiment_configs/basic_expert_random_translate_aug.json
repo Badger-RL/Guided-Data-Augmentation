@@ -1,7 +1,55 @@
 {
-    "total_jobs":60,
+    "total_jobs":120,
     "experiment_manifest":[
     {
+        "name": "expert_10000",
+        "count": 10,
+        "collect_data":false,
+        "dataset_name": "expert/10000.hdf5",
+        "eval_freq": 5000,
+        "training_steps":100000
+    },
+    {
+        "name": "expert_50000",
+        "count": 10,
+        "collect_data":false,
+        "dataset_name": "expert/50000.hdf5",
+        "eval_freq": 5000,
+        "training_steps":100000
+    },
+    {
+        "name": "expert_100000",
+        "count": 10,
+        "collect_data":false,
+        "dataset_name": "expert/100000.hdf5",
+        "eval_freq": 5000,
+        "training_steps":100000
+    },
+    {
+        "name": "random_10000",
+        "count": 10,
+        "collect_data":false,
+        "dataset_name": "random/10000.hdf5",
+        "eval_freq": 5000,
+        "training_steps":100000
+    },
+    {
+        "name": "random_50000",
+        "count": 10,
+        "collect_data":false,
+        "dataset_name": "random/50000.hdf5",
+        "eval_freq": 5000,
+        "training_steps":100000
+    },
+    {
+        "name": "random_100000",
+        "count": 10,
+        "collect_data":false,
+        "dataset_name": "random/100000.hdf5",
+        "eval_freq": 5000,
+        "training_steps":100000
+    },
+        {
         "name": "expert_augmented_10000",
         "count": 10,
         "collect_data":false,
