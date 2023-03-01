@@ -152,3 +152,4 @@ policy
 bundle.zip
 
 src/logdata/*
+src/plotting/*

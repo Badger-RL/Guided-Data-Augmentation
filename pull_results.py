@@ -12,7 +12,14 @@ def filter_entries(key_filter, entry):
             result[key] = entry[key]
     return result
 
-wandb.login(key = "PLACEHOLDER")
+
+wandb_key = None
+with open("wandb_credentials.json", 'r') as credentials_file:
+    credentials_json = json.load(credentials_file)
+    wandb_key = credentials_json['wandb_key']
+
+
+wandb.login(key = wandb_key)
 
 api = wandb.Api()
 
@@ -49,14 +56,14 @@ for run in runs:
     print(get_name_prefix(run.name))
     save_folder = f"./src/logdata/{get_name_prefix(run.name)}/"
     Path(save_folder).mkdir(exist_ok = True, parents = True)
-    result = {"t":[],"r":[],"reward":[]}
+    result = {"t":[],"r":[],"success_rate":[]}
     print(metrics)
     for i,row in metrics.iterrows():
             entry_result = row# filter_entries(key_filter, entry)
             print(entry_result)
             result["t"].append(entry_result["_step"])
-            result["reward"].append(entry_result["d4rl_normalized_score"])
-            result["r"].append(entry_result["success_rate"])
+            result["r"].append(entry_result["d4rl_normalized_score"])
+            result["success_rate"].append(entry_result["success_rate"])
     print(result)
     np.savez(f"{save_folder}{run.name}{'.npz'}", **result)
 
