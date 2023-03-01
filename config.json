@@ -1,21 +1,102 @@
 {
-"total_jobs":4,
-"experiment_manifest":[
-{
-    "name": "expert_test",
-    "count": 2,
-    "collect_data":false,
-    "dataset_name": "dataset_expert_1000.hdf5",
-    "eval_freq": 50,
-    "training_steps": 100
-},
-{
-    "name": "random_test",
-    "count": 2,
-    "collect_data":false,
-    "dataset_name": "dataset_random_1000.hdf5",
-    "eval_freq": 50,
-    "training_steps": 100
-}
-]
-}
+    "total_jobs":120,
+    "experiment_manifest":[
+    {
+        "name": "expert_10000",
+        "count": 10,
+        "collect_data":false,
+        "dataset_name": "expert/10000.hdf5",
+        "eval_freq": 5000,
+        "training_steps":100000
+    },
+    {
+        "name": "expert_50000",
+        "count": 10,
+        "collect_data":false,
+        "dataset_name": "expert/50000.hdf5",
+        "eval_freq": 5000,
+        "training_steps":100000
+    },
+    {
+        "name": "expert_100000",
+        "count": 10,
+        "collect_data":false,
+        "dataset_name": "expert/100000.hdf5",
+        "eval_freq": 5000,
+        "training_steps":100000
+    },
+    {
+        "name": "random_10000",
+        "count": 10,
+        "collect_data":false,
+        "dataset_name": "random/10000.hdf5",
+        "eval_freq": 5000,
+        "training_steps":100000
+    },
+    {
+        "name": "random_50000",
+        "count": 10,
+        "collect_data":false,
+        "dataset_name": "random/50000.hdf5",
+        "eval_freq": 5000,
+        "training_steps":100000
+    },
+    {
+        "name": "random_100000",
+        "count": 10,
+        "collect_data":false,
+        "dataset_name": "random/100000.hdf5",
+        "eval_freq": 5000,
+        "training_steps":100000
+    },
+        {
+        "name": "expert_augmented_10000",
+        "count": 10,
+        "collect_data":false,
+        "dataset_name": "expert/translate_robot_and_ball/10000_1.hdf5",
+        "eval_freq": 5000,
+        "training_steps":100000
+    },
+    {
+        "name": "expert_augmented_50000",
+        "count": 10,
+        "collect_data":false,
+        "dataset_name": "expert/translate_robot_and_ball/50000_1.hdf5",
+        "eval_freq": 5000,
+        "training_steps":100000
+    },
+    {
+        "name": "expert_augmented_100000",
+        "count": 10,
+        "collect_data":false,
+        "dataset_name": "expert/translate_robot_and_ball/100000_1.hdf5",
+        "eval_freq": 5000,
+        "training_steps":100000
+    },
+    {
+        "name": "random_augmented_10000",
+        "count": 10,
+        "collect_data":false,
+        "dataset_name": "random/translate_robot_and_ball/10000_1.hdf5",
+        "eval_freq": 5000,
+        "training_steps":100000
+    },
+    {
+        "name": "random_augmented_50000",
+        "count": 10,
+        "collect_data":false,
+        "dataset_name": "random/translate_robot_and_ball/50000_1.hdf5",
+        "eval_freq": 5000,
+        "training_steps":100000
+    },
+    {
+        "name": "random_augmented_100000",
+        "count": 10,
+        "collect_data":false,
+        "dataset_name": "random/translate_robot_and_ball/100000_1.hdf5",
+        "eval_freq": 5000,
+        "training_steps":100000
+    }
+    ]
+    }
+    

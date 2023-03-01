@@ -27,9 +27,9 @@ note that here the dataset is necessary because the normalization params used wh
 
 
 # Running with Condor
-You need to copy `credentials.json` and `wandb_credentials.json` out of the templates folder into the top level folder, and add you wisc cs login and password and wandbapi key. This will allow the staging scripts to automatically stage your bundle, though you will still need to do a two factor confirmation. The wandb api key is necessary for logging, you can get one with a free account.
+You need to copy `credentials.json` and `wandb_credentials.json` out of the templates folder into the top level folder, and add you wisc login and password and wandb api key. This will allow the staging scripts to automatically stage your bundle, though you will still need to do a two factor confirmation. The wandb api key is necessary for logging, you can get one with a free account.
 
-Once credentials are set up, first can pick your experimental params by editing `config.json` and offline_rl.sub. The total number of jobs should match between the two config files. Once you have configured the experiments to your liking, to run your experiments:
+Once credentials are set up, first can pick your experimental params by editing `config.json` and `offline_rl.sub`. The total number of jobs should match between the two config files. Once you have configured the experiments to your liking, to run your experiments:
 
 First create the folder `result_offline_rl` on your condor submit node, then on your computer run
 

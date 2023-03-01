@@ -21,12 +21,17 @@ unzip -qq ./bundle.zip
 
 ls
 
-cd GuidedDataAugmentationForRobotics/src
+cd GuidedDataAugmentationForRobotics
 
-#python3 -m venv env
-#source env/bin/activate
-#python3 -m pip install -r ../requirements/requirements.txt
+python3 -m venv env
+source env/bin/activate
+python3 -m pip install -r requirements/requirements.txt
 #python -c "import mujoco_py"
+
+python3 -m pip install -e . 
+python3 -m pip install -e src/custom-envs
+
+cd src
 
 
 export D4RL_DATASET_DIR=$(pwd)/.d4rl
