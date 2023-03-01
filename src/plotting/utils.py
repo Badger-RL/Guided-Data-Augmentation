@@ -25,16 +25,16 @@ def load_data(paths, success_rate=False):
     avgs = []
 
     for path in paths:
-        data = np.load(path, allow_pickle=True).item()
+
+        data = dict(np.load(path))
         if success_rate:
             avg = data['success_rate']
         else:
             avg = data['r']
-
-        if avg is not None:
-            avgs.append(avg)
-        else:
-            print(f'Could not load data at {path}. Skipping.')
+        avgs.append(avg)
+        
+        if t is None:
+            t = data['t']
 
     return t, np.array(avgs)
 
@@ -56,8 +56,6 @@ def plot(path_dict, success_rate=False):
         q95 = avg_of_avgs - ci
 
         style_kwargs = {}
-        t = np.arange(len(avg_of_avgs)) * 500
+        #t = np.arange(len(avg_of_avgs)) * 5000
         plt.plot(t, avg_of_avgs, label=agent, **style_kwargs)
         plt.fill_between(t, q05, q95, alpha=0.2)
-
-
