@@ -167,6 +167,9 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
             reward_dist_to_goal = 1/distance_target_goal
             reward = 0.9*reward_dist_to_goal + 0.1*reward_dist_to_ball
 
+        if at_goal:
+            reward += 1
+
 
         return reward, at_goal
 

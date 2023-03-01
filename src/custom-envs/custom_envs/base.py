@@ -151,6 +151,9 @@ class BaseEnv(gym.Env):
             reward_dist_to_goal = 1/self.get_distance_target_goal()
             reward = 0.9*reward_dist_to_goal + 0.1*reward_dist_to_ball
 
+        if self.at_goal():
+            reward += 1
+
         return reward
 
     def at_goal(self):
