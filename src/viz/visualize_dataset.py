@@ -9,15 +9,15 @@ from matplotlib.collections import LineCollection
 
 def get_coords(observation, action):
     """Function to extract absolute coordinates from and observation and an action."""
-    ball_agent_x_offset = observation[4] * 9000
-    ball_agent_y_offset = observation[5] * 6000
-    goal_ball_x_offset = observation[6] * 9000
-    goal_ball_y_offset = observation[7] * 6000
+    ball_agent_x_offset = observation[0] * 9000
+    ball_agent_y_offset = observation[1] * 6000
+    goal_ball_x_offset = observation[2] * 9000
+    goal_ball_y_offset = observation[3] * 6000
 
-    ball_robot_angle_offset_sin = observation[8]
-    ball_robot_angle_offset_cos = observation[9]
-    goal_robot_angle_offset_sin = observation[10]
-    goal_robot_angle_offset_cos = observation[11]
+    ball_robot_angle_offset_sin = observation[4]
+    ball_robot_angle_offset_cos = observation[5]
+    goal_robot_angle_offset_sin = observation[6]
+    goal_robot_angle_offset_cos = observation[7]
 
     target_x = 4800 - goal_ball_x_offset
     target_y = 0 - goal_ball_y_offset
@@ -55,7 +55,7 @@ def get_coords(observation, action):
 
     return robot_x, robot_y, target_x, target_y, policy_target_x, policy_target_y
 
-def visualize_recorded_rollout(dataset):
+def visualize_recorded_rollout(dataset, single_episode = False):
 
     agent_x_list = []
     agent_y_list = []
@@ -64,7 +64,7 @@ def visualize_recorded_rollout(dataset):
     ball_x_list = []
     ball_y_list = []
 
-    for observation, action in zip(dataset["observations"],dataset["actions"]):
+    for observation, action, done in zip(dataset["observations"],dataset["actions"], dataset["terminals"]):
         print(action)
         print(observation)
         robot_x, robot_y, target_x, target_y, action_x, action_y = get_coords(
@@ -76,43 +76,79 @@ def visualize_recorded_rollout(dataset):
         action_y_list.append(action_y)
         ball_x_list.append(target_x)
         ball_y_list.append(target_y)
-    fig, ax = plt.subplots()
+        if done and single_episode:
+            fig, ax = plt.subplots()
 
-    agent_points = [(x, y) for x, y in zip(agent_x_list, agent_y_list)]
-    action_points = [(x, y) for x, y in zip(action_x_list, action_y_list)]
-    lines = [
-        [agent_point, action_point]
-        for agent_point, action_point in zip(agent_points, action_points)
-    ]
+            agent_points = [(x, y) for x, y in zip(agent_x_list, agent_y_list)]
+            action_points = [(x, y) for x, y in zip(action_x_list, action_y_list)]
+            lines = [
+                [agent_point, action_point]
+                for agent_point, action_point in zip(agent_points, action_points)
+            ]
 
-    col = LineCollection(lines)
-    ax.add_collection(col)
+            col = LineCollection(lines)
+            ax.add_collection(col)
 
-    plt.scatter(
-        agent_x_list,
-        agent_y_list,
-        c=[i for i in range(len(agent_x_list))],
-        cmap="Blues",
-    )
-    plt.scatter(
-        ball_x_list, ball_y_list, c=[i for i in range(len(ball_x_list))], cmap="Greens"
-    )
-    plt.scatter(
-        action_x_list,
-        action_y_list,
-        c=[i for i in range(len(action_x_list))],
-        cmap="Reds",
-    )
+            plt.scatter(
+                agent_x_list,
+                agent_y_list,
+                c=[i for i in range(len(agent_x_list))],
+                cmap="Blues",
+            )
+            plt.scatter(
+                ball_x_list, ball_y_list, c=[i for i in range(len(ball_x_list))], cmap="Greens"
+            )
+            plt.scatter(
+                action_x_list,
+                action_y_list,
+                c=[i for i in range(len(action_x_list))],
+                cmap="Reds",
+            )
+            
 
-    plt.show()
+            plt.show()
+            agent_x_list = []
+            agent_y_list = []
+            action_x_list = []
+            action_y_list = []
+            ball_x_list = []
+            ball_y_list = []
+    if not single_episode:
+        fig, ax = plt.subplots()
 
+        agent_points = [(x, y) for x, y in zip(agent_x_list, agent_y_list)]
+        action_points = [(x, y) for x, y in zip(action_x_list, action_y_list)]
+        lines = [
+            [agent_point, action_point]
+            for agent_point, action_point in zip(agent_points, action_points)
+        ]
 
+        col = LineCollection(lines)
+        ax.add_collection(col)
+
+        plt.scatter(
+            agent_x_list,
+            agent_y_list,
+            c=[i for i in range(len(agent_x_list))],
+            cmap="Blues",
+        )
+        plt.scatter(
+            ball_x_list, ball_y_list, c=[i for i in range(len(ball_x_list))], cmap="Greens"
+        )
+        plt.scatter(
+            action_x_list,
+            action_y_list,
+            c=[i for i in range(len(action_x_list))],
+            cmap="Reds",
+        )
+        plt.show()
 
 if __name__ == "__main__":
 
 
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
         print("usage: python3 ./viz/visualize_dataset.py <dataset name>")
+        print("optional arg --single_episode")
         exit()
 
     dataset = {}
@@ -121,4 +157,4 @@ if __name__ == "__main__":
         dataset[key] = np.array(data_hdf5[key])
     print(dataset)
 
-    visualize_recorded_rollout(dataset)
+    visualize_recorded_rollout(dataset, single_episode = "--single_episode" in sys.argv)
