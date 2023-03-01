@@ -49,7 +49,7 @@ if __name__ == "__main__":
         plt.axhline(y=1, color='k', linestyle='--')
         plt.xlabel('Timesteps', fontsize=16)
         plt.ylabel('Success Rate', fontsize=16)
-        plt.ylim(0,1.05)
+        plt.ylim(-0.05,1.05)
         plt.tight_layout()
         plt.legend()
 
