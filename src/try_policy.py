@@ -63,7 +63,7 @@ for key in data_hdf5.keys():
 state_mean, state_std = compute_mean_std(dataset["observations"], eps=1e-3)
 
 #env = gym.make("maze2d-umaze-v1" )
-env = gym.make("PushBalltoGoal-v0")
+env = gym.make("PushBallToGoal-v0")
 env = wrap_env(env, state_mean=state_mean, state_std=state_std)
 
 state_dim = env.observation_space.shape[0]
