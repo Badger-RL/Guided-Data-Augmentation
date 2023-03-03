@@ -1,13 +1,14 @@
 import argparse
 
 from stable_baselines3 import PPO
+from stable_baselines3.common.callbacks import EvalCallback, CheckpointCallback
 from stable_baselines3.common.vec_env import VecNormalize, VecMonitor
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.evaluation import evaluate_policy
 
+from custom_envs.push_ball_to_goal import PushBallToGoalEnv
 from src.envs.walk_to_goal import WalkToGoalEnv
 from src.envs.walk_to_ball import WalkToBallEnv
-from src.envs.push_ball_to_goal import PushBallToGoalEnv
 from src.envs.goalkeeper import GoalKeeperEnv
 from src.envs.dummy_defenders import DummyDefendersEnv
 from src.envs.goalie import GoalieEnv
@@ -23,7 +24,7 @@ import sys
 # This file is provided to generate all the baselines models and vector-normalization parameters and save them in their
 # respective subfolders of the vectornormalization folder. You can validate that these models are performing acceptably well
 # using validate_baselines.py
-
+import gym, custom_envs
 
 models = {
     "base": {
@@ -47,7 +48,7 @@ models = {
     "push_ball_to_goal": {
         "env": PushBallToGoalEnv,
         "path": "push_ball_to_goal",
-        "training_steps": 10000000,
+        "training_steps": 50000000,
         "starter_model": None,
     },
     "dummy_defenders": {
@@ -65,7 +66,7 @@ models = {
     "keepaway": {
         "env": KeepawayEnv,
         "path": "keepaway",
-        "training_steps": 15000000,
+        "training_steps": 5000000,
         "starter_model": None,
     },
     "kick_to_goal": {
@@ -83,7 +84,7 @@ models = {
     "defender": {
         "env": DefenderEnv,
         "path": "defender",
-        "training_steps": 5000000,
+        "training_steps": 10000000,
         "starter_model": None,
     },
 }
@@ -109,13 +110,22 @@ if __name__ == "__main__":
 
     if params["starter_model"] == None:
         env = VecNormalize(
-            make_vec_env(params["env"], n_envs=12),
+            make_vec_env('PushBallToGoal-v0', n_envs=12),
+            norm_obs=True,
+            norm_reward=True,
+            clip_obs=1.0,
+        )
+        eval_env = VecNormalize(
+            make_vec_env(params["env"], n_envs=1),
             norm_obs=True,
             norm_reward=True,
             clip_obs=1.0,
         )
 
-        model = PPO("MlpPolicy", env, verbose=1)
+        # model = PPO("MlpPolicy", env, verbose=1, learning_rate=1e-3, batch_size=128)
+        model = PPO("MlpPolicy", env, verbose=1, learning_rate=3e-4, batch_size=512)
+        # model = PPO("MlpPolicy", env, verbose=1)
+
     else:
         starter_model_params = models[params["starter_model"]]
 
@@ -133,7 +143,8 @@ if __name__ == "__main__":
         )
 
     env = VecMonitor(venv=env, filename=f"./expert_policies/{params['path']}/")
-    model.learn(total_timesteps=params["training_steps"])
+    eval_callback = CheckpointCallback(save_freq=10000, save_path='./checkpoints2', save_vecnormalize=True, verbose=1)
+    model.learn(total_timesteps=params["training_steps"], callback=eval_callback)
     model.save(f"./expert_policies/{params['path']}/policy")
     env.save(f"./expert_policies/{params['path']}/vector_normalize")
     save_vec_normalize_data(env, f"./expert_policies/{params['path']}/vector_normalize.json")

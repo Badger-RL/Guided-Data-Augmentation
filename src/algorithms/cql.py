@@ -12,7 +12,7 @@ import json
 import sys
 
 import h5py
-import gym
+import gym, custom_envs
 import numpy as np
 import pyrallis
 import torch
@@ -23,20 +23,17 @@ import wandb
 
 sys.path.append("..")
 
-from src.envs.push_ball_to_goal import PushBallToGoalEnv
-
 TensorBatch = List[torch.Tensor]
-
 
 @dataclass
 class TrainConfig:
     # Experiment
     device: str = "cpu"
-    env: str = "maze2d-umaze-v1"  # OpenAI gym environment name
+    env: str = "PushBallToGoal-v0"  # OpenAI gym environment name
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
-    eval_freq: int = int(5e2)  # How often (time steps) we evaluate
+    eval_freq: int = int(2e3)  # How often (time steps) we evaluate
     n_episodes: int = 100  # How many episodes run during evaluation
-    max_timesteps: int = int(10000)  # Max time steps to run environment
+    max_timesteps: int = int(100000)  # Max time steps to run environment
     checkpoints_path: Optional[str] = "./policy"  # Save path
     load_model: str = ""  # Model load file name, "" doesn't load
     # CQL
@@ -205,17 +202,19 @@ def eval_actor(
     env.seed(seed)
     actor.eval()
     episode_rewards = []
+    successes = []
     for _ in range(n_episodes):
         state, done = env.reset(), False
         episode_reward = 0.0
         while not done:
             action = actor.act(state, device)
-            state, reward, done, _ = env.step(action)
+            state, reward, done, info = env.step(action)
             episode_reward += reward
         episode_rewards.append(episode_reward)
+        successes.append(info['is_success'])
 
     actor.train()
-    return np.asarray(episode_rewards)
+    return np.asarray(episode_rewards), np.array(successes)
 
 
 def return_reward_range(dataset, max_episode_steps):
@@ -822,7 +821,7 @@ def train( config: TrainConfig):
 
     #dataset_name = sys.argv[1]
 
-    env = PushBallToGoalEnv()
+    env = gym.make(config.env)
     
     #gym.make(config.env)
 
@@ -940,7 +939,7 @@ def train( config: TrainConfig):
         # Evaluate episode
         if (t + 1) % config.eval_freq == 0:
             print(f"Time steps: {t + 1}")
-            eval_scores = eval_actor(
+            eval_scores, eval_successes = eval_actor(
                 env,
                 actor,
                 device=config.device,
@@ -948,12 +947,14 @@ def train( config: TrainConfig):
                 seed=config.seed,
             )
             eval_score = eval_scores.mean()
+            eval_success_rate = eval_successes.mean()
             normalized_eval_score = eval_score#env.get_normalized_score(eval_score) * 100.0
             evaluations.append(eval_score)
             print("---------------------------------------")
             print(
                 f"Evaluation over {config.n_episodes} episodes: "
                 f"{eval_score:.3f} , D4RL score: {normalized_eval_score:.3f}"
+                f"Success rate: {eval_success_rate:.3f}"
             )
             print("---------------------------------------")
             if config.checkpoints_path:
@@ -963,6 +964,10 @@ def train( config: TrainConfig):
                 )
             wandb.log(
                 {"d4rl_normalized_score": normalized_eval_score},
+                step=trainer.total_it,
+            )
+            wandb.log(
+                {"success_rate": eval_success_rate},
                 step=trainer.total_it,
             )
 

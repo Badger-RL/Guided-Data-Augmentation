@@ -150,3 +150,6 @@ policy
 /credentials.json
 /wandb_credentials.json
 bundle.zip
+
+src/logdata/*
+src/plotting/*

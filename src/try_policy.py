@@ -22,7 +22,7 @@ import torch.nn.functional as F
 import wandb
 from algorithms.cql import ContinuousCQL, TanhGaussianPolicy, ReplayBuffer, ReparameterizedTanhGaussian, FullyConnectedQFunction, Scalar
 
-from envs.push_ball_to_goal import PushBallToGoalEnv
+#from envs.push_ball_to_goal import PushBallToGoalEnv
 
 
 def compute_mean_std(states: np.ndarray, eps: float) -> Tuple[np.ndarray, np.ndarray]:
@@ -63,7 +63,7 @@ for key in data_hdf5.keys():
 state_mean, state_std = compute_mean_std(dataset["observations"], eps=1e-3)
 
 #env = gym.make("maze2d-umaze-v1" )
-env = PushBallToGoalEnv()
+env = gym.make("PushBallToGoal-v0")
 env = wrap_env(env, state_mean=state_mean, state_std=state_std)
 
 state_dim = env.observation_space.shape[0]
