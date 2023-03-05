@@ -273,7 +273,7 @@ class BaseEnv(gym.Env):
                 self.target_x
                 + np.cos(self.theta_radians)
                 * (self.robot_radius + self.target_radius)
-                * 6
+                * 5
             )
             self.target_y = (
                 self.target_y
