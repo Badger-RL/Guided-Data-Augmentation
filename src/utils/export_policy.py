@@ -64,7 +64,7 @@ for key in data_hdf5.keys():
 state_mean, state_std = compute_mean_std(dataset["observations"], eps=1e-3)
 
 #env = gym.make("maze2d-umaze-v1" )
-env = gym.make("PushBalltoGoal-v0")
+env = gym.make("PushBallToGoal-v0")
 env = wrap_env(env, state_mean=state_mean, state_std=state_std)
 
 state_dim = env.observation_space.shape[0]
@@ -81,16 +81,42 @@ actor.load_state_dict(state_dict = checkpoint["actor"])
 
 
 keras_actor  = pytorch_to_keras(
-        actor, torch.zeros((1, env.observation_space.shape[0])), verbose=True, name_policy="renumerate"
+        actor.base_network, torch.zeros((1, env.observation_space.shape[0])), verbose=True, name_policy="renumerate"
 )
 
 print(keras_actor)
 
-obs = env.reset()
+
+obs = np.array([-1.3579835,   0.27951971,  0.95481869,  0.41910834 , 2.60238981 ,-7.56153716,
+  2.02996028 , 1.04410311])
+
+#obs = env.reset()
 done = False
 while True:
+    keras_obs = np.array(obs).reshape((1,8))
+    print(obs)
+    print(keras_obs)
+    keras_output = keras_actor.predict(keras_obs)
+
+    keras_action = keras_output[0,:3]
+    keras_log_stds = keras_output[0,3:]
+    keras_log_stds -= 1
+    keras_log_stds = np.clip(keras_log_stds, -20.0, 2.0)
+    keras_stds = np.exp(keras_log_stds)
+    keras_action = np.tanh(keras_action)
+
+
+
+
+
     action = actor.act(obs, "cpu")
-    obs, reward, done, info = env.step(action)
+    print(action)
+    print(keras_action)
+    print(keras_log_stds)
+    exit()
+
+
+    obs, reward, done, info = env.step(action[0])
     env.render()
     if done:
         obs = env.reset()
