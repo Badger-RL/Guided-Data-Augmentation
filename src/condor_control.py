@@ -33,6 +33,9 @@ if __name__ == "__main__":
     index = int(sys.argv[1]) # index is 0 through n-1 where n is the number of jobs
     manifest_index = get_manifest_index(config, index)
 
+
+    required_commands = ["name", "dataset_name", "training_steps", "eval_freq", "count"]
+
     command_list = ["python3", "./algorithms/cql.py"]
     # job name
     command_list.append("--name")
@@ -49,6 +52,12 @@ if __name__ == "__main__":
     #sets the seed to the job index (note that this means not controlling for seeds across experimental cases right now)
     command_list.append("--seed")
     command_list.append(str(index))
+
+    for key in config['experiment_manifest'][manifest_index].keys():
+        if key not in required_commands:
+            command_list.append(f"--{key}")
+            command_list.append(str(config['experiment_manifest'][manifest_index][key]))
+
 
 
 
