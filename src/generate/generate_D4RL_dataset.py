@@ -97,6 +97,9 @@ def main():
         if ts >= args.max_episode_steps:
             timeout = True
        
+        if 'terminal_observation' in info[0]:
+            ns = [info[0]['terminal_observation']]
+            ns_o = env.unnormalize_obs(ns)
 
         append_data(data, s_o[0], act[0], r[0], ns_o[0], done[0])
 
