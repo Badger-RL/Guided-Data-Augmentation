@@ -26,7 +26,7 @@ class BaseEnv(gym.Env):
 
     EPISODE_LENGTH = LENGTH
 
-    def __init__(self):
+    def __init__(self,robot_x_range = [-4500,4500], robot_y_range = [-3000,3000], ball_x_range = [-4500,4500], ball_y_range = [-3000,3000]):
         self.rendering_init = False
 
         """
@@ -55,7 +55,9 @@ class BaseEnv(gym.Env):
         self.target_radius = 10
         self.robot_radius = 20
 
-        self.reset()
+
+        
+       
 
     def _observe_state(self):
 
