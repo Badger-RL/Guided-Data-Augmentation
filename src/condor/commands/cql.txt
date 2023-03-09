@@ -1,0 +1,2 @@
+python*algorithms/cql.py*--name*expert/100000.hdf5*--dataset_name*expert/100000.hdf5*--max_timesteps*100000*--eval_freq*5000
+python*algorithms/cql.py*--name*expert/translate_ball_to_goal/100000.hdf5*--dataset_name*expert/translate_ball_to_goal/100000.hdf5*--max_timesteps*100000*--eval_freq*5000

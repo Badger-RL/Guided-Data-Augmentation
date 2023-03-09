@@ -37,7 +37,12 @@ cd src
 export D4RL_DATASET_DIR=$(pwd)/.d4rl
 export WANDB_CONFIG_DIR=$(pwd)/.config/wandb
 
-python3 ./condor_control.py $1 # we go to our python control script, and tell it our index number
+pid=$1 # command index
+step=$2 # index within different runs of the same command
+command=`tr '*' ' ' <<< $3` # replace * with space in command
+echo command
+
+$($cmd --seed $step)
 
 #python3 ./algorithms/cql.py --dataset_name dataset_expert_1000.hdf5
 
