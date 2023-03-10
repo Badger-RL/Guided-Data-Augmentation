@@ -133,6 +133,8 @@ class BaseEnv(gym.Env):
         angle_to_ball = math.degrees(
             math.atan2(self.target_y - self.robot_y, self.target_x - self.robot_x)
         )
+        if angle_to_ball < 0:
+            angle_to_ball += 360
         # Check if the robot is facing the ball
         if abs(angle_to_ball - robot_angle) < 30:
             return True
