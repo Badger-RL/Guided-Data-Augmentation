@@ -1,5 +1,5 @@
-
-
+import argparse
+import os
 import sys
 import h5py
 import numpy as np
@@ -55,7 +55,7 @@ def get_coords(observation, action):
 
     return robot_x, robot_y, target_x, target_y, policy_target_x, policy_target_y
 
-def visualize_recorded_rollout(dataset, single_episode = False):
+def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_episode=False):
 
     agent_x_list = []
     agent_y_list = []
@@ -65,8 +65,7 @@ def visualize_recorded_rollout(dataset, single_episode = False):
     ball_y_list = []
 
     for observation, action, done in zip(dataset["observations"],dataset["actions"], dataset["terminals"]):
-        print(action)
-        print(observation)
+
         robot_x, robot_y, target_x, target_y, action_x, action_y = get_coords(
             observation, action
         )
@@ -76,46 +75,23 @@ def visualize_recorded_rollout(dataset, single_episode = False):
         action_y_list.append(action_y)
         ball_x_list.append(target_x)
         ball_y_list.append(target_y)
+
         if done and single_episode:
-            fig, ax = plt.subplots()
+            break
 
-            agent_points = [(x, y) for x, y in zip(agent_x_list, agent_y_list)]
-            action_points = [(x, y) for x, y in zip(action_x_list, action_y_list)]
-            lines = [
-                [agent_point, action_point]
-                for agent_point, action_point in zip(agent_points, action_points)
-            ]
+    fig, ax = plt.subplots()
 
-            col = LineCollection(lines)
-            ax.add_collection(col)
+    plt.scatter(
+        agent_x_list,
+        agent_y_list,
+        c=[i for i in range(len(agent_x_list))],
+        cmap="Blues",
+    )
+    plt.scatter(
+        ball_x_list, ball_y_list, c=[i for i in range(len(ball_x_list))], cmap="Greens"
+    )
 
-            plt.scatter(
-                agent_x_list,
-                agent_y_list,
-                c=[i for i in range(len(agent_x_list))],
-                cmap="Blues",
-            )
-            plt.scatter(
-                ball_x_list, ball_y_list, c=[i for i in range(len(ball_x_list))], cmap="Greens"
-            )
-            plt.scatter(
-                action_x_list,
-                action_y_list,
-                c=[i for i in range(len(action_x_list))],
-                cmap="Reds",
-            )
-            
-
-            plt.show()
-            agent_x_list = []
-            agent_y_list = []
-            action_x_list = []
-            action_y_list = []
-            ball_x_list = []
-            ball_y_list = []
-    if not single_episode:
-        fig, ax = plt.subplots()
-
+    if show_actions:
         agent_points = [(x, y) for x, y in zip(agent_x_list, agent_y_list)]
         action_points = [(x, y) for x, y in zip(action_x_list, action_y_list)]
         lines = [
@@ -126,35 +102,31 @@ def visualize_recorded_rollout(dataset, single_episode = False):
         col = LineCollection(lines)
         ax.add_collection(col)
 
-        plt.scatter(
-            agent_x_list,
-            agent_y_list,
-            c=[i for i in range(len(agent_x_list))],
-            cmap="Blues",
-        )
-        plt.scatter(
-            ball_x_list, ball_y_list, c=[i for i in range(len(ball_x_list))], cmap="Greens"
-        )
-        plt.scatter(
-            action_x_list,
-            action_y_list,
-            c=[i for i in range(len(action_x_list))],
-            cmap="Reds",
-        )
-        plt.show()
+    plt.xlim(-5000, 5000)
+    plt.ylim(-3500, 3500)
+    plt.xlabel('x position')
+    plt.ylabel('y position')
+    # plt.show()
+
+    plt.savefig(save_path)
 
 if __name__ == "__main__":
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--dataset-path', type=str, default=None)
+    parser.add_argument('--save-dir', type=str, default=None)
+    parser.add_argument('--save-name', type=str, default=None)
+    parser.add_argument('--single-episode', type=bool, default=False)
+    parser.add_argument('--show-actions', type=bool, default=False)
+    args = parser.parse_args()
 
-    if len(sys.argv) < 2:
-        print("usage: python3 ./viz/visualize_dataset.py <dataset name>")
-        print("optional arg --single_episode")
-        exit()
+
+    os.makedirs(args.save_dir, exist_ok=True)
+    save_path = f'{args.save_dir}/{args.save_name}'
 
     dataset = {}
-    data_hdf5 = h5py.File(f"./datasets/{sys.argv[1]}", "r")
+    data_hdf5 = h5py.File(args.dataset_path, "r")
     for key in data_hdf5.keys():
         dataset[key] = np.array(data_hdf5[key])
-    print(dataset)
 
-    visualize_recorded_rollout(dataset, single_episode = "--single_episode" in sys.argv)
+    visualize_recorded_rollout(dataset, save_path, show_actions=args.show_actions, single_episode=args.single_episode)
