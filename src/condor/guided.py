@@ -15,11 +15,11 @@ def expert(
 if __name__ == "__main__":
 
     all_commands = ""
-    for dataset_dir in ['expert', 'expert/translate_ball_and_goal']:
-        for dataset_size in [10000, 50000, 100000]:
+    for dataset_dir in ['expert/trajectories', 'expert/trajectories/guided/']:
+        for i in range(5):
 
-            name = f"{dataset_dir.replace('/', '_')}_{dataset_size}"
-            dataset_name = f'{dataset_dir}/{dataset_size}.hdf5'
+            name = f"{dataset_dir.replace('/', '_')}_{i}"
+            dataset_name = f'{dataset_dir}/{i}.hdf5'
 
             command = expert(
                 name=dataset_name,
@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     save_dir = 'commands'
     os.makedirs(save_dir, exist_ok=True)
-    f = open(f'{save_dir}/expert.txt', "w",)
+    f = open(f'{save_dir}/guided.txt', "w",)
 
     f.write(all_commands[:-1])
     f.close()

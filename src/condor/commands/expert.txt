@@ -1,0 +1,6 @@
+python*algorithms/cql.py*--name*expert/10000.hdf5*--dataset_name*expert/10000.hdf5*--max_timesteps*100000*--eval_freq*5000
+python*algorithms/cql.py*--name*expert/50000.hdf5*--dataset_name*expert/50000.hdf5*--max_timesteps*100000*--eval_freq*5000
+python*algorithms/cql.py*--name*expert/100000.hdf5*--dataset_name*expert/100000.hdf5*--max_timesteps*100000*--eval_freq*5000
+python*algorithms/cql.py*--name*expert/translate_ball_and_goal/10000.hdf5*--dataset_name*expert/translate_ball_and_goal/10000.hdf5*--max_timesteps*100000*--eval_freq*5000
+python*algorithms/cql.py*--name*expert/translate_ball_and_goal/50000.hdf5*--dataset_name*expert/translate_ball_and_goal/50000.hdf5*--max_timesteps*100000*--eval_freq*5000
+python*algorithms/cql.py*--name*expert/translate_ball_and_goal/100000.hdf5*--dataset_name*expert/translate_ball_and_goal/100000.hdf5*--max_timesteps*100000*--eval_freq*5000
