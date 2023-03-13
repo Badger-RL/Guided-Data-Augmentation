@@ -87,10 +87,10 @@ keras_actor  = pytorch_to_keras(
 print(keras_actor)
 
 
-obs = np.array([-1.3579835,   0.27951971,  0.95481869,  0.41910834 , 2.60238981 ,-7.56153716,
-  2.02996028 , 1.04410311])
+#obs = np.array([-1.3579835,   0.27951971,  0.95481869,  0.41910834 , 2.60238981 ,-7.56153716,
+#  2.02996028 , 1.04410311])
 
-#obs = env.reset()
+obs = env.reset()
 done = False
 while True:
     keras_obs = np.array(obs).reshape((1,8))
@@ -99,11 +99,13 @@ while True:
     keras_output = keras_actor.predict(keras_obs)
 
     keras_action = keras_output[0,:3]
+    print("KERAS ACTION")
+    print(keras_action)
     keras_log_stds = keras_output[0,3:]
     keras_log_stds -= 1
     keras_log_stds = np.clip(keras_log_stds, -20.0, 2.0)
     keras_stds = np.exp(keras_log_stds)
-    keras_action = np.tanh(keras_action)
+    keras_action = np.tanh(keras_action) * float(env.action_space.high[0])
 
 
 
@@ -113,10 +115,9 @@ while True:
     print(action)
     print(keras_action)
     print(keras_log_stds)
-    exit()
 
 
-    obs, reward, done, info = env.step(action[0])
+    obs, reward, done, info = env.step(keras_action)
     env.render()
     if done:
         obs = env.reset()
