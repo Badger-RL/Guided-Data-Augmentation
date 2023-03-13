@@ -13,8 +13,12 @@ TRAINING_STEPS = 1000000
 
 
 class PushBallToGoalEnv(BaseEnv):
-    def __init__(self):
-        super().__init__()
+    #def __init__(self, robot_x_range = [-4500,4500], robot_y_range = [-3000,3000], ball_x_range = [-4500,4500], ball_y_range = [-3000,3000]):
+    def __init__(self, **kwargs):
+   
+        
+        super().__init__(**kwargs)
+
 
         """
         OBSERVATION SPACE:
@@ -23,7 +27,12 @@ class PushBallToGoalEnv(BaseEnv):
             - sin(Angle between robot and target)
             - cos(Angle between robot and target)
         """
+    
+       
+
+
         observation_space_size = 8
+
 
         observation_space_low = -1 * np.ones(observation_space_size)
         observation_space_high = np.ones(observation_space_size)
@@ -40,12 +49,13 @@ class PushBallToGoalEnv(BaseEnv):
 
         self.contacted_ball = False
 
-        self.robot_x = np.random.uniform(-3500, 3500)
-        self.robot_y = np.random.uniform(-2500, 2500)
+
+        self.robot_x = np.random.uniform(self.robot_x_range[0], self.robot_x_range[1])
+        self.robot_y = np.random.uniform(self.robot_y_range[0], self.robot_y_range[1])
         self.robot_angle = np.random.uniform(0, 2 * np.pi)
 
-        self.target_x = np.random.uniform(-2500, 2500)
-        self.target_y = np.random.uniform(-2000, 2000)
+        self.target_x = np.random.uniform(self.ball_x_range[0], self.ball_x_range[1])
+        self.target_y = np.random.uniform(self.ball_y_range[0], self.ball_y_range[1])
 
         self.goal_x = 4800
         self.goal_y = 0
