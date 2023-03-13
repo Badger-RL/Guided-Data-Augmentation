@@ -52,6 +52,11 @@ class BaseEnv(gym.Env):
             observation_space_low, observation_space_high
         )
 
+        self.robot_x_range = robot_x_range
+        self.robot_y_range = robot_y_range
+        self.ball_x_range = ball_x_range
+        self.ball_y_range = ball_y_range
+
         self.target_radius = 10
         self.robot_radius = 20
 

@@ -13,10 +13,11 @@ TRAINING_STEPS = 1000000
 
 
 class PushBallToGoalEnv(BaseEnv):
-    def __init__(self, robot_x_range = [-4500,4500], robot_y_range = [-3000,3000], ball_x_range = [-4500,4500], ball_y_range = [-3000,3000]):
+    #def __init__(self, robot_x_range = [-4500,4500], robot_y_range = [-3000,3000], ball_x_range = [-4500,4500], ball_y_range = [-3000,3000]):
+    def __init__(self, **kwargs):
+   
         
-        
-        super().__init__()
+        super().__init__(**kwargs)
 
 
         """
@@ -27,10 +28,7 @@ class PushBallToGoalEnv(BaseEnv):
             - cos(Angle between robot and target)
         """
     
-        self.robot_x_range = robot_x_range
-        self.robot_y_range = robot_y_range
-        self.ball_x_range = ball_x_range
-        self.ball_y_range = ball_y_range
+       
 
 
         observation_space_size = 8
