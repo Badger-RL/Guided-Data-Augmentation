@@ -15,10 +15,11 @@ def expert(
 if __name__ == "__main__":
 
     all_commands = ""
-    for dataset_dir in ['expert', 'expert/translate_ball_and_goal']:
+    for dataset_dir in ['expert']:
         for dataset_size in [10000, 50000, 100000]:
 
             name = f"{dataset_dir.replace('/', '_')}_{dataset_size}"
+    
             dataset_name = f'{dataset_dir}/{dataset_size}.hdf5'
 
             command = expert(
@@ -30,7 +31,24 @@ if __name__ == "__main__":
 
             command = command.replace(' ', '*')
             all_commands += command + '\n'
+    """
+    for dataset_dir in ['expert/translate_robot_and_ball']:
+        for dataset_size in [10000, 50000, 100000]:
 
+            name = f"{dataset_dir.replace('/', '_')}_{dataset_size}"
+    
+            dataset_name = f'{dataset_dir}/{dataset_size}_1.hdf5'
+
+            command = expert(
+                name=dataset_name,
+                dataset_name=dataset_name,
+            )
+
+            print(command)
+
+            command = command.replace(' ', '*')
+            all_commands += command + '\n'
+    """
     save_dir = 'commands'
     os.makedirs(save_dir, exist_ok=True)
     f = open(f'{save_dir}/expert.txt', "w",)

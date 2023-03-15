@@ -45,8 +45,8 @@ class TrainConfig:
     use_automatic_entropy_tuning: bool = True  # Tune entropy
     backup_entropy: bool = False  # Use backup entropy
     policy_lr: float = 3e-5  # Policy learning rate
-    qf_lr: float = 0.0003  # Critics learning rate
-    soft_target_update_rate: float = 5e-3  # Target network update rate
+    qf_lr: float = 3e-6  # Critics learning rate
+    soft_target_update_rate: float = 0.005  # Target network update rate
     bc_steps: int = int(0)  # Number of BC steps at start
     target_update_period: int = 1  # Frequency of target nets updates
     cql_n_actions: int = 10  # Number of sampled actions
