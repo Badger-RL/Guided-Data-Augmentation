@@ -15,7 +15,7 @@ def expert(
 if __name__ == "__main__":
 
     all_commands = ""
-    for dataset_dir in ['expert/trajectories', 'expert/trajectories/guided/']:
+    for dataset_dir in ['expert/trajectories', 'expert/trajectories/guided']:
         for i in range(5):
 
             name = f"{dataset_dir.replace('/', '_')}_{i}"
