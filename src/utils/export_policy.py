@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import random
 import uuid
+import json
 import sys
 from pytorch2keras import pytorch_to_keras
 
@@ -72,6 +73,20 @@ action_dim = env.action_space.shape[0]
 max_action = float(env.action_space.high[0])
 orthogonal_init = True
 
+
+metadata = {
+    "observation_length": sum(env.observation_space.shape),
+    "action_length": sum(env.action_space.shape),
+    "policy_type": "CORL_CQL"
+}
+metadata["mean"] = [float(entry) for entry in state_mean]
+metadata["var"] = [float(std**2) for std in state_std]
+metadata["clip"] = 1000
+metadata["epsilon"] = 0
+print(metadata)
+with open("metadata.json", "w") as metadata_file:
+    json.dump(metadata, metadata_file)
+
 actor = TanhGaussianPolicy(
     state_dim, action_dim, max_action, orthogonal_init=orthogonal_init
 ).to("cpu")
@@ -83,6 +98,8 @@ actor.load_state_dict(state_dict = checkpoint["actor"])
 keras_actor  = pytorch_to_keras(
         actor.base_network, torch.zeros((1, env.observation_space.shape[0])), verbose=True, name_policy="renumerate"
 )
+
+keras_actor.save("policy.h5", save_format="h5")
 
 print(keras_actor)
 
