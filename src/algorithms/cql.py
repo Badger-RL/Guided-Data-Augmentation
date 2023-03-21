@@ -422,6 +422,7 @@ class Scalar(nn.Module):
 class ContinuousCQL:
     def __init__(
         self,
+        action_space,
         critic_1,
         critic_1_optimizer,
         critic_2,
@@ -451,6 +452,7 @@ class ContinuousCQL:
     ):
         super().__init__()
 
+        self.action_space = action_space
         self.discount = discount
         self.target_entropy = target_entropy
         self.alpha_multiplier = alpha_multiplier
@@ -578,7 +580,7 @@ class ContinuousCQL:
         action_dim = actions.shape[-1]
         cql_random_actions = actions.new_empty(
             (batch_size, self.cql_n_actions, action_dim), requires_grad=False
-        ).uniform_(-1, 1)
+        ).uniform_(0, 1) * (self.action_space.high - self.action_space.low) + self.action_space.low
         cql_current_actions, cql_current_log_pis = self.actor(
             observations, repeat=self.cql_n_actions
         )
@@ -887,6 +889,7 @@ def train( config: TrainConfig):
     actor_optimizer = torch.optim.Adam(actor.parameters(), config.policy_lr)
 
     kwargs = {
+        "action_space": env.action_space,
         "critic_1": critic_1,
         "critic_2": critic_2,
         "critic_1_optimizer": critic_1_optimizer,
