@@ -5,6 +5,7 @@ import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
+import json
 
 
 def get_coords(observation, action):
@@ -63,6 +64,8 @@ def visualize_recorded_rollout(dataset, single_episode = False):
     action_y_list = []
     ball_x_list = []
     ball_y_list = []
+
+
 
     for observation, action, done in zip(dataset["observations"],dataset["actions"], dataset["terminals"]):
         print(action)
@@ -149,12 +152,18 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("usage: python3 ./viz/visualize_dataset.py <dataset name>")
         print("optional arg --single_episode")
+        print("optional arg --json")
+
         exit()
 
     dataset = {}
-    data_hdf5 = h5py.File(f"./datasets/{sys.argv[1]}", "r")
-    for key in data_hdf5.keys():
-        dataset[key] = np.array(data_hdf5[key])
+    if "--json" not in sys.argv:
+        data_hdf5 = h5py.File(f"./datasets/{sys.argv[1]}", "r")
+        for key in data_hdf5.keys():
+            dataset[key] = np.array(data_hdf5[key])
+    else:
+        with open(sys.argv[1],'r') as json_file:
+            dataset = json.load(json_file)
     print(dataset)
 
     visualize_recorded_rollout(dataset, single_episode = "--single_episode" in sys.argv)
