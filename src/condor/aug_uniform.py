@@ -23,7 +23,7 @@ if __name__ == "__main__":
                 name = f"Exp_{dataset_dir.replace('/', '_')}_{observed_dataset_size}k_{aug_dataset_size}k"
                 dataset_name = f'{dataset_dir}/{observed_dataset_size}k_{aug_dataset_size}k.hdf5'
                 command = expert(
-                    name=dataset_name,
+                    name=name,
                     dataset_name=dataset_name,
                 )
 

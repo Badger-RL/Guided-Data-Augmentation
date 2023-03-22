@@ -17,11 +17,11 @@ if __name__ == "__main__":
     all_commands = ""
     for dataset_dir in ['expert_restricted/no_aug']:
         for dataset_size in [10, 50, 100]:
-            name = f"ExpRestricted_{dataset_dir.replace('/', '_')}_{dataset_size}"
+            name = f"ExpRestricted_{dataset_dir.replace('/', '_')}_{dataset_size}k"
             dataset_name = f'{dataset_dir}/{dataset_size}k.hdf5'
 
             command = expert(
-                name=dataset_name,
+                name=name,
                 dataset_name=dataset_name,
             )
 
