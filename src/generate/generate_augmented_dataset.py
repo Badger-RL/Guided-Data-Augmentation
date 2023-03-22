@@ -78,4 +78,11 @@ if __name__ == '__main__':
         observed = observed_dataset[k]
         aug = np.array(aug_dataset[k])
         data = np.concatenate([observed, aug])
+
+        if k in ['terminals', 'timeouts']:
+            dtype = np.bool_
+        else:
+            dtype = np.float32
+        data = data.astype(dtype)
+
         new_dataset.create_dataset(k, data=data, compression='gzip')
