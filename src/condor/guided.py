@@ -29,7 +29,7 @@ if __name__ == "__main__":
                 print(command)
                 command = command.replace(' ', '*')
                 all_commands += command + '\n'
-
+                
     save_dir = 'commands'
     os.makedirs(save_dir, exist_ok=True)
     f = open(f'{save_dir}/guided.txt', "w",)
