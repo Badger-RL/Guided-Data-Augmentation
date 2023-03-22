@@ -4,9 +4,10 @@ if __name__ == "__main__":
 
     # os.chdir('generate')
     for i in range(5):
-        os.system(
-            f'python ./visualize_dataset.py  '
-            f' --dataset-path ../datasets/expert/trajectories/guided/{i}.hdf5'
-            f' --save-dir ./figures/guided/'
-            f' --save-name {i}.png'
-        )
+        for dataset_size in [100, 200]:
+            os.system(
+                f'python ./visualize_dataset.py  '
+                f' --dataset-path ../datasets/expert/aug_guided/{i}_{dataset_size}k.hdf5'
+                f' --save-dir ./figures/aug_guided/'
+                f' --save-name {i}_{dataset_size}k.png'
+            )

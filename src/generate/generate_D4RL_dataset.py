@@ -120,7 +120,7 @@ def main():
 
     save_dir = f'datasets/{"random" if args.random_actions else "expert"}'
     os.makedirs(save_dir, exist_ok=True)
-    fname = f'{save_dir}/{args.num_samples}.hdf5'
+    fname = f'{save_dir}/no_aug/{int(args.num_samples//1e3)}k.hdf5'
     dataset = h5py.File(fname, 'w')
     npify(data)
     for k in data:

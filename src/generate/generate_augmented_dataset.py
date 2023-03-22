@@ -18,17 +18,18 @@ models = {"push_ball_to_goal": {"env": PushBallToGoalEnv}}
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--observed-dataset-size', type=int, default=int(10e3), help='Size of original dataset to load')
+    parser.add_argument('--observed-dataset-path', type=str, default=None)
     parser.add_argument('--policy', type=str, default='expert', help='Type of policy used to generate the observed dataset')
     parser.add_argument('--augmentation-ratio', '-aug-ratio', type=int, default=1, help='Number of augmentations per observed transition')
+    parser.add_argument('--save-dir', type=str, default=None)
+    parser.add_argument('--save-name', type=str, default=None)
+
     args = parser.parse_args()
 
-    dataset_size = args.observed_dataset_size
     aug_ratio = args.augmentation_ratio
     policy = args.policy
 
-    observed_dataset_name = f'../datasets/{policy}/{dataset_size}.hdf5'
-    observed_data_hdf5 = h5py.File(f"{observed_dataset_name}", "r")
+    observed_data_hdf5 = h5py.File(f"{args.observed_dataset_path}", "r")
 
     observed_dataset = {}
     for key in observed_data_hdf5.keys():
@@ -69,10 +70,12 @@ if __name__ == '__main__':
                 else:
                     invalid_count += 1
 
+            if aug_count >= n * aug_ratio:
+                break
+
     print(f'Invalid count: {invalid_count}')
-    save_dir = f'../datasets/{policy}/translate_and_rotate/'
-    os.makedirs(save_dir, exist_ok=True)
-    fname = f'{save_dir}/{dataset_size}_{aug_ratio}.hdf5'
+    os.makedirs(args.save_dir, exist_ok=True)
+    fname = f'{args.save_dir}/{args.save_name}'
     new_dataset = h5py.File(fname, 'w')
     for k in aug_dataset:
         observed = observed_dataset[k]
@@ -86,3 +89,5 @@ if __name__ == '__main__':
         data = data.astype(dtype)
 
         new_dataset.create_dataset(k, data=data, compression='gzip')
+
+    print(f"Aug dataset size: {len(new_dataset['observations'])}")

@@ -6,7 +6,7 @@ if __name__ == "__main__":
 
     os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide" # disable pygame welcome message
 
-    dataset_dir = '../datasets/'
+    dataset_dir = '../datasets/expert'
     all_dataset_paths = []
     for dirpath, dirnames, filenames in os.walk(dataset_dir):
         for fname in filenames:
