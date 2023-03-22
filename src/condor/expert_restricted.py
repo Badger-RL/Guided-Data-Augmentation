@@ -15,9 +15,9 @@ def expert(
 if __name__ == "__main__":
 
     all_commands = ""
-    for dataset_dir in ['expert/no_aug']:
+    for dataset_dir in ['expert_restricted/no_aug']:
         for dataset_size in [10, 50, 100]:
-            name = f"Exp_{dataset_dir.replace('/', '_')}_{dataset_size}"
+            name = f"ExpRestricted_{dataset_dir.replace('/', '_')}_{dataset_size}"
             dataset_name = f'{dataset_dir}/{dataset_size}k.hdf5'
 
             command = expert(
@@ -31,7 +31,7 @@ if __name__ == "__main__":
 
     save_dir = 'commands'
     os.makedirs(save_dir, exist_ok=True)
-    f = open(f'{save_dir}/expert.txt', "w",)
+    f = open(f'{save_dir}/expert_restricted.txt', "w",)
 
     f.write(all_commands[:-1])
     f.close()

@@ -15,14 +15,15 @@ def expert(
 if __name__ == "__main__":
 
     all_commands = ""
-    for dataset_dir in ['expert/aug_guided', 'expert/aug_guided']:
-        for dataset_size in [100, 200]:
-            for i in range(5):
+    for dataset_dir in ['expert/aug_uniform']:
+        for observed_dataset_size in [10, 50, 100]:
+            for aug_dataset_size in [100, 200]:
+                if observed_dataset_size >= aug_dataset_size: continue
 
-                name = f"ExpGuided_{dataset_dir.replace('/', '_')}_{i}"
-                dataset_name = f'{dataset_dir}/{i}_{dataset_size}k.hdf5'
+                name = f"Exp_{dataset_dir.replace('/', '_')}_{observed_dataset_size}k_{aug_dataset_size}k"
+                dataset_name = f'{dataset_dir}/{observed_dataset_size}k_{aug_dataset_size}k.hdf5'
                 command = expert(
-                    name=name,
+                    name=dataset_name,
                     dataset_name=dataset_name,
                 )
 
@@ -32,7 +33,7 @@ if __name__ == "__main__":
 
     save_dir = 'commands'
     os.makedirs(save_dir, exist_ok=True)
-    f = open(f'{save_dir}/guided.txt', "w",)
+    f = open(f'{save_dir}/aug_uniform.txt', "w",)
 
     f.write(all_commands[:-1])
     f.close()
