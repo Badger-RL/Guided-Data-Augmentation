@@ -11,9 +11,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecMonitor
 from stable_baselines3.common.env_util import make_vec_env
 
-
-from GuidedDataAugmentationForRobotics.src.augment.translate_robot_and_ball import TranslateRobotAndBall
-from augment.translate_and_rotate import TranslateAndRotate
+from augment.rotate_reflect_translate import RotateReflectTranslate
 from custom_envs.push_ball_to_goal import PushBallToGoalEnv
 
 models = {"push_ball_to_goal": {"env": PushBallToGoalEnv}}
@@ -33,7 +31,7 @@ def main():
 
     ns, r, done, info = env.step([act])
     ns_o = env.get_original_obs()
-    f = TranslateAndRotate(env=None)
+    f = RotateReflectTranslate(env=None)
 
     for _ in range(1000):
 

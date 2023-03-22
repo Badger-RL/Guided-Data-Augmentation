@@ -8,7 +8,7 @@ import numpy as np
 import h5py
 import argparse
 
-from augment.translate_and_rotate import TranslateAndRotate
+from augment.rotate_reflect_translate import RotateReflectTranslate
 from augment.utils import check_valid
 from custom_envs.push_ball_to_goal import PushBallToGoalEnv
 
@@ -36,7 +36,7 @@ if __name__ == '__main__':
     n = observed_dataset['observations'].shape[0]
 
     env = gym.make('PushBallToGoal-v0')
-    f = TranslateAndRotate(env=None)
+    f = RotateReflectTranslate(env=None)
 
     aug_dataset = reset_data()
     aug_count = 0 # number of valid augmentations produced

@@ -7,7 +7,7 @@ from GuidedDataAugmentationForRobotics.src.augment.augmentation_function import 
 from augment.utils import convert_to_absolute_obs, calculate_reward, convert_to_relative_obs
 
 
-class TranslateAndRotate(AbstractSimAugmentationFunction):
+class RotateReflectTranslate(AbstractSimAugmentationFunction):
     '''
     Translate the robot and ball by the same (delta_x, delta_y).
     '''
