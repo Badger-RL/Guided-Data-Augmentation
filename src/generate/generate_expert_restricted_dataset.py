@@ -17,8 +17,6 @@ from custom_envs.push_ball_to_goal import PushBallToGoalEnv
 import custom_envs
 
 
-models = {"push_ball_to_goal": {"env": PushBallToGoalEnv}}
-
 def reset_data():
     return {'observations': [],
             'actions': [],
@@ -57,11 +55,11 @@ def main():
 
     args = parser.parse_args()
 
-    policy_path = f"./expert_policies/{args.path}/policy"
-    normalization_path = f"./expert_policies/{args.path}/vector_normalize"
+    policy_path = f"../expert_policies/{args.path}/policy_100"
+    normalization_path = f"../expert_policies/{args.path}/vector_normalize_100"
 
     env = VecNormalize.load(
-        normalization_path, make_vec_env('PushBallToGoal-v0', n_envs=1)
+        normalization_path, make_vec_env('PushBallToGoalRestricted-v0', n_envs=1)
     )
     env.norm_obs = True
     env.norm_reward = False
@@ -118,9 +116,9 @@ def main():
             s = ns
             s_o = ns_o
 
-    save_dir = f'datasets/{"random" if args.random_actions else "expert"}'
+    save_dir = f'../datasets/expert/no_aug_restricted/'
     os.makedirs(save_dir, exist_ok=True)
-    fname = f'{save_dir}/no_aug/{int(args.num_samples//1e3)}k.hdf5'
+    fname = f'{save_dir}/{int(args.num_samples//1e3)}k.hdf5'
     dataset = h5py.File(fname, 'w')
     npify(data)
     for k in data:
