@@ -8,41 +8,15 @@ import h5py
 import argparse
 
 from stable_baselines3 import PPO
+from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecMonitor
 from stable_baselines3.common.env_util import make_vec_env
 
 from custom_envs.push_ball_to_goal import PushBallToGoalEnv
 import custom_envs
+from generate.utils import reset_data, append_data, npify
 
 models = {"push_ball_to_goal": {"env": PushBallToGoalEnv}}
-
-
-def reset_data():
-    return {'observations': [],
-            'actions': [],
-            'terminals': [],
-            'rewards': [],
-            'next_observations': [],
-            }
-
-
-def append_data(data, s, a, r, ns, done):
-    data['observations'].append(s)
-    data['next_observations'].append(ns)
-    data['actions'].append(a)
-    data['rewards'].append(r)
-    data['terminals'].append(done)
-
-
-def npify(data):
-    for k in data:
-        if k in ['terminals', 'timeouts']:
-            dtype = np.bool_
-        else:
-            dtype = np.float32
-
-        data[k] = np.array(data[k], dtype=dtype)
-
 
 def main():
     parser = argparse.ArgumentParser()
@@ -53,7 +27,7 @@ def main():
     parser.add_argument('--seed', type=int, default=0)
     args = parser.parse_args()
 
-    np.random.seed(args.seed)
+    set_random_seed(args.seed)
 
     policy_path = f"../expert_policies/{args.path}/policy_100"
     normalization_path = f"../expert_policies/{args.path}/vector_normalize_100"
@@ -64,6 +38,7 @@ def main():
     env.norm_obs = True
     env.norm_reward = False
     env.clip_obs = 1.0
+    env.epsilon = 1e-16
     env.training = False
 
     s = env.reset()
@@ -94,6 +69,8 @@ def main():
         s = ns
         s_o = ns_o
         # env.render()
+
+    print(ret)
 
 
     os.makedirs(args.save_dir, exist_ok=True)
