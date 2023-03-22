@@ -47,7 +47,11 @@ This will also stage offlinerl.sub and condor_execute.sh
 Then ssh into the submit node and run
 
 ````
-condor_submit offlinerl.sub
+condor_submit offlinerl.sub num_jobs=10 commands_file=src/condor/commands/cql.txt
+````
+or 
+````
+./submit.sh cql.txt 10
 ````
 
 
