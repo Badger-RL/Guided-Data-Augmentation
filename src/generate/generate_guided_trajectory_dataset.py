@@ -5,6 +5,8 @@ import numpy as np
 import h5py
 import argparse
 
+from stable_baselines3.common.utils import set_random_seed
+
 from augment.rotate_reflect_trajectory import rotate_reflect_traj
 from augment.translate_reflect_trajectory import translate_reflect_traj_y
 from augment.utils import check_valid
@@ -38,21 +40,25 @@ def gen_aug_dataset(env, observed_dataset, aug_ratio=1):
 
     aug_obs_list, aug_action_list, aug_reward_list, aug_next_obs_list, aug_done_list = [], [], [], [], []
 
-    count = 0
-    while count < aug_ratio:
+    aug_count = 0
+    invalid_count = 0
+    while aug_count < aug_ratio:
         for aug_function in [rotate_reflect_traj, translate_reflect_traj_y]:
             aug_obs, aug_action, aug_reward, aug_next_obs, aug_done = aug_function(obs, action, next_obs, reward, done)
             is_valid = check_valid(env, aug_obs, aug_action, aug_reward, aug_next_obs)
 
             if is_valid:
-                count += 1
+                aug_count += 1
                 aug_obs_list.append(aug_obs)
                 aug_action_list.append(aug_action)
                 aug_reward_list.append(aug_reward)
                 aug_next_obs_list.append(aug_next_obs)
                 aug_done_list.append(aug_done)
             else:
-                print('Invalid augmented trajectory')
+                invalid_count += 1
+
+            if aug_count >= aug_ratio:
+                break
 
     aug_obs = np.concatenate(aug_obs_list)
     aug_action = np.concatenate(aug_action_list)
@@ -69,6 +75,7 @@ def gen_aug_dataset(env, observed_dataset, aug_ratio=1):
     }
     npify(aug_dataset)
 
+    print(f'Invalid count: {invalid_count}')
     return aug_dataset
 
 if __name__ == '__main__':
@@ -81,7 +88,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', type=int, default=0)
     args = parser.parse_args()
 
-    np.random.seed(args.seed)
+    set_random_seed(args.seed)
 
     env = gym.make('PushBallToGoal-v0')
 
@@ -98,5 +105,5 @@ if __name__ == '__main__':
         data = np.concatenate([observed, aug])
         new_dataset.create_dataset(k, data=data, compression='gzip')
 
-
+    print(f"Aug dataset size: {new_dataset['observations'].shape[0]}")
 

@@ -342,6 +342,8 @@ class BaseEnv(gym.Env):
         self.target_y = abstract_state[3] * 6000
 
         self.robot_angle = np.arctan2(abstract_state[8], abstract_state[9])
+        if self.robot_angle < 0:
+            self.robot_angle += 2*np.pi
 
     def render(self, mode="display"):
         Field_length = 1200
@@ -399,23 +401,6 @@ class BaseEnv(gym.Env):
         pygame.display.update()
         self.clock.tick(60)
     def position_rule(self):
-        # Ball out : 3 case
-        # 1) corner kick : right side of field
-        if self.target_x > 4500:
-            if self.target_y > 750:
-                self.target_x = 4500
-                self.target_y = 3000
-            elif self.target_y < -750:
-                self.target_x = 4500
-                self.target_y = -3000
-        # 2) corner kick :checking ball out of bounds on left side of field
-        if self.target_x < -4500:
-            if self.target_y > 750:
-                self.target_x = -4500
-                self.target_y = 3000
-            elif self.target_y < -750:
-                self.target_x = -4500
-                self.target_y = -3000
 
         # 3) ball out of bounds on top/bottom of field
         if self.target_y > 3000:
@@ -425,16 +410,10 @@ class BaseEnv(gym.Env):
 
         # disallow robot pass through goal-net
         if self.robot_x < -4500 or self.robot_x > 4500:
-            if abs(-750 - self.robot_y) < 20:
-                if self.robot_y < -750:
-                    self.robot_y = -900
-                else:
-                    self.robot_y = -700
-            elif abs(750 - self.robot_y) < 20:
-                if self.robot_y > 750:
-                    self.robot_y = 900
-                else:
-                    self.robot_y = 700
+            if self.robot_y < -750:
+                self.robot_y = -750
+            if self.robot_y > 750:
+                self.robot_y = 750
 
         # out of bounds
         if self.robot_x > 4500:
