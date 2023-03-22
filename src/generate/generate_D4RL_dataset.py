@@ -7,8 +7,9 @@ import numpy as np
 import h5py
 import argparse
 
-
+import torch
 from stable_baselines3 import PPO
+from stable_baselines3.common.utils import set_random_seed
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecMonitor
 from stable_baselines3.common.env_util import make_vec_env
 
@@ -48,7 +49,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_samples', type=int, default=int(1e4), help='Num samples to collect')
     parser.add_argument('--path', type=str, default='push_ball_to_goal', help='file_name')
-    parser.add_argument('--max_episode_steps', default=1000, type=int)
+    parser.add_argument('--seed', type=int, default=0)
     parser.set_defaults(use_policy = False)
     parser.add_argument('--random_actions', type=int, default=0)
     parser.add_argument('--render', type=bool, default=False)
@@ -64,9 +65,11 @@ def main():
     )
     env.norm_obs = True
     env.norm_reward = False
-    env.clip_obs = 1.0
+    env.clip_obs = np.inf
     env.training = False
+    env.epsilon = 1e-16
 
+    set_random_seed(args.seed)
     s = env.reset()
     s_o = env.get_original_obs()
 
@@ -87,18 +90,14 @@ def main():
         else:
             act = policy.predict(s)[0]
           
-
         ns, r, done, info = env.step(act)
         ret += r
         ns_o = env.get_original_obs()
         if args.render:
             env.render()
-        timeout = False
-        if ts >= args.max_episode_steps:
-            timeout = True
        
         if 'terminal_observation' in info[0]:
-            ns = [info[0]['terminal_observation']]
+            ns = np.array([info[0]['terminal_observation']])
             ns_o = env.unnormalize_obs(ns)
 
         append_data(data, s_o[0], act[0], r[0], ns_o[0], done[0])
@@ -108,7 +107,7 @@ def main():
 
         ts += 1
 
-        if done or timeout:
+        if done:
             ts = 0
             s = env.reset()
             s_o = env.get_original_obs()
