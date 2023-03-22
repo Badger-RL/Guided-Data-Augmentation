@@ -13,6 +13,7 @@ from stable_baselines3.common.env_util import make_vec_env
 
 
 from GuidedDataAugmentationForRobotics.src.augment.translate_robot_and_ball import TranslateRobotAndBall
+from augment.translate_and_rotate import TranslateAndRotate
 from custom_envs.push_ball_to_goal import PushBallToGoalEnv
 
 models = {"push_ball_to_goal": {"env": PushBallToGoalEnv}}
@@ -32,13 +33,11 @@ def main():
 
     ns, r, done, info = env.step([act])
     ns_o = env.get_original_obs()
-
-    # f = TranslateRobot(env=None)
-    f = TranslateRobotAndBall(env=None)
+    f = TranslateAndRotate(env=None)
 
     for _ in range(1000):
 
-        aug_s, _, _, _, _ = f.augment(s_o[0], ns_o[0], act, r, done)
+        aug_s, aug_a, aug_ns, aug_r, aug_done = f.augment(s_o[0], ns_o[0], act, r, done)
         env.envs[0].set_abstract_state(aug_s)
         env.render()
         time.sleep(0.5)

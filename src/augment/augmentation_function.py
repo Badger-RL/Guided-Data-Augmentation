@@ -102,8 +102,7 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
             robot_y,
             target_x,
             target_y,
-            np.sin(robot_angle),
-            np.cos(robot_angle)
+            robot_angle
         ])
 
     def _convert_to_relative_obs(self, obs):
@@ -121,7 +120,7 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
         if relative_angle < 0:
             relative_angle += 2*np.pi
 
-        robot_angle = np.arctan2(obs[4], obs[5])
+        robot_angle = obs[4]
         if robot_angle < 0:
             robot_angle += 2*np.pi
 
@@ -144,13 +143,13 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
         robot_y = absolute_next_obs[1]
         target_x = absolute_next_obs[2]
         target_y = absolute_next_obs[3]
+        robot_angle = absolute_next_obs[4]
+        robot_angle = np.degrees(robot_angle) % 360
 
         at_goal = self.at_goal(target_x, target_y)
 
-        robot_angle = np.arctan2(absolute_next_obs[4], absolute_next_obs[5])
-        robot_angle = np.degrees(robot_angle) % 360
         angle_robot_ball = np.arctan2(target_y - robot_y, target_x - robot_x)
-        angle_robot_ball = np.degrees(angle_robot_ball)
+        angle_robot_ball = np.degrees(angle_robot_ball) % 360
         is_facing_ball = abs(angle_robot_ball - robot_angle) < 30
 
         reward = 0
@@ -169,7 +168,6 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
 
         if at_goal:
             reward += 1
-
 
         return reward, at_goal
 

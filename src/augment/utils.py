@@ -111,25 +111,34 @@ def convert_to_relative_obs(obs):
         np.cos(goal_relative_angle - robot_angle),
     ]).T
 
-def check_valid(env, aug_obs, aug_action, aug_reward, aug_next_obs, render=False):
+def check_valid(env, aug_obs, aug_action, aug_reward, aug_next_obs, render=False, verbose=False):
 
     env.reset()
 
     valid = True
-    for i in range(aug_obs.shape[0]):
+    for i in range(len(aug_obs)):
         env.set_abstract_state(aug_obs[i])
+
         next_obs, reward, done, info = env.step(aug_action[i])
 
-        if render: env.render()
+        if render:
+            env.render()
 
         # Augmented transitions at the goal are surely not valid, but that's fine.
         if not info['is_success']:
             if not np.allclose(next_obs, aug_next_obs[i], atol=1e-5):
                 valid = False
-                print('obs', aug_next_obs[i]-next_obs)
+                if verbose:
+                    print(f'{i}, true next obs - aug next obs', aug_next_obs[i]-next_obs)
+                    print(f'{i}, true next obs', next_obs)
+                    print(f'{i}, aug next obs', aug_next_obs[i])
+
+                    # print(aug_next_obs[i, 2:4], next_obs[2:4])
+
             if not np.isclose(reward, aug_reward[i], atol=1e-5):
                 valid = False
-                print('reward', aug_reward[i], reward)
+                if verbose:
+                    print(f'{i}, aug reward: {aug_reward[i]}\ttrue reward: {reward}')
 
         if not valid:
             break
