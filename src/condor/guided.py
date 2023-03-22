@@ -18,11 +18,11 @@ if __name__ == "__main__":
     for dataset_dir in ['expert/trajectories', 'expert/trajectories/guided']:
         for i in range(5):
 
-            name = f"{dataset_dir.replace('/', '_')}_{i}"
+            name = f"EXPGUIDED_{dataset_dir.replace('/', '_')}_{i}"
             dataset_name = f'{dataset_dir}/{i}.hdf5'
 
             command = expert(
-                name=dataset_name,
+                name=name,
                 dataset_name=dataset_name,
             )
 

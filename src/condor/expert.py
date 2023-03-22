@@ -18,12 +18,12 @@ if __name__ == "__main__":
     for dataset_dir in ['expert']:
         for dataset_size in [10000, 50000, 100000]:
 
-            name = f"{dataset_dir.replace('/', '_')}_{dataset_size}"
+            name = f"EXPEXPERTWIDESPAWNAREA_{dataset_dir.replace('/', '_')}_{dataset_size}"
     
             dataset_name = f'{dataset_dir}/{dataset_size}.hdf5'
 
             command = expert(
-                name=dataset_name,
+                name=name,
                 dataset_name=dataset_name,
             )
 
