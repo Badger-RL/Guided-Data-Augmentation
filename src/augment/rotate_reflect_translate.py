@@ -35,7 +35,7 @@ class RotateReflectTranslate(AbstractSimAugmentationFunction):
         aug_action = action.copy()
         aug_done = done.copy()
 
-        theta = np.random.uniform(-np.pi, np.pi)
+        theta = np.random.uniform(-np.pi/4, np.pi/4)
 
         M = np.array([
             [np.cos(theta), -np.sin(theta)],
