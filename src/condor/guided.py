@@ -15,7 +15,7 @@ def expert(
 if __name__ == "__main__":
 
     all_commands = ""
-    for dataset_dir in ['expert/aug_guided', 'expert/aug_guided']:
+    for dataset_dir in ['expert/aug_guided']:
         for dataset_size in [100, 200]:
             for i in range(5):
 
