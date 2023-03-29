@@ -53,6 +53,10 @@ if __name__ == "__main__":
         print(run.name)
         if not run.name.startswith(sys.argv[1]) or run.state != "finished":
             continue
+
+        #if not "100k" in run.config["dataset_name"]:
+        #    continue
+
         save_folder = f"./src/logdata/{run.name.replace('/', '_')}/"  
         Path(save_folder).mkdir(exist_ok = True, parents = True)
         result = {"t":[],"r":[],"success_rate":[]}

@@ -6,7 +6,7 @@ docker_image = jbalis/43534534:release
 log = job_$(Cluster).log
 error = job_$(Cluster)_$(Process).err
 output = job_$(Cluster)_$(Process).out
-requirements = (OpSys == "LINUX")
+requirements = (OpSys == "LINUX" && Target.HasCHTCStaging == true)
 
 bundle_name = bundle.zip
 executable = condor_execute.sh
