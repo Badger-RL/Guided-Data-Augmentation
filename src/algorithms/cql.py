@@ -938,9 +938,12 @@ def train( config: TrainConfig):
         batch = replay_buffer.sample(config.batch_size)
         batch = [b.to(config.device) for b in batch]
         log_dict = trainer.train(batch)
-        wandb.log(log_dict, step=trainer.total_it)
+
+
+        if t % 100 == 0:
+            wandb.log(log_dict, step=trainer.total_it)
         # Evaluate episode
-        if (t + 1) % config.eval_freq == 0:
+        if (t) % config.eval_freq == 0:
             print(f"Time steps: {t + 1}")
             eval_scores, eval_successes = eval_actor(
                 env,
