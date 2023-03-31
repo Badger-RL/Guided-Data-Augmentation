@@ -51,7 +51,10 @@ if __name__ == "__main__":
     for run in runs:
         metrics = run.history(keys= key_filter)
         print(run.name)
-        if not run.name.startswith(sys.argv[1]) or run.state != "finished":
+        #if not run.name.startswith(sys.argv[1]) or run.state != "finished":
+        #    continue
+
+        if run.state != "finished":
             continue
 
         #if not "100k" in run.config["dataset_name"]:
