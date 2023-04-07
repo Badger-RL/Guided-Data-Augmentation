@@ -1,0 +1,5 @@
+python*algorithms/cql.py*--name*ExpPerfect_expert_perfect_aug_uniform_10k_100k*--dataset_name*expert_perfect/aug_uniform/10k_100k.hdf5*--max_timesteps*100000*--eval_freq*5000
+python*algorithms/cql.py*--name*ExpPerfect_expert_perfect_aug_uniform_10k_200k*--dataset_name*expert_perfect/aug_uniform/10k_200k.hdf5*--max_timesteps*100000*--eval_freq*5000
+python*algorithms/cql.py*--name*ExpPerfect_expert_perfect_aug_uniform_50k_100k*--dataset_name*expert_perfect/aug_uniform/50k_100k.hdf5*--max_timesteps*100000*--eval_freq*5000
+python*algorithms/cql.py*--name*ExpPerfect_expert_perfect_aug_uniform_50k_200k*--dataset_name*expert_perfect/aug_uniform/50k_200k.hdf5*--max_timesteps*100000*--eval_freq*5000
+python*algorithms/cql.py*--name*ExpPerfect_expert_perfect_aug_uniform_100k_200k*--dataset_name*expert_perfect/aug_uniform/100k_200k.hdf5*--max_timesteps*100000*--eval_freq*5000

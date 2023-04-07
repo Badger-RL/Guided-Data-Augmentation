@@ -1,0 +1,5 @@
+python*algorithms/cql.py*--name*ExpTraj_expert_trajectories_0*--dataset_name*expert/trajectories/0.hdf5*--max_timesteps*100000*--eval_freq*5000
+python*algorithms/cql.py*--name*ExpTraj_expert_trajectories_1*--dataset_name*expert/trajectories/1.hdf5*--max_timesteps*100000*--eval_freq*5000
+python*algorithms/cql.py*--name*ExpTraj_expert_trajectories_2*--dataset_name*expert/trajectories/2.hdf5*--max_timesteps*100000*--eval_freq*5000
+python*algorithms/cql.py*--name*ExpTraj_expert_trajectories_3*--dataset_name*expert/trajectories/3.hdf5*--max_timesteps*100000*--eval_freq*5000
+python*algorithms/cql.py*--name*ExpTraj_expert_trajectories_4*--dataset_name*expert/trajectories/4.hdf5*--max_timesteps*100000*--eval_freq*5000
