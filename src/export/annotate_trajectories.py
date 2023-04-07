@@ -2,6 +2,7 @@ import json
 import sys
 from custom_envs.push_ball_to_goal import PushBallToGoalEnv
 import h5py
+import os
 import numpy as np
 
 #this file is for annotating trajectories returned from the physical robots with rewards and terminals.
@@ -9,15 +10,33 @@ import numpy as np
 env = PushBallToGoalEnv()
 
 
-def annotate_trajectories(trajectories):
-    trajectories["terminals"] = [False for i in range(len(trajectories["observations"]))]
-    trajectories["terminals"][-1] = True
-    trajectories["observations"] = [observation[4:] for observation in trajectories["observations"]]
-    trajectories["next_observations"] = [observation[4:] for observation in trajectories["next_observations"]]
-    trajectories["rewards"] = []
-    for observation in trajectories["next_observations"]:
-        env.set_state_from_obs(observation)
-        trajectories["rewards"].append(env.calculate_reward())
+EPISODE_BATCH_LENGTH = 2
+
+def annotate_trajectories(paths):
+
+    trajectories = {
+        "terminals": [],
+        "observations": [],
+        "next_observations": [],
+        "rewards": [],
+        "actions": [],
+    }
+
+    for path in paths:
+        dataset = None
+        with open(path, 'r') as input_file:
+            dataset = json.load(input_file)
+        new_terminals = [False for i in range(len(dataset["observations"]))]
+        if f"{str(EPISODE_BATCH_LENGTH)}.log" in path:
+            new_terminals[-1] = True
+        trajectories["terminals"] += new_terminals
+        trajectories["observations"] += [observation[4:] for observation in dataset["observations"]]
+        trajectories["actions"] += [action for action in dataset["actions"]]
+        trajectories["next_observations"] += [observation[4:] for observation in dataset["next_observations"]]
+        for observation in dataset["next_observations"]:
+            env.set_state_from_obs(observation)
+            trajectories["rewards"].append(env.calculate_reward())
+        print([str(len(trajectories[key]) )for key in trajectories.keys()])
 
     return trajectories
 
@@ -41,12 +60,18 @@ if __name__ == "__main__":
         exit()
 
 
-    dataset = None
-    with open(sys.argv[1], 'r') as input_file:
-        dataset = json.load(input_file)
-    dataset = annotate_trajectories(dataset)
+    trajectory_files = []
 
-    print(dataset)
+    for path, subdirs, files in os.walk(sys.argv[1]):
+        for name in files:
+            if "trajectories_" in name: 
+                trajectory_files.append(os.path.join(path, name))
+    
+
+
+    dataset = annotate_trajectories(trajectory_files)
+
+   # print(dataset)
 
 
     if "--json" in sys.argv:
