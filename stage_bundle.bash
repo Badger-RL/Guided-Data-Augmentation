@@ -24,10 +24,28 @@ USERNAME=$(python3 -c "import json; config_file = open('credentials.json','r'); 
 PASSWORD=$(python3 -c "import json; config_file = open('credentials.json','r'); config = json.load(config_file); print(config['password'])")
 
 
+#if [ $# -eq 0 ]
+#  then
+#    echo "usage: ./stage_bundle.bash <command_name>"
+#    exit
+#fi
+
+
 
 /usr/bin/expect -c "
-spawn scp ./bundle.zip ./offlinerl.sub ./condor_execute.sh ${USERNAME}@submit1.chtc.wisc.edu:/home/${USERNAME}/
+spawn scp -r  ./src/condor/commands   ./offlinerl.sub ./condor_execute.sh ${USERNAME}@submit1.chtc.wisc.edu:/home/${USERNAME}/
 expect \"Password: \"
 send \"${PASSWORD}\n\"
 interact
 "
+
+
+/usr/bin/expect -c "
+spawn scp -r  ./bundle.zip ${USERNAME}@transfer.chtc.wisc.edu:/staging/${USERNAME}/
+expect \"Password: \"
+send \"${PASSWORD}\n\"
+interact
+"
+
+
+
