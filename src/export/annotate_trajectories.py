@@ -34,7 +34,9 @@ def annotate_trajectories(paths):
         trajectories["actions"] += [action for action in dataset["actions"]]
         trajectories["next_observations"] += [observation[4:] for observation in dataset["next_observations"]]
         for observation in dataset["next_observations"]:
-            env.set_state_from_obs(observation)
+           # print(observation)
+            env.set_state_from_obs(observation[4:])
+            env.render()
             trajectories["rewards"].append(env.calculate_reward())
         print([str(len(trajectories[key]) )for key in trajectories.keys()])
 
@@ -63,15 +65,23 @@ if __name__ == "__main__":
     trajectory_files = []
 
     for path, subdirs, files in os.walk(sys.argv[1]):
+        print(files)
+        files = sorted(files)
         for name in files:
+
             if "trajectories_" in name: 
+                print(name)
                 trajectory_files.append(os.path.join(path, name))
     
 
 
     dataset = annotate_trajectories(trajectory_files)
 
-   # print(dataset)
+    # print(dataset)
+    print(len(dataset["observations"]))
+    for i in range(len(dataset["observations"])):
+            if dataset["terminals"][i]:
+                print(i)
 
 
     if "--json" in sys.argv:

@@ -49,7 +49,11 @@ if __name__ == "__main__":
 
     for setting in settings:
 
-            name = "ExpPhysicalSweep"
+
+            if setting[order.index("policy_lr")] < setting[order.index("qf_lr")]:
+                continue
+
+            name = f"ExpPhysicalSweep_qf_lr_{setting[order.index('qf_lr')]}_stur_{setting[order.index('soft_target_update_rate')]}_policy_lr_{setting[order.index('policy_lr')]}_tup_{setting[order.index('target_update_period')]}"
             dataset_name = f'{dataset_dir}/10_episodes.hdf5'
             command = gen_command(
                 name=name,
