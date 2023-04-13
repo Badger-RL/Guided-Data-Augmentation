@@ -45,11 +45,11 @@ if __name__ == '__main__':
     prev_terminal_idx = 0
     i = 0
     for terminal_idx in terminal_indices:
-        obs_i = obs[prev_terminal_idx:terminal_idx]
-        action_i = action[prev_terminal_idx:terminal_idx]
-        reward_i = reward[prev_terminal_idx:terminal_idx]
-        next_obs_i = next_obs[prev_terminal_idx:terminal_idx]
-        done_i = done[prev_terminal_idx:terminal_idx]
+        obs_i = obs[prev_terminal_idx:terminal_idx+1]
+        action_i = action[prev_terminal_idx:terminal_idx+1]
+        reward_i = reward[prev_terminal_idx:terminal_idx+1]
+        next_obs_i = next_obs[prev_terminal_idx:terminal_idx+1]
+        done_i = done[prev_terminal_idx:terminal_idx+1]
 
         print(reward_i)
 
@@ -70,7 +70,7 @@ if __name__ == '__main__':
             new_dataset_hdf5.create_dataset(k, data=data, compression='gzip')
 
         print(f"New dataset size: {new_dataset_hdf5['observations'].shape[0]}")
-        prev_terminal_idx = terminal_idx
+        prev_terminal_idx = terminal_idx +1
         i += 1
 
 

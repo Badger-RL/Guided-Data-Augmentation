@@ -132,4 +132,15 @@ if __name__ == "__main__":
     for key in data_hdf5.keys():
         dataset[key] = np.array(data_hdf5[key])
 
+    """
+    print(len(dataset["terminals"]))
+
+    
+    for i in range(len(dataset["terminals"])-1):
+        assert(dataset["terminals"][i] == 0)
+    assert(dataset["terminals"][-1] == 1)
+    assert(len(dataset["observations"]) == 2000)
+    """
+
+
     visualize_recorded_rollout(dataset, save_path, show_actions=args.show_actions, single_episode=args.single_episode)

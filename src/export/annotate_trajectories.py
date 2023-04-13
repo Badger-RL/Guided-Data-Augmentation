@@ -37,6 +37,7 @@ def annotate_trajectories(paths):
            # print(observation)
             env.set_state_from_obs(observation[4:])
             env.render()
+            print(env.calculate_reward())
             trajectories["rewards"].append(env.calculate_reward())
         print([str(len(trajectories[key]) )for key in trajectories.keys()])
 
