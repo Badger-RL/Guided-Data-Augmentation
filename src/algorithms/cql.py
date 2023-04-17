@@ -65,7 +65,7 @@ class TrainConfig:
     normalize: bool = True  # Normalize states
     normalize_reward: bool = False  # Normalize reward
     # Wandb logging
-    use_wandb: bool = True
+    use_wandb: bool = False
     project: str = "CORL"
     group: str = "CQL-D4RL"
     name: str = None

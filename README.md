@@ -31,7 +31,7 @@ You need to copy `credentials.json` and `wandb_credentials.json` out of the temp
 
 Once credentials are set up, first can pick your experimental params by editing `config.json` and `offline_rl.sub`. The total number of jobs should match between the two config files. Once you have configured the experiments to your liking, to run your experiments:
 
-First create the folder `result_offline_rl` on your condor submit node, then on your computer run
+On your computer, run
 
 ````
 prepare_bundle.bash
@@ -47,7 +47,7 @@ This will also stage offlinerl.sub and condor_execute.sh
 Then ssh into the submit node and run
 
 ````
-condor_submit offlinerl.sub num_jobs=10 commands_file=src/condor/commands/cql.txt
+condor_submit offlinerl.sub num_jobs=10 commands_file=src/condor/commands/cql.txt output_dir=output
 ````
 or 
 ````
