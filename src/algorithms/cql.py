@@ -1,6 +1,8 @@
 # source: https://github.com/young-geng/CQL/tree/934b0e8354ca431d6c083c4e3a29df88d4b0a24d
 # STRONG UNDER-PERFORMANCE ON PART OF ANTMAZE TASKS. BUT IN IQL PAPER IT WORKS SOMEHOW
 # https://arxiv.org/pdf/2006.04779.pdf
+import dataclasses
+from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple, Union
 from copy import deepcopy
 from dataclasses import asdict, dataclass
@@ -20,6 +22,8 @@ from torch.distributions import Normal, TanhTransform, TransformedDistribution
 import torch.nn as nn
 import torch.nn.functional as F
 import wandb
+
+from src.algorithms.utils import get_latest_run_id
 
 sys.path.append("..")
 
@@ -62,9 +66,12 @@ class TrainConfig:
     normalize: bool = True  # Normalize states
     normalize_reward: bool = False  # Normalize reward
     # Wandb logging
+    use_wandb: bool = True,
     project: str = "CORL"
     group: str = "CQL-D4RL"
     name: str = "CQL"
+    save_dir: str = "results"
+    run_id: str = None
 
     def __post_init__(self):
         self.name = self.name
@@ -540,7 +547,7 @@ class ContinuousCQL:
         return policy_loss
 
     def _q_loss(
-        self, observations, actions, next_observations, rewards, dones, alpha, log_dict
+        self, observations, actions, next_observations, rewards, dones, alpha, stats_dict
     ):
         q1_predicted = self.critic_1(observations, actions)
         q2_predicted = self.critic_2(observations, actions)
@@ -685,7 +692,7 @@ class ContinuousCQL:
 
         qf_loss = qf1_loss + qf2_loss + cql_min_qf1_loss + cql_min_qf2_loss
 
-        log_dict.update(
+        stats_dict.update(
             dict(
                 qf1_loss=qf1_loss.item(),
                 qf2_loss=qf2_loss.item(),
@@ -696,7 +703,7 @@ class ContinuousCQL:
             )
         )
 
-        log_dict.update(
+        stats_dict.update(
             dict(
                 cql_std_q1=cql_std_q1.mean().item(),
                 cql_std_q2=cql_std_q2.mean().item(),
@@ -736,7 +743,7 @@ class ContinuousCQL:
             observations, actions, new_actions, alpha, log_pi
         )
 
-        log_dict = dict(
+        stats_dict = dict(
             log_pi=log_pi.mean().item(),
             policy_loss=policy_loss.item(),
             alpha_loss=alpha_loss.item(),
@@ -745,7 +752,7 @@ class ContinuousCQL:
 
         """ Q function loss """
         qf_loss, alpha_prime, alpha_prime_loss = self._q_loss(
-            observations, actions, next_observations, rewards, dones, alpha, log_dict
+            observations, actions, next_observations, rewards, dones, alpha, stats_dict
         )
 
         if self.use_automatic_entropy_tuning:
@@ -766,7 +773,7 @@ class ContinuousCQL:
         if self.total_it % self.target_update_period == 0:
             self.update_target_network(self.soft_target_update_rate)
 
-        return log_dict
+        return stats_dict
 
     def state_dict(self) -> Dict[str, Any]:
         return {
@@ -816,28 +823,24 @@ class ContinuousCQL:
 @pyrallis.wrap()
 def train( config: TrainConfig):
 
+    # create save directories
+    if config.run_id is not None:
+        config.save_dir += f"/run_{config.run_id}"
+    else:
+        run_id = get_latest_run_id(save_dir=config.save_dir) + 1
+        config.save_dir += f"/run_{run_id}"
+    os.makedirs(config.save_dir, exist_ok=True)
+    print(f"Results will be saved to: {config.save_dir}")
 
-    #if not len(sys.argv) == 2:
-    #    print("usage: python3 ./algorithms/cql.py <dataset name>")
-    #    exit(1)
+    # save config
+    with open(os.path.join(config.save_dir, "config.json"), "w") as f:
+        json.dump(dataclasses.asdict(config), f, indent=4)
 
-    #dataset_name = sys.argv[1]
-
-    env = gym.make(config.env)
-    
-    #gym.make(config.env)
-
-    state_dim = env.observation_space.shape[0]
-    action_dim = env.action_space.shape[0]
-
-    #dataset = d4rl.qlearning_dataset(env)
+    # load and preprocess dataset
     dataset = {}
     data_hdf5 = h5py.File(f"./datasets/{config.dataset_name}", "r")
     for key in data_hdf5.keys():
         dataset[key] = np.array(data_hdf5[key])
-
-    #with open("./saved.json", "w") as json_file:
-        #json.dump(dataset, json_file)
 
     if config.normalize_reward:
         modify_reward(dataset, config.env)
@@ -853,7 +856,14 @@ def train( config: TrainConfig):
     dataset["next_observations"] = normalize_states(
         dataset["next_observations"], state_mean, state_std
     )
+
+    # load env
+    env = gym.make(config.env)
     env = wrap_env(env, state_mean=state_mean, state_std=state_std)
+
+    # create replay buffer
+    state_dim = env.observation_space.shape[0]
+    action_dim = env.action_space.shape[0]
     replay_buffer = ReplayBuffer(
         state_dim,
         action_dim,
@@ -862,18 +872,11 @@ def train( config: TrainConfig):
     )
     replay_buffer.load_d4rl_dataset(dataset)
 
-    max_action = float(env.action_space.high[0])
-
-    if config.checkpoints_path is not None:
-        print(f"Checkpoints path: {config.checkpoints_path}")
-        os.makedirs(config.checkpoints_path, exist_ok=True)
-        with open(os.path.join(config.checkpoints_path, "config.yaml"), "w") as f:
-            pyrallis.dump(config, f)
-
     # Set seeds
     seed = config.seed
     set_seed(seed, env)
 
+    # create nets
     critic_1 = FullyConnectedQFunction(state_dim, action_dim, config.orthogonal_init).to(
         config.device
     )
@@ -883,6 +886,7 @@ def train( config: TrainConfig):
     critic_1_optimizer = torch.optim.Adam(list(critic_1.parameters()), config.qf_lr)
     critic_2_optimizer = torch.optim.Adam(list(critic_2.parameters()), config.qf_lr)
 
+    max_action = float(env.action_space.high[0])
     actor = TanhGaussianPolicy(
         state_dim, action_dim, max_action, orthogonal_init=config.orthogonal_init
     ).to(config.device)
@@ -926,23 +930,28 @@ def train( config: TrainConfig):
     # Initialize actor
     trainer = ContinuousCQL(**kwargs)
 
+    # load policy if applicable
     if config.load_model != "":
         policy_file = Path(config.load_model)
         trainer.load_state_dict(torch.load(policy_file))
         actor = trainer.actor
 
-    wandb_init(asdict(config))
+    # initialize logging
+    if config.use_wandb:
+        wandb_init(asdict(config))
+    log_evaluations = defaultdict(lambda: [])
+    log_stats = defaultdict(lambda: [])
 
-    evaluations = []
     for t in range(int(config.max_timesteps)+1):
         batch = replay_buffer.sample(config.batch_size)
         batch = [b.to(config.device) for b in batch]
-        log_dict = trainer.train(batch)
+        stats_dict = trainer.train(batch)
 
+        # log training statistics
+        if config.use_wandb and t % 100 == 0:
+            wandb.log(stats_dict, step=trainer.total_it)
 
-        if t % 100 == 0:
-            wandb.log(log_dict, step=trainer.total_it)
-        # Evaluate episode
+        # evalutate agent
         if (t) % config.eval_freq == 0:
             print(f"Time steps: {t}")
             eval_scores, eval_successes = eval_actor(
@@ -955,11 +964,10 @@ def train( config: TrainConfig):
             eval_score = eval_scores.mean()
             eval_success_rate = eval_successes.mean()
             normalized_eval_score = eval_score#env.get_normalized_score(eval_score) * 100.0
-            evaluations.append(eval_score)
             print("---------------------------------------")
             print(
                 f"Evaluation over {config.n_episodes} episodes: "
-                f"{eval_score:.3f} , D4RL score: {normalized_eval_score:.3f}"
+                f"{eval_score:.3f} , D4RL score: {normalized_eval_score:.3f} "
                 f"Success rate: {eval_success_rate:.3f}"
             )
             print("---------------------------------------")
@@ -968,14 +976,29 @@ def train( config: TrainConfig):
                     trainer.state_dict(),
                     os.path.join(config.checkpoints_path, f"checkpoint_{t}.pt"),
                 )
-            wandb.log(
-                {"d4rl_normalized_score": normalized_eval_score},
-                step=trainer.total_it,
-            )
-            wandb.log(
-                {"success_rate": eval_success_rate},
-                step=trainer.total_it,
-            )
+
+            # log evaluations
+            log_evaluations['timestep'].append(t)
+            log_evaluations['return'].append(eval_score)
+            log_evaluations['success_rate'].append(eval_success_rate)
+            np.savez(os.path.join(config.save_dir, "evaluations.npz"), **log_evaluations)
+
+            # log training stats
+            log_stats['timestep'].append(t)
+            for key, val in stats_dict.items():
+                log_stats[key].append(val)
+            np.savez(os.path.join(config.save_dir, "stats.npz"), **log_stats)
+
+            if config.use_wandb:
+                wandb.log(
+                    {"d4rl_normalized_score": normalized_eval_score},
+                    step=trainer.total_it,
+                )
+                wandb.log(
+                    {"success_rate": eval_success_rate},
+                    step=trainer.total_it,
+                )
+
 
 
 if __name__ == "__main__":
@@ -986,5 +1009,5 @@ if __name__ == "__main__":
         credential_json = json.load(json_file)
         key = credential_json["wandb_key"]
 
-    wandb.login(key = key)
+    # wandb.login(key = key)
     train()
