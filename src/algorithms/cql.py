@@ -38,7 +38,6 @@ class TrainConfig:
     eval_freq: int = int(500)  # How often (time steps) we evaluate
     n_episodes: int = 100  # How many episodes run during evaluation
     max_timesteps: int = int(100000)  # Max time steps to run environment
-    checkpoints_path: Optional[str] = "./policy"  # Save path
     load_model: str = ""  # Model load file name, "" doesn't load
     # CQL
     buffer_size: int = 2_000_000  # Replay buffer size
@@ -75,9 +74,6 @@ class TrainConfig:
 
     def __post_init__(self):
         self.name = self.name
-        if self.checkpoints_path is not None:
-            self.checkpoints_path = os.path.join(self.checkpoints_path, self.name)
-
 
 def soft_update(target: nn.Module, source: nn.Module, tau: float):
     for target_param, source_param in zip(target.parameters(), source.parameters()):
@@ -941,6 +937,7 @@ def train( config: TrainConfig):
         wandb_init(asdict(config))
     log_evaluations = defaultdict(lambda: [])
     log_stats = defaultdict(lambda: [])
+    best_eval_score = -np.inf
 
     for t in range(int(config.max_timesteps)+1):
         batch = replay_buffer.sample(config.batch_size)
@@ -971,11 +968,6 @@ def train( config: TrainConfig):
                 f"Success rate: {eval_success_rate:.3f}"
             )
             print("---------------------------------------")
-            if config.checkpoints_path:
-                torch.save(
-                    trainer.state_dict(),
-                    os.path.join(config.checkpoints_path, f"checkpoint_{t}.pt"),
-                )
 
             # log evaluations
             log_evaluations['timestep'].append(t)
@@ -988,6 +980,21 @@ def train( config: TrainConfig):
             for key, val in stats_dict.items():
                 log_stats[key].append(val)
             np.savez(os.path.join(config.save_dir, "stats.npz"), **log_stats)
+
+            # save current model
+            torch.save(
+                trainer.state_dict(),
+                os.path.join(config.save_dir, f"current_model.pt"),
+            )
+
+            # save best model
+            if eval_score > best_eval_score:
+                best_eval_score = eval_score
+                torch.save(
+                    trainer.state_dict(),
+                    os.path.join(config.save_dir, f"best_model.pt"),
+                )
+
 
             if config.use_wandb:
                 wandb.log(
@@ -1009,5 +1016,5 @@ if __name__ == "__main__":
         credential_json = json.load(json_file)
         key = credential_json["wandb_key"]
 
-    # wandb.login(key = key)
+    wandb.login(key = key)
     train()
