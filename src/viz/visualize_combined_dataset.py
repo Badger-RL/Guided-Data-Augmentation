@@ -1,11 +1,11 @@
 import argparse
 import os
+from os import listdir
 import sys
 import h5py
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
-import json
 
 
 def get_coords(observation, action):
@@ -56,7 +56,7 @@ def get_coords(observation, action):
 
     return robot_x, robot_y, target_x, target_y, policy_target_x, policy_target_y
 
-def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_episode=False):
+def visualize_recorded_rollout(dataset,fig,ax, sample_rate = 1, show_actions=False, single_episode=False):
 
     agent_x_list = []
     agent_y_list = []
@@ -66,23 +66,24 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
     ball_y_list = []
 
 
-
+    counter = 0
     for observation, action, done in zip(dataset["observations"],dataset["actions"], dataset["terminals"]):
 
-        robot_x, robot_y, target_x, target_y, action_x, action_y = get_coords(
-            observation, action
-        )
-        agent_x_list.append(robot_x)
-        agent_y_list.append(robot_y)
-        action_x_list.append(action_x)
-        action_y_list.append(action_y)
-        ball_x_list.append(target_x)
-        ball_y_list.append(target_y)
+        if counter % sample_rate == 0:
+            robot_x, robot_y, target_x, target_y, action_x, action_y = get_coords(
+                observation, action
+            )
+            agent_x_list.append(robot_x)
+            agent_y_list.append(robot_y)
+            action_x_list.append(action_x)
+            action_y_list.append(action_y)
+            ball_x_list.append(target_x)
+            ball_y_list.append(target_y)
 
+        counter += 1
         if done and single_episode:
             break
 
-    fig, ax = plt.subplots()
 
     plt.scatter(
         agent_x_list,
@@ -111,12 +112,11 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
     plt.ylabel('y position')
     # plt.show()
 
-    plt.savefig(save_path)
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset-path', type=str, default=None)
+    parser.add_argument('--dataset-dir', type=str, default=None)
     parser.add_argument('--save-dir', type=str, default=None)
     parser.add_argument('--save-name', type=str, default=None)
     parser.add_argument('--single-episode', type=bool, default=False)
@@ -127,20 +127,21 @@ if __name__ == "__main__":
     os.makedirs(args.save_dir, exist_ok=True)
     save_path = f'{args.save_dir}/{args.save_name}'
 
-    dataset = {}
-    data_hdf5 = h5py.File(args.dataset_path, "r")
-    for key in data_hdf5.keys():
-        dataset[key] = np.array(data_hdf5[key])
-
-    """
-    print(len(dataset["terminals"]))
-
-    
-    for i in range(len(dataset["terminals"])-1):
-        assert(dataset["terminals"][i] == 0)
-    assert(dataset["terminals"][-1] == 1)
-    assert(len(dataset["observations"]) == 2000)
-    """
+    files = [f for f in listdir(args.dataset_dir)]
 
 
-    visualize_recorded_rollout(dataset, save_path, show_actions=args.show_actions, single_episode=args.single_episode)
+    dataset = []
+    for f in files:
+        data_hdf5 = h5py.File(args.dataset_dir + f, "r")
+        entry ={}
+        for key in data_hdf5.keys():
+            entry[key] = np.array(data_hdf5[key])
+        dataset.append(entry)
+
+
+    fig, ax = plt.subplots()
+
+    for entry in dataset:
+        print(entry)
+        visualize_recorded_rollout(entry,fig, ax, sample_rate = 13, show_actions=args.show_actions, single_episode=args.single_episode)
+    plt.savefig(save_path)

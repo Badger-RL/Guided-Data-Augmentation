@@ -226,6 +226,35 @@ class BaseEnv(gym.Env):
                     self.target_x = -4501
                     self.target_y = 0
 
+    def set_state_from_obs(self, obs):
+
+        target_x = (self.goal_x - obs[2]*9000)
+        target_y = (self.goal_y - obs[3]*6000)
+        robot_x = (target_x - obs[0]*9000)
+        robot_y = (target_y - obs[1]*6000)
+
+        relative_x = target_x - robot_x
+        relative_y = target_y - robot_y
+        relative_angle = np.arctan2(relative_y, relative_x)
+        if relative_angle < 0:
+            relative_angle += 2*np.pi
+
+        relative_angle_minus_robot_angle = np.arctan2(obs[4], obs[5])
+        if relative_angle_minus_robot_angle < 0:
+            relative_angle_minus_robot_angle += 2*np.pi
+
+        robot_angle = relative_angle - relative_angle_minus_robot_angle
+        if robot_angle < 0:
+            robot_angle += 2*np.pi
+
+        self.target_x = target_x
+        self.target_y = target_y
+        self.robot_x = robot_x
+        self.robot_y = robot_y
+        self.robot_angle = robot_angle        
+
+
+
     def move_robot(self, action):
         # Find location policy is trying to reach
 
