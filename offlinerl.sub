@@ -10,7 +10,7 @@ requirements = (OpSys == "LINUX" && Target.HasCHTCStaging == true)
 
 bundle_name = bundle.zip
 executable = condor_execute.sh
-initialdir = result_offline_rl
+initialdir = $(output_dir)
 arguments = $(Process) $(Step) $(command)
 # arguments = $(Process)
 
