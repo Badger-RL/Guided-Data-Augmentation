@@ -45,11 +45,13 @@ step=$2 # index within different runs of the same command
 command=`tr '*' ' ' <<< $3` # replace * with space in command
 echo $command
 
-$($command --seed $step)
+$($command --seed $step --run-id $pid)
 
 #python3 ./algorithms/cql.py --dataset_name dataset_expert_1000.hdf5
 
-cd ../../..
+tar -czvf results_${pid}.tar.gz results/*
+mv results_${pid}.tar.gz ../../..
 
+cd ../../..
 rm -rf ./workspace
 
