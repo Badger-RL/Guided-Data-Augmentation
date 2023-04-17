@@ -2,7 +2,7 @@ import os
 import itertools
 
 def gen_command(
-        name,
+        save_dir,
         dataset_name,
         qf_lr,
         soft_target_update_rate,
@@ -11,16 +11,14 @@ def gen_command(
         max_timesteps=int(100e3),
         eval_freq=5000,
 ):
-    command = f'python algorithms/cql.py --name {name}' \
+    command = f'python algorithms/cql.py --max_timesteps {max_timesteps} --eval_freq {eval_freq}' \
+              f' --save_dir {save_dir} '\
               f' --dataset_name {dataset_name}' \
-              f' --max_timesteps {max_timesteps} --eval_freq {eval_freq}' \
               f' --qf_lr {qf_lr} --soft_target_update_rate {soft_target_update_rate}'\
               f' --policy_lr {policy_lr} --target_update_period {target_update_period}'
     return command
 
 if __name__ == "__main__":
-
-
 
     hyperparams = {"qf_lr": [ 3e-6, 3e-5, 3e-4],
                 "soft_target_update_rate":[0.005, 0.05],
@@ -33,30 +31,25 @@ if __name__ == "__main__":
 
     order = [key for key, _ in ordered_entries]
 
-
     settings = [set(entry) for _, entry in ordered_entries ]
     settings = [entry for entry in itertools.product(*settings)]
-
 
     print(settings)
     print(order)
 
-
     all_commands = ""
-
-
     dataset_dir = "physical"
 
     for setting in settings:
 
-
             if setting[order.index("policy_lr")] < setting[order.index("qf_lr")]:
                 continue
 
-            name = f"ExpPhysicalSweep_qf_lr_{setting[order.index('qf_lr')]}_stur_{setting[order.index('soft_target_update_rate')]}_policy_lr_{setting[order.index('policy_lr')]}_tup_{setting[order.index('target_update_period')]}"
+            save_dir = f"results/PushBallToGoalPhysical/qf_lr_{setting[order.index('qf_lr')]}/policy_lr_{setting[order.index('policy_lr')]}/stur_{setting[order.index('soft_target_update_rate')]}/tup_{setting[order.index('target_update_period')]}"
+
             dataset_name = f'{dataset_dir}/10_episodes.hdf5'
             command = gen_command(
-                name=name,
+                save_dir=save_dir,
                 dataset_name=dataset_name,
                 qf_lr= setting[order.index("qf_lr")],
                 soft_target_update_rate = setting[order.index("soft_target_update_rate")],
