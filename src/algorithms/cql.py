@@ -65,10 +65,10 @@ class TrainConfig:
     normalize: bool = True  # Normalize states
     normalize_reward: bool = False  # Normalize reward
     # Wandb logging
-    use_wandb: bool = True,
+    use_wandb: bool = True
     project: str = "CORL"
     group: str = "CQL-D4RL"
-    name: str = "CQL"
+    name: str = None
     save_dir: str = "results"
     run_id: str = None
 
@@ -932,9 +932,19 @@ def train( config: TrainConfig):
         trainer.load_state_dict(torch.load(policy_file))
         actor = trainer.actor
 
-    # initialize logging
+    # wandb logging
     if config.use_wandb:
+        with open("../wandb_credentials.json", 'r') as json_file:
+            credential_json = json.load(json_file)
+            key = credential_json["wandb_key"]
+        wandb.login(key=key)
+
+        if config.use_wandb and config.name is None:
+            config.name = config.save_dir.replace('/', '_')
+
         wandb_init(asdict(config))
+
+    # local logging
     log_evaluations = defaultdict(lambda: [])
     log_stats = defaultdict(lambda: [])
     best_eval_score = -np.inf
@@ -1009,12 +1019,4 @@ def train( config: TrainConfig):
 
 
 if __name__ == "__main__":
-
-
-    key = None
-    with open("../wandb_credentials.json", 'r') as json_file:
-        credential_json = json.load(json_file)
-        key = credential_json["wandb_key"]
-
-    wandb.login(key = key)
     train()
