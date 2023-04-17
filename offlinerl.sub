@@ -6,7 +6,7 @@ docker_image = jbalis/43534534:release
 log = job_$(Cluster).log
 error = job_$(Cluster)_$(Process).err
 output = job_$(Cluster)_$(Process).out
-requirements = (OpSys == "LINUX")
+requirements = (OpSys == "LINUX" && Target.HasCHTCStaging == true)
 
 bundle_name = bundle.zip
 executable = condor_execute.sh
@@ -23,7 +23,7 @@ transfer_input_files = ../$(bundle_name)
 
 request_cpus = 4
 request_memory = 2GB
-request_disk = 8GB
+request_disk = 12GB
 
 queue $(num_jobs) command from $(commands_file)
 

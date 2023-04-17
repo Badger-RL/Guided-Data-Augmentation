@@ -19,7 +19,7 @@ if __name__ == "__main__":
         for dataset_size in [100, 200]:
             for i in range(5):
 
-                name = f"ExpGuided_{dataset_dir.replace('/', '_')}_{i}"
+                name = f"ExpGuided_{dataset_dir.replace('/', '_')}_{i}_{dataset_size}k"
                 dataset_name = f'{dataset_dir}/{i}_{dataset_size}k.hdf5'
                 command = expert(
                     name=name,

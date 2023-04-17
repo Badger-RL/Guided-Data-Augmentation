@@ -42,7 +42,8 @@ if __name__ == "__main__":
 
 
 
-    key_filter =[ "d4rl_normalized_score", "success_rate"]
+    key_filter =[ "d4rl_normalized_score", "success_rate", "average_target_q", "policy_loss",
+    "qf1_loss", "qf2_loss", "alpha_loss", "log_pi", "cql_std_q1", "cql_std_q2"]
 
 
 
@@ -51,17 +52,30 @@ if __name__ == "__main__":
     for run in runs:
         metrics = run.history(keys= key_filter)
         print(run.name)
-        if not run.name.startswith(sys.argv[1]) or run.state != "finished":
+        if run.state != "finished":
             continue
+        #if not "100k" in run.config["dataset_name"]:
+        #    continue
+
         save_folder = f"./src/logdata/{run.name.replace('/', '_')}/"  
         Path(save_folder).mkdir(exist_ok = True, parents = True)
-        result = {"t":[],"r":[],"success_rate":[]}
+        result = {"t":[],"r":[],"success_rate":[], "average_target_q" : [], "policy_loss": [], 
+        "qf1_loss" : [], "qf2_loss":[], "alpha_loss" : [], "log_pi": [], "cql_std_q1":[],
+        "cql_std_q2":[]}
         print(metrics)
         for i,row in metrics.iterrows():
                 entry_result = row# filter_entries(key_filter, entry)
                 print(entry_result)
                 result["t"].append(entry_result["_step"])
                 result["r"].append(entry_result["d4rl_normalized_score"])
+                result["average_target_q"].append(entry_result["average_target_q"])
+                result["policy_loss"].append(entry_result["policy_loss"])
+                result["qf1_loss"].append(entry_result["qf1_loss"])
+                result["qf2_loss"].append(entry_result["qf2_loss"])
+                result["alpha_loss"].append(entry_result["alpha_loss"])
+                result["log_pi"].append(entry_result["log_pi"])
+                result["cql_std_q1"].append(entry_result["cql_std_q1"])
+                result["cql_std_q2"].append(entry_result["cql_std_q2"])
                 result["success_rate"].append(entry_result["success_rate"])
         print(result)
         index = 0

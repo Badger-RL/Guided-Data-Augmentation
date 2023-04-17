@@ -15,7 +15,10 @@ mkdir ./workspace
 
 # copy in bundle
 
-cp ./bundle.zip ./workspace
+
+cp /staging/balis/bundle.zip ./workspace
+
+#cp ./bundle.zip ./workspace
 cd workspace
 unzip -qq ./bundle.zip
 
