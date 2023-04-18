@@ -18,4 +18,5 @@ if __name__ == "__main__":
                     f' --augmentation-ratio {aug_ratio}'
                     f' --save-dir ../datasets/{policy}/aug_uniform/'
                     f' --save-name {observed_dataset_size}k_{aug_dataset_size}k.hdf5'
+                    f' --check-valid 1'
                 )

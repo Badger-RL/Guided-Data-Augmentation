@@ -23,6 +23,8 @@ if __name__ == '__main__':
     parser.add_argument('--augmentation-ratio', '-aug-ratio', type=int, default=1, help='Number of augmentations per observed transition')
     parser.add_argument('--save-dir', type=str, default=None)
     parser.add_argument('--save-name', type=str, default=None)
+    parser.add_argument('--check-valid', type=int, default=True)
+
 
     args = parser.parse_args()
 
@@ -56,16 +58,18 @@ if __name__ == '__main__':
 
             i += 1
             if obs is not None:
-                is_valid = check_valid(
-                    env=env,
-                    aug_obs=[obs],
-                    aug_action=[action],
-                    aug_reward=[reward],
-                    aug_next_obs=[next_obs]
-                )
-
+                is_valid = True
+                if args.check_valid:
+                    is_valid = check_valid(
+                        env=env,
+                        aug_obs=[obs],
+                        aug_action=[action],
+                        aug_reward=[reward],
+                        aug_next_obs=[next_obs]
+                    )
                 if is_valid:
                     aug_count += 1
+                    print(aug_count)
                     append_data(aug_dataset, obs, action, reward, next_obs, done)
                 else:
                     invalid_count += 1
