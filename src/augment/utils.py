@@ -111,6 +111,21 @@ def convert_to_relative_obs(obs):
         np.cos(goal_relative_angle - robot_angle),
     ]).T
 
+def check_in_bounds(absolute_obs):
+    is_in_bounds = False
+    # agent is in bounds
+    # print(np.max(np.abs(absolute_obs[:, 0])))
+    # print(np.max(np.abs(absolute_obs[:, 1])))
+
+    if np.all(np.abs(absolute_obs[:, 0]) <= 5000) and np.all(np.abs(absolute_obs[:, 1]) < 3000):
+        if np.all(np.abs(absolute_obs[:, 2]) <= 5000) and np.all(np.abs(absolute_obs[:, 3]) < 3000):
+            is_in_bounds = True
+
+    # only check y positions, since there's sizeable uncertainty in x localization
+    # if  np.all(np.abs(absolute_obs[:, 1]) < 3000) and np.all(np.abs(absolute_obs[:, 3]) < 3000):
+    #         is_in_bounds = True
+    return is_in_bounds
+
 def check_valid(env, aug_obs, aug_action, aug_reward, aug_next_obs, render=False, verbose=False):
 
     env.reset()

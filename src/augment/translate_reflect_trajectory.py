@@ -1,6 +1,6 @@
 import numpy as np
 
-from augment.utils import convert_to_absolute_obs, calculate_reward, convert_to_relative_obs
+from augment.utils import convert_to_absolute_obs, calculate_reward, convert_to_relative_obs, check_in_bounds
 
 
 def translate_reflect_traj_y(obs, action, next_obs, reward, done):
@@ -15,9 +15,18 @@ def translate_reflect_traj_y(obs, action, next_obs, reward, done):
 
     ball_at_goal_y = absolute_obs[-1, 3]
 
-    delta_y = np.random.uniform(-(500+ball_at_goal_y), 500-ball_at_goal_y)
-    aug_absolute_obs[:, 1] += delta_y
-    aug_absolute_next_obs[:, 1] += delta_y
+    # Verify that translation doesn't move the agent out of bounds.
+    # Only need to check y since we only translate vertically.
+    is_valid_delta = False
+    while not is_valid_delta:
+        delta_y = np.random.uniform(-(500+ball_at_goal_y), 500-ball_at_goal_y)
+        aug_absolute_obs[:, 1] += delta_y
+        aug_absolute_next_obs[:, 1] += delta_y
+
+        # check if agent and ball are in bounds
+        if check_in_bounds(aug_absolute_obs) and check_in_bounds(aug_absolute_next_obs):
+            is_valid_delta = True
+        # print('delta', is_valid_delta)
 
     aug_absolute_obs[:, 3] += delta_y
     aug_absolute_next_obs[:, 3] += delta_y

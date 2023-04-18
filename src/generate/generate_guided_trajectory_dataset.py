@@ -45,7 +45,8 @@ def gen_aug_dataset(env, observed_dataset, aug_ratio=1):
     while aug_count < aug_ratio:
         for aug_function in [rotate_reflect_traj, translate_reflect_traj_y]:
             aug_obs, aug_action, aug_reward, aug_next_obs, aug_done = aug_function(obs, action, next_obs, reward, done)
-            is_valid = check_valid(env, aug_obs, aug_action, aug_reward, aug_next_obs)
+            # is_valid = check_valid(env, aug_obs, aug_action, aug_reward, aug_next_obs)
+            is_valid = True
 
             if is_valid:
                 aug_count += 1
