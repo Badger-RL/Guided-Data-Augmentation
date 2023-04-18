@@ -81,15 +81,15 @@ class RotateReflectTranslate(AbstractSimAugmentationFunction):
         delta_x = new_x - xmin
         delta_y = new_y - ymin
 
-        absolute_obs[0] += delta_x
-        absolute_obs[1] += delta_y
-        absolute_obs[2] += delta_x
-        absolute_obs[3] += delta_y
+        aug_absolute_obs[0] += delta_x
+        aug_absolute_obs[1] += delta_y
+        aug_absolute_obs[2] += delta_x
+        aug_absolute_obs[3] += delta_y
 
-        absolute_next_obs[0] += delta_x
-        absolute_next_obs[1] += delta_y
-        absolute_next_obs[2] += delta_x
-        absolute_next_obs[3] += delta_y
+        aug_absolute_next_obs[0] += delta_x
+        aug_absolute_next_obs[1] += delta_y
+        aug_absolute_next_obs[2] += delta_x
+        aug_absolute_next_obs[3] += delta_y
 
         aug_reward, _ = self.calculate_reward(aug_absolute_next_obs)
 
