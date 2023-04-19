@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
                 os.system(
                     f'python ./aug_random.py '
-                    f' --policy {policy} '
+                    f' --policy {policy} --seed 0'
                     f' --observed-dataset-path ../datasets/{policy}/no_aug/{observed_dataset_size}k.hdf5 '
                     f' --augmentation-ratio {aug_ratio}'
                     f' --save-dir ../datasets/{policy}/aug_uniform/'
