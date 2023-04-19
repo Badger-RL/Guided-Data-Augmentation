@@ -24,9 +24,10 @@ if __name__ == '__main__':
     parser.add_argument('--save-dir', type=str, default=None)
     parser.add_argument('--save-name', type=str, default=None)
     parser.add_argument('--check-valid', type=int, default=True)
-
+    parser.add_argument('--seed', type=int, default=0)
 
     args = parser.parse_args()
+    np.random.seed(seed=args.seed)
 
     aug_ratio = args.augmentation_ratio
     policy = args.policy
