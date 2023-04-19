@@ -6,7 +6,7 @@ def expert():
     dataset_dir = 'expert/no_aug'
     for dataset_size in [10, 50, 100]:
         name = f"Exp_{dataset_dir.replace('/', '_')}_{dataset_size}k"
-        save_dir = f'results/PushBallToGoal/expert/no_aug/{dataset_size}k'
+        save_dir = f'results/PushBallToGoal/sim/no_aug/{dataset_size}k'
         dataset_name = f'{dataset_dir}/{dataset_size}k.hdf5'
 
         command = gen_command(
@@ -24,7 +24,7 @@ def expert_traj():
     all_commands = ""
     dataset_dir = 'expert/trajectories'
     for i in range(5):
-        save_dir = f'results/PushBallToGoal/expert/no_aug/traj_{i}'
+        save_dir = f'results/PushBallToGoal/sim/no_aug/traj_{i}'
         dataset_name = f'{dataset_dir}/{i}.hdf5'
         command = gen_command(
             save_dir=save_dir,
@@ -58,12 +58,12 @@ if __name__ == "__main__":
 
     all_commands = ""
     all_commands += expert()
-    all_commands += expert_traj()
+    # all_commands += expert_traj()
     all_commands += expert_restricted()
 
     save_dir = 'commands'
     os.makedirs(save_dir, exist_ok=True)
-    f = open(f'{save_dir}/expert.txt', "w",)
+    f = open(f'{save_dir}/sim_no_aug.txt', "w",)
 
     f.write(all_commands[:-1])
     f.close()
