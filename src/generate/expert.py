@@ -55,8 +55,8 @@ def main():
 
     args = parser.parse_args()
 
-    policy_path = f"./expert_policies/{args.path}/policy"
-    normalization_path = f"./expert_policies/{args.path}/vector_normalize"
+    policy_path = f"../expert_policies/{args.path}/policy"
+    normalization_path = f"../expert_policies/{args.path}/vector_normalize"
 
     env = VecNormalize.load(
         normalization_path, make_vec_env('PushBallToGoal-v0', n_envs=1)
@@ -116,7 +116,7 @@ def main():
             s = ns
             s_o = ns_o
 
-    save_dir = f'datasets/{"random" if args.random_actions else "expert"}'
+    save_dir = f'../datasets/{"random" if args.random_actions else "expert"}'
     os.makedirs(save_dir, exist_ok=True)
     fname = f'{save_dir}/no_aug/{int(args.num_samples//1e3)}k.hdf5'
     dataset = h5py.File(fname, 'w')
