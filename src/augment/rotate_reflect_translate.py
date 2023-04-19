@@ -78,6 +78,12 @@ class RotateReflectTranslate(AbstractSimAugmentationFunction):
         new_x = np.random.uniform(-4500, 4500-(xmax-xmin))
         new_y = np.random.uniform(-3000, 3000-(ymax-ymin))
 
+        # if new_x > 4500 and 750-(ymax-ymin) > -750:
+        #     new_y = np.random.uniform(-750, 750-(ymax-ymin))
+        # else:
+        #     new_y = np.random.uniform(-3000, 3000-(ymax-ymin))
+
+
         delta_x = new_x - xmin
         delta_y = new_y - ymin
 
