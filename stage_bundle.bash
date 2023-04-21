@@ -33,7 +33,7 @@ PASSWORD=$(python3 -c "import json; config_file = open('credentials.json','r'); 
 
 
 /usr/bin/expect -c "
-spawn scp -r  ./src/condor/commands   ./offlinerl.sub ./condor_execute.sh ${USERNAME}@submit1.chtc.wisc.edu:/home/${USERNAME}/
+spawn scp -r  ./src/condor/commands ./offlinerl.sub ./condor_execute.sh ${USERNAME}@submit1.chtc.wisc.edu:/home/${USERNAME}/
 expect \"Password: \"
 send \"${PASSWORD}\n\"
 interact

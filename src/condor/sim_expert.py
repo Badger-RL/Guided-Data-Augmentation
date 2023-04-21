@@ -1,5 +1,5 @@
 import os
-from condor.common import gen_command
+from src.condor.common import gen_command
 
 def expert():
     all_commands = ""

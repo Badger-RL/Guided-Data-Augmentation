@@ -1,6 +1,6 @@
 import os
 
-from condor.common import gen_command
+from src.condor.common import gen_command
 
 def guided_single_traj():
 
@@ -32,7 +32,7 @@ def guided():
     # guided datasets generated from 10k and 50k expert datasets
     for expert_size in [10, 50]:
         save_dir = f'results/PushBallToGoal/sim/aug_guided/{expert_size}k_100k'
-        dataset_name = f'{dataset_dir}/{expert_size}_100k.hdf5'
+        dataset_name = f'{dataset_dir}/{expert_size}k_100k.hdf5'
         command = gen_command(
             save_dir=save_dir,
             dataset_name=dataset_name,

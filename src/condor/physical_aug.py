@@ -1,6 +1,6 @@
 import os
 
-from condor.common import gen_command
+from src.condor.common import gen_command
 def guided_single_traj():
     all_commands = ""
     dataset_dir = 'physical/aug_guided'
@@ -27,8 +27,8 @@ def guided():
     dataset_dir = 'physical/aug_guided'
 
     # guided datasets generated from 10k and 50k expert datasets
-    save_dir = f'results/PushBallToGoal/physical/aug_guided/10_episodes_100k'
-    dataset_name = f'{dataset_dir}/10_episodes_100k.hdf5'
+    save_dir = f'results/PushBallToGoal/physical/aug_guided/10_episodes_200k'
+    dataset_name = f'{dataset_dir}/10_episodes_200k.hdf5'
     command = gen_command(
         save_dir=save_dir,
         dataset_name=dataset_name,
@@ -44,8 +44,8 @@ def random():
     all_commands = ""
     dataset_dir = 'physical/aug_uniform'
 
-    save_dir = f'results/PushBallToGoal/physical/aug_uniform/10_episodes_100k'
-    dataset_name = f'{dataset_dir}/10_episodes_100k.hdf5'
+    save_dir = f'results/PushBallToGoal/physical/aug_uniform/10_episodes_200k'
+    dataset_name = f'{dataset_dir}/10_episodes_200k.hdf5'
     command = gen_command(
         save_dir=save_dir,
         dataset_name=dataset_name,
