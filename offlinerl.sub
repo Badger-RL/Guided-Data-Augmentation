@@ -18,7 +18,7 @@ should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
 stream_output = False
 stream_error = False
-transfer_input_files = ../$(bundle_name)
+# transfer_input_files = ../$(bundle_name)
 # transfer_input_files = ""
 
 request_cpus = 4

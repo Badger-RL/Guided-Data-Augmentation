@@ -992,6 +992,12 @@ def train( config: TrainConfig):
                 log_stats[key].append(val)
             np.savez(os.path.join(config.save_dir, "stats.npz"), **log_stats)
 
+            # save current model
+            torch.save(
+                trainer.state_dict(),
+                os.path.join(config.save_dir, f"model.pt"),
+            )
+
             # save best model
             if config.save_policy:
                 if eval_score > best_eval_score:

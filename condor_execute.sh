@@ -45,7 +45,7 @@ step=$2 # index within different runs of the same command
 command=`tr '*' ' ' <<< $3` # replace * with space in command
 echo $command
 
-$($command --seed $step --run-id $step)
+$($command --seed $step --run_id $step)
 
 #python3 ./algorithms/cql.py --dataset_name dataset_expert_1000.hdf5
 
