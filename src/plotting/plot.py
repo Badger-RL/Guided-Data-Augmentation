@@ -6,12 +6,50 @@ import seaborn
 import sys
 from matplotlib import pyplot as plt
 
-from utils import get_paths, plot
+from utils import get_paths, plot, get_run_paths
 
 
 if __name__ == "__main__":
 
 
+    
+
+    if not(len(sys.argv) == 2):
+        print("usage: python3 ./plot.py <results path>")
+        exit()
+
+
+    paths = get_run_paths(sys.argv[1])
+    plot(paths, success_rate = True)
+    plt.title(f'CQL', fontsize=16)
+    plt.xlabel('Timesteps', fontsize=16)
+    plt.ylabel('Success Rate', fontsize=16)
+    plt.tight_layout()    
+    plt.legend()
+    plt.savefig(f"./figures/{sys.argv[1].replace('/','*').replace('.','*')}_success_rate")
+
+    fig = plt.figure()
+    paths = get_run_paths(sys.argv[1])
+    plot(paths, success_rate = False)    
+    plt.title(f'CQL', fontsize=16)
+    plt.axhline(y=3.44, color='k', linestyle='--')
+    plt.xlabel('Timesteps', fontsize=16)
+    plt.ylabel('Return', fontsize=16)
+    plt.tight_layout()    
+    plt.legend()
+
+
+
+
+
+    plt.savefig(f"./figures/{sys.argv[1].replace('/','*').replace('.','*')}_return")
+
+
+    
+
+
+
+    """
     if not(len(sys.argv) == 2):
         print("usage: python3 ./plot.py <experiment type>")
         exit()
@@ -233,6 +271,7 @@ if __name__ == "__main__":
         os.makedirs(save_dir, exist_ok=True)
         plt.savefig(f'{save_dir}/{save_name}')
 
+    """
     """
     for policy_type in ['expert', 'random', 'expert_augmented', 'random_augmented']:
         path_dicts = {}
