@@ -6,21 +6,7 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 
 
-
-def get_run_paths(results_dir):
-    path_dict = {}
-    for dirpath, dirnames, filenames in os.walk(results_dir):
-        for dir_name in dirnames:
-            if "run_" in dir_name:
-                if dirpath not in path_dict:
-                    path_dict[dirpath] = []
-                path_dict[dirpath].append(f'{dirpath}/{dir_name}/evaluations.npz')
-
-    return path_dict
-
-
 def get_paths(results_dir, key, **kwargs):
-
     path_dict = {}
     path_dict[key] = {
         'paths': []
@@ -32,32 +18,27 @@ def get_paths(results_dir, key, **kwargs):
     return path_dict
 
 
-
-def load_data(paths, success_rate=False):
+def load_data(paths, name='r'):
     t = None
     avgs = []
 
     for path in paths:
 
         data = dict(np.load(path))
-        if success_rate:
-            avg = data['success_rate']
-        else:
-            avg = data['return']
+        avg = data[name]
         avgs.append(avg)
-        
+
         if t is None:
-            t = data['timestep']
+            t = data['t']
 
     return t, np.array(avgs)
 
-def plot(path_dict, success_rate=False):
 
+def plot(path_dict, name='r'):
     for agent, info in path_dict.items():
-        print(agent)
-        paths = info#info['paths']
+        paths = info['paths']
 
-        t, avgs = load_data(paths, success_rate=success_rate)
+        t, avgs = load_data(paths, name=name)
         assert len(avgs) > 0
 
         avg_of_avgs = np.average(avgs, axis=0)
@@ -70,8 +51,13 @@ def plot(path_dict, success_rate=False):
         q95 = avg_of_avgs - ci
 
         style_kwargs = {}
-        #t = np.arange(len(avg_of_avgs)) * 5000
+        style_kwargs['linewidth'] = 3
+
+        if 'no aug' in agent.lower():
+            style_kwargs['linestyle'] = ':'
+        elif 'random' in agent.lower():
+            style_kwargs['linestyle'] = '--'
+
+        # t = np.arange(len(avg_of_avgs)) * 5000
         plt.plot(t, avg_of_avgs, label=agent, **style_kwargs)
         plt.fill_between(t, q05, q95, alpha=0.2)
-
-        
