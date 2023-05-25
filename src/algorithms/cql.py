@@ -15,6 +15,7 @@ import sys
 
 import h5py
 import gym, custom_envs
+import d4rl
 import numpy as np
 import pyrallis
 import torch
@@ -23,7 +24,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import wandb
 
-from src.algorithms.utils import get_latest_run_id
+from src.algorithms.utils import get_latest_run_id, make_save_dir, load_dataset, wandb_init, set_seed
 
 sys.path.append("..")
 
@@ -33,7 +34,7 @@ TensorBatch = List[torch.Tensor]
 class TrainConfig:
     # Experiment
     device: str = "cpu"
-    env: str = "PushBallToGoal-v0"  # OpenAI gym environment name
+    env: str = "maze2d-umaze-v1"  # OpenAI gym environment name
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
     eval_freq: int = int(500)  # How often (time steps) we evaluate
     n_episodes: int = 100  # How many episodes run during evaluation
@@ -175,30 +176,6 @@ class ReplayBuffer:
         raise NotImplementedError
 
 
-def set_seed(
-    seed: int, env: Optional[gym.Env] = None, deterministic_torch: bool = False
-):
-    if env is not None:
-        env.seed(seed)
-        env.action_space.seed(seed)
-    os.environ["PYTHONHASHSEED"] = str(seed)
-    np.random.seed(seed)
-    random.seed(seed)
-    torch.manual_seed(seed)
-    torch.use_deterministic_algorithms(deterministic_torch)
-
-
-def wandb_init(config: dict) -> None:
-    wandb.init(
-        config=config,
-        project=config["project"],
-        group=config["group"],
-        name=config["name"],
-        id=str(uuid.uuid4()),
-    )
-    wandb.run.save()
-
-
 @torch.no_grad()
 def eval_actor(
     env: gym.Env, actor: nn.Module, device: str, n_episodes: int, seed: int
@@ -215,7 +192,8 @@ def eval_actor(
             state, reward, done, info = env.step(action)
             episode_reward += reward
         episode_rewards.append(episode_reward)
-        successes.append(info['is_success'])
+        if 'is_success' in info:
+            successes.append(info['is_success'])
 
     actor.train()
     return np.asarray(episode_rewards), np.array(successes)
@@ -821,24 +799,19 @@ class ContinuousCQL:
 def train( config: TrainConfig):
 
     # create save directories
-    if config.run_id is not None:
-        config.save_dir += f"/run_{config.run_id}"
-    else:
-        run_id = get_latest_run_id(save_dir=config.save_dir) + 1
-        config.save_dir += f"/run_{run_id}"
-    os.makedirs(config.save_dir, exist_ok=True)
-    print(f"Results will be saved to: {config.save_dir}")
+    make_save_dir(config=config)
 
-    # save config
-    with open(os.path.join(config.save_dir, "config.json"), "w") as f:
-        json.dump(dataclasses.asdict(config), f, indent=4)
+    # setup wandb logging
+    if config.use_wandb:
+        wandb_init(config)
 
-    # load and preprocess dataset
-    dataset = {}
-    data_hdf5 = h5py.File(f"./datasets/{config.dataset_name}", "r")
-    for key in data_hdf5.keys():
-        dataset[key] = np.array(data_hdf5[key])
+    # make env
+    env = gym.make(config.env)
 
+    # load dataset
+    dataset = load_dataset(config=config, env=env)
+
+    # preprocess dataset
     if config.normalize_reward:
         modify_reward(dataset, config.env)
 
@@ -874,19 +847,13 @@ def train( config: TrainConfig):
     set_seed(seed, env)
 
     # create nets
-    critic_1 = FullyConnectedQFunction(state_dim, action_dim, config.orthogonal_init).to(
-        config.device
-    )
-    critic_2 = FullyConnectedQFunction(state_dim, action_dim, config.orthogonal_init).to(
-        config.device
-    )
+    critic_1 = FullyConnectedQFunction(state_dim, action_dim, config.orthogonal_init).to(config.device)
+    critic_2 = FullyConnectedQFunction(state_dim, action_dim, config.orthogonal_init).to(config.device)
     critic_1_optimizer = torch.optim.Adam(list(critic_1.parameters()), config.qf_lr)
     critic_2_optimizer = torch.optim.Adam(list(critic_2.parameters()), config.qf_lr)
 
     max_action = float(env.action_space.high[0])
-    actor = TanhGaussianPolicy(
-        state_dim, action_dim, max_action, orthogonal_init=config.orthogonal_init
-    ).to(config.device)
+    actor = TanhGaussianPolicy(state_dim, action_dim, max_action, orthogonal_init=config.orthogonal_init).to(config.device)
     actor_optimizer = torch.optim.Adam(actor.parameters(), config.policy_lr)
 
     kwargs = {
@@ -932,18 +899,6 @@ def train( config: TrainConfig):
         policy_file = Path(config.load_model)
         trainer.load_state_dict(torch.load(policy_file))
         actor = trainer.actor
-
-    # wandb logging
-    if config.use_wandb:
-        with open("../wandb_credentials.json", 'r') as json_file:
-            credential_json = json.load(json_file)
-            key = credential_json["wandb_key"]
-        wandb.login(key=key)
-
-        if config.use_wandb and config.name is None:
-            config.name = config.save_dir.replace('/', '_')
-
-        wandb_init(asdict(config))
 
     # local logging
     log_evaluations = defaultdict(lambda: [])
