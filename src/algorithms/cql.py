@@ -37,7 +37,7 @@ class TrainConfig:
     env: str = "maze2d-umaze-v1"  # OpenAI gym environment name
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
     eval_freq: int = int(500)  # How often (time steps) we evaluate
-    n_episodes: int = 100  # How many episodes run during evaluation
+    n_episodes: int = 10  # How many episodes run during evaluation
     max_timesteps: int = int(100000)  # Max time steps to run environment
     load_model: str = ""  # Model load file name, "" doesn't load
     # CQL
@@ -49,7 +49,7 @@ class TrainConfig:
     use_automatic_entropy_tuning: bool = True  # Tune entropy
     backup_entropy: bool = False  # Use backup entropy
     policy_lr: float = 3e-5  # Policy learning rate
-    qf_lr: float = 3e-6  # Critics learning rate
+    qf_lr: float = 3e-4  # Critics learning rate
     soft_target_update_rate: float = 0.005  # Target network update rate
     bc_steps: int = int(0)  # Number of BC steps at start
     target_update_period: int = 1  # Frequency of target nets updates
@@ -300,13 +300,11 @@ class TanhGaussianPolicy(nn.Module):
         self.no_tanh = no_tanh
 
         self.base_network = nn.Sequential(
-            nn.Linear(state_dim, 256),
+            nn.Linear(state_dim, 64),
             nn.ReLU(),
-            nn.Linear(256, 256),
+            nn.Linear(64, 64),
             nn.ReLU(),
-            nn.Linear(256, 256),
-            nn.ReLU(),
-            nn.Linear(256, 2 * action_dim),
+            nn.Linear(64, 2 * action_dim),
         )
 
         if orthogonal_init:
@@ -363,13 +361,11 @@ class FullyConnectedQFunction(nn.Module):
         self.orthogonal_init = orthogonal_init
 
         self.network = nn.Sequential(
-            nn.Linear(observation_dim + action_dim, 256),
+            nn.Linear(observation_dim + action_dim, 64),
             nn.ReLU(),
-            nn.Linear(256, 256),
+            nn.Linear(64, 64),
             nn.ReLU(),
-            nn.Linear(256, 256),
-            nn.ReLU(),
-            nn.Linear(256, 1),
+            nn.Linear(64, 1),
         )
         if orthogonal_init:
             self.network.apply(lambda m: init_module_weights(m, True))

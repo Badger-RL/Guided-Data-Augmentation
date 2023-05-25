@@ -39,7 +39,7 @@ def make_save_dir(config):
 
 def wandb_init(config):
     # wandb logging
-    with open("../wandb_credentials.json", 'r') as json_file:
+    with open("../../wandb_credentials.json", 'r') as json_file:
         credential_json = json.load(json_file)
         key = credential_json["wandb_key"]
     wandb.login(key=key)
