@@ -6,6 +6,19 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 
 
+
+def get_run_paths(results_dir):
+    path_dict = {}
+    for dirpath, dirnames, filenames in os.walk(results_dir):
+        for dir_name in dirnames:
+            if "run_" in dir_name:
+                if dirpath not in path_dict:
+                    path_dict[dirpath] = []
+                path_dict[dirpath].append(f'{dirpath}/{dir_name}/evaluations.npz')
+
+    return path_dict
+
+
 def get_paths(results_dir, key, **kwargs):
 
     path_dict = {}
@@ -30,18 +43,19 @@ def load_data(paths, success_rate=False):
         if success_rate:
             avg = data['success_rate']
         else:
-            avg = data['r']
+            avg = data['return']
         avgs.append(avg)
         
         if t is None:
-            t = data['t']
+            t = data['timestep']
 
     return t, np.array(avgs)
 
 def plot(path_dict, success_rate=False):
 
     for agent, info in path_dict.items():
-        paths = info['paths']
+        print(agent)
+        paths = info#info['paths']
 
         t, avgs = load_data(paths, success_rate=success_rate)
         assert len(avgs) > 0
@@ -59,3 +73,5 @@ def plot(path_dict, success_rate=False):
         #t = np.arange(len(avg_of_avgs)) * 5000
         plt.plot(t, avg_of_avgs, label=agent, **style_kwargs)
         plt.fill_between(t, q05, q95, alpha=0.2)
+
+        
