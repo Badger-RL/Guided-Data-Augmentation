@@ -17,20 +17,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 import wandb
 
+from algorithms.utils import make_save_dir, load_dataset, TrainConfigBase, wandb_init, set_seed, train_base
+
 TensorBatch = List[torch.Tensor]
 
 
 @dataclass
-class TrainConfig:
-    # Experiment
-    device: str = "cuda"
-    env: str = "halfcheetah-medium-expert-v2"  # OpenAI gym environment name
-    seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
-    eval_freq: int = int(5e3)  # How often (time steps) we evaluate
-    n_episodes: int = 10  # How many episodes run during evaluation
-    max_timesteps: int = int(1e6)  # Max time steps to run environment
-    checkpoints_path: Optional[str] = None  # Save path
-    load_model: str = ""  # Model load file name, "" doesn't load
+class TrainConfig(TrainConfigBase):
     # TD3
     buffer_size: int = 2_000_000  # Replay buffer size
     batch_size: int = 256  # Batch size for all networks
@@ -44,15 +37,6 @@ class TrainConfig:
     alpha: float = 2.5  # Coefficient for Q function in actor loss
     normalize: bool = True  # Normalize states
     normalize_reward: bool = False  # Normalize reward
-    # Wandb logging
-    project: str = "CORL"
-    group: str = "TD3_BC-D4RL"
-    name: str = "TD3_BC"
-
-    def __post_init__(self):
-        self.name = f"{self.name}-{self.env}-{str(uuid.uuid4())[:8]}"
-        if self.checkpoints_path is not None:
-            self.checkpoints_path = os.path.join(self.checkpoints_path, self.name)
 
 
 def soft_update(target: nn.Module, source: nn.Module, tau: float):
@@ -152,30 +136,6 @@ class ReplayBuffer:
         # Use this method to add new data into the replay buffer during fine-tuning.
         # I left it unimplemented since now we do not do fine-tuning.
         raise NotImplementedError
-
-
-def set_seed(
-    seed: int, env: Optional[gym.Env] = None, deterministic_torch: bool = False
-):
-    if env is not None:
-        env.seed(seed)
-        env.action_space.seed(seed)
-    os.environ["PYTHONHASHSEED"] = str(seed)
-    np.random.seed(seed)
-    random.seed(seed)
-    torch.manual_seed(seed)
-    torch.use_deterministic_algorithms(deterministic_torch)
-
-
-def wandb_init(config: dict) -> None:
-    wandb.init(
-        config=config,
-        project=config["project"],
-        group=config["group"],
-        name=config["name"],
-        id=str(uuid.uuid4()),
-    )
-    wandb.run.save()
 
 
 @torch.no_grad()
@@ -389,47 +349,12 @@ class TD3_BC:  # noqa
 
 @pyrallis.wrap()
 def train(config: TrainConfig):
-    env = gym.make(config.env)
 
+    # make env
+    env = gym.make(config.env)
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
-
-    dataset = d4rl.qlearning_dataset(env)
-
-    if config.normalize_reward:
-        modify_reward(dataset, config.env)
-
-    if config.normalize:
-        state_mean, state_std = compute_mean_std(dataset["observations"], eps=1e-3)
-    else:
-        state_mean, state_std = 0, 1
-
-    dataset["observations"] = normalize_states(
-        dataset["observations"], state_mean, state_std
-    )
-    dataset["next_observations"] = normalize_states(
-        dataset["next_observations"], state_mean, state_std
-    )
-    env = wrap_env(env, state_mean=state_mean, state_std=state_std)
-    replay_buffer = ReplayBuffer(
-        state_dim,
-        action_dim,
-        config.buffer_size,
-        config.device,
-    )
-    replay_buffer.load_d4rl_dataset(dataset)
-
     max_action = float(env.action_space.high[0])
-
-    if config.checkpoints_path is not None:
-        print(f"Checkpoints path: {config.checkpoints_path}")
-        os.makedirs(config.checkpoints_path, exist_ok=True)
-        with open(os.path.join(config.checkpoints_path, "config.yaml"), "w") as f:
-            pyrallis.dump(config, f)
-
-    # Set seeds
-    seed = config.seed
-    set_seed(seed, env)
 
     actor = Actor(state_dim, action_dim, max_action).to(config.device)
     actor_optimizer = torch.optim.Adam(actor.parameters(), lr=3e-4)
@@ -458,54 +383,9 @@ def train(config: TrainConfig):
         "alpha": config.alpha,
     }
 
-    print("---------------------------------------")
-    print(f"Training TD3 + BC, Env: {config.env}, Seed: {seed}")
-    print("---------------------------------------")
-
     # Initialize actor
     trainer = TD3_BC(**kwargs)
-
-    if config.load_model != "":
-        policy_file = Path(config.load_model)
-        trainer.load_state_dict(torch.load(policy_file))
-        actor = trainer.actor
-
-    wandb_init(asdict(config))
-
-    evaluations = []
-    for t in range(int(config.max_timesteps)):
-        batch = replay_buffer.sample(config.batch_size)
-        batch = [b.to(config.device) for b in batch]
-        log_dict = trainer.train(batch)
-        wandb.log(log_dict, step=trainer.total_it)
-        # Evaluate episode
-        if (t + 1) % config.eval_freq == 0:
-            print(f"Time steps: {t + 1}")
-            eval_scores = eval_actor(
-                env,
-                actor,
-                device=config.device,
-                n_episodes=config.n_episodes,
-                seed=config.seed,
-            )
-            eval_score = eval_scores.mean()
-            normalized_eval_score = env.get_normalized_score(eval_score) * 100.0
-            evaluations.append(normalized_eval_score)
-            print("---------------------------------------")
-            print(
-                f"Evaluation over {config.n_episodes} episodes: "
-                f"{eval_score:.3f} , D4RL score: {normalized_eval_score:.3f}"
-            )
-            print("---------------------------------------")
-            torch.save(
-                trainer.state_dict(),
-                os.path.join(config.checkpoints_path, f"checkpoint_{t}.pt"),
-            )
-            wandb.log(
-                {"d4rl_normalized_score": normalized_eval_score},
-                step=trainer.total_it,
-            )
-
+    train_base(config, env, trainer)
 
 if __name__ == "__main__":
     train()
