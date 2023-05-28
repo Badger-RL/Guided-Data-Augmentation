@@ -63,7 +63,7 @@ setup(
         "gym<0.24.0",
         "numpy",
         "mujoco_py",
-        "pybullet",
+        # "pybullet",
         "h5py",
         "termcolor",  # adept_envs dependency
         "click",  # adept_envs dependency
