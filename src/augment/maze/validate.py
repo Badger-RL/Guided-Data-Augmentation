@@ -23,8 +23,7 @@ def main():
     np.random.seed(seed)
     env.seed(seed)
 
-
-    num_steps = 10000
+    num_steps = int(1e6)
 
     f = PointMazeAugmentationFunction(env)
 
@@ -33,37 +32,15 @@ def main():
         action = env.action_space.sample()
         next_obs, reward, done, info = env.step(action)
 
-        if t == 4:
-            stop = 0
-
         aug_obs, aug_action, aug_reward, aug_next_obs, aug_done = f.augment(obs, action, next_obs, reward, done)
         aug_qpos = aug_obs[:2]
         aug_qvel = aug_obs[2:]
         env.set_state(aug_qpos, aug_qvel)
         env.set_marker()
-        # time.sleep(0.2)
-        # env.render()
         true_next_obs, true_reward, true_done, true_info = env.step(aug_action)
-        # time.sleep(0.2)
-        # env.render()
 
-        if not np.allclose(aug_next_obs, true_next_obs):
-            aug_obs, aug_action, aug_reward, aug_next_obs, aug_done = f.augment(obs, action, next_obs, reward, done)
-            aug_qpos = aug_obs[:2]
-            aug_qvel = aug_obs[2:]
-            env.set_state(aug_qpos, aug_qvel)
-            env.set_marker()
-            # time.sleep(0.2)
-            # env.render()
-            true_next_obs, true_reward, true_done, true_info = env.step(aug_action)
-
-        print(aug_next_obs - true_next_obs)
         assert np.allclose(aug_next_obs, true_next_obs)
         assert np.allclose(aug_reward, true_reward)
-
-        obs = next_obs
-        if done:
-            obs = env.reset()
 
 if __name__ == '__main__':
     main()
