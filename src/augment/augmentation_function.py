@@ -39,7 +39,7 @@ class BaseAugmentationFunction:
             self._deepcopy_transition(obs, next_obs, action, reward, done)
 
         # augment input copy of input transition in-place
-        return self._augment(aug_obs, aug_next_obs, aug_action, aug_reward, done, **kwargs)
+        return self._augment(aug_obs, aug_next_obs, aug_action, aug_reward, aug_done, **kwargs)
 
     def _augment(self,
                  obs: np.ndarray,
