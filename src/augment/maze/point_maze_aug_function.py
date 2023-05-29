@@ -1,11 +1,20 @@
 import numpy as np
 from augment.augmentation_function_base import AugmentationFunctionBase
-from d4rl.pointmaze.maze_model import EMPTY
+from d4rl.pointmaze.maze_model import EMPTY, GOAL
 
 
 class PointMazeAugmentationFunction(AugmentationFunctionBase):
     def __init__(self, env, **kwargs):
         super().__init__(env=env, **kwargs)
+        self.target = np.array((0,0))
+        self.valid_locations = []
+        width, height = self.env.maze_arr.shape
+        for w in range(width):
+            for h in range(height):
+                location_type = self.env.maze_arr[w, h]
+                if location_type in [EMPTY, GOAL]:
+                    box_location = np.array((w,h))
+                    self.valid_locations.append(box_location)
 
     def _is_in_box(self, box_location, x, y):
         xlo, ylo = box_location - 0.597
@@ -20,15 +29,10 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
     def _is_valid_position(self, xy):
         x, y = xy[0], xy[1]
         is_valid_position = False
-
-        width, height = self.env.maze_arr.shape
-        for w in range(width):
-            for h in range(height):
-                if self.env.maze_arr[w, h] == EMPTY:
-                    box_location = np.array((w,h))
-                    if self._is_in_box(box_location, x, y):
-                        is_valid_position = True
-                        break
+        for box_location in self.valid_locations:
+            if self._is_in_box(box_location, x, y):
+                is_valid_position = True
+                break
 
         return is_valid_position
 
@@ -43,9 +47,9 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
 
     def _reward(self, next_obs):
         if self.env.reward_type == 'sparse':
-            reward = 1.0 if np.linalg.norm(next_obs[0:2] - self.env.target) <= 0.5 else 0.0
+            reward = 1.0 if np.linalg.norm(next_obs[0:2] - self.target) <= 0.5 else 0.0
         elif self.env.reward_type == 'dense':
-            reward = np.exp(-np.linalg.norm(next_obs[0:2] - self.env.target))
+            reward = np.exp(-np.linalg.norm(next_obs[0:2] - self.target))
         else:
             raise ValueError('Unknown reward type %s' % self.env.reward_type)
 
