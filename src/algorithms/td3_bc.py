@@ -27,6 +27,8 @@ class TrainConfig(TrainConfigBase):
     policy_noise: float = 0.2  # Noise added to target actor during critic update
     noise_clip: float = 0.5  # Range to clip target actor noise
     policy_freq: int = 2  # Frequency of delayed actor updates
+    actor_lr: float = 3e-4,
+    critic_lr: float = 3e-4,
     # TD3 + BC
     alpha: float = 2.5  # Coefficient for Q function in actor loss
     normalize: bool = True  # Normalize states
@@ -351,12 +353,12 @@ def train(config: TrainConfig):
     max_action = float(env.action_space.high[0])
 
     actor = Actor(state_dim, action_dim, max_action).to(config.device)
-    actor_optimizer = torch.optim.Adam(actor.parameters(), lr=3e-4)
+    actor_optimizer = torch.optim.Adam(actor.parameters(), lr=config.actor_lr)
 
     critic_1 = Critic(state_dim, action_dim).to(config.device)
-    critic_1_optimizer = torch.optim.Adam(critic_1.parameters(), lr=3e-4)
+    critic_1_optimizer = torch.optim.Adam(critic_1.parameters(), lr=config.critic_lr)
     critic_2 = Critic(state_dim, action_dim).to(config.device)
-    critic_2_optimizer = torch.optim.Adam(critic_2.parameters(), lr=3e-4)
+    critic_2_optimizer = torch.optim.Adam(critic_2.parameters(), lr=config.critic_lr)
 
     kwargs = {
         "max_action": max_action,
