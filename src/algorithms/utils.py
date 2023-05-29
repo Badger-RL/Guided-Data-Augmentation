@@ -146,7 +146,7 @@ class TrainConfigBase:
     load_model: str = ""  # Model load file name, "" doesn't load
     dataset_name: str = None
     # Wandb logging
-    use_wandb: bool = True
+    use_wandb: bool = False
     project: str = "CORL"
     group: str = "CQL-D4RL"
     name: str = None
