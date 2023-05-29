@@ -92,6 +92,6 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
             is_valid = self._is_valid_position(next_pos)
 
         aug_reward = self._reward(aug_next_obs)
-        aug_done = np.copy(done)
+        aug_done = done
 
         return aug_obs, aug_action, aug_reward, aug_next_obs, aug_done

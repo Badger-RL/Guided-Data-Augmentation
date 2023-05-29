@@ -16,7 +16,7 @@ def main():
 
 
     # env = gym.make('maze2d-umaze-v0')
-    env = gym.make('maze2d-open-v0')
+    env = gym.make('maze2d-umaze-v0')
 
     seed = 0
     random.seed(seed)
