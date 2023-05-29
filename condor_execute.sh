@@ -22,6 +22,7 @@ tar -xzvf mujoco210-linux-x86_64.tar.gz -C .mujoco
 export MUJOCO_PY_MUJOCO_PATH="$PWD/.mujoco/mujoco210"
 export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$PWD/.mujoco/mujoco210/bin"
 
+cd src
 pid=$1 # command index
 step=$2 # index within different runs of the same command
 command=`tr '*' ' ' <<< $3` # replace * with space in command
