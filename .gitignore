@@ -3,6 +3,7 @@ benchmark.py
 mlc_run.sh
 .ml-job-preset.yml
 wandb
+datasets
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
