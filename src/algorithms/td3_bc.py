@@ -27,8 +27,8 @@ class TrainConfig(TrainConfigBase):
     policy_noise: float = 0.2  # Noise added to target actor during critic update
     noise_clip: float = 0.5  # Range to clip target actor noise
     policy_freq: int = 2  # Frequency of delayed actor updates
-    actor_lr: float = 3e-4,
-    critic_lr: float = 3e-4,
+    actor_lr: float = 3e-4
+    critic_lr: float = 3e-4
     # TD3 + BC
     alpha: float = 2.5  # Coefficient for Q function in actor loss
     normalize: bool = True  # Normalize states
@@ -207,11 +207,11 @@ class Critic(nn.Module):
         super(Critic, self).__init__()
 
         self.net = nn.Sequential(
-            nn.Linear(state_dim + action_dim, 256),
+            nn.Linear(state_dim + action_dim, 64),
             nn.ReLU(),
-            nn.Linear(256, 256),
+            nn.Linear(64,64),
             nn.ReLU(),
-            nn.Linear(256, 1),
+            nn.Linear(64, 1),
         )
 
     def forward(self, state: torch.Tensor, action: torch.Tensor) -> torch.Tensor:
@@ -280,6 +280,10 @@ class TD3_BC:  # noqa
             target_q2 = self.critic_2_target(next_state, next_action)
             target_q = torch.min(target_q1, target_q2)
             target_q = reward + not_done * self.discount * target_q
+            log_dict["avg_target_q1"] = target_q1.mean().item()
+            log_dict["avg_target_q2"] = target_q2.mean().item()
+            log_dict["avg_target_q"] = target_q.mean().item()
+
 
         # Get current Q estimates
         current_q1 = self.critic_1(state, action)

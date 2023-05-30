@@ -43,10 +43,7 @@ def make_save_dir(config):
 
 def wandb_init(config):
     # wandb logging
-    with open("../../wandb_credentials.json", 'r') as json_file:
-        credential_json = json.load(json_file)
-        key = credential_json["wandb_key"]
-    wandb.login(key=key)
+    wandb.login(key='7313077863c8908c24cc6058b99c2b2cc35d326b')
 
     if config.use_wandb and config.name is None:
         config.name = config.save_dir.replace('/', '_')
@@ -111,6 +108,7 @@ def load_dataset(config, env):
         data_hdf5 = h5py.File(f"./datasets/{config.dataset_name}", "r")
         for key in data_hdf5.keys():
             dataset[key] = np.array(data_hdf5[key])
+            print(dataset[key].shape)
     else:
         # remote dataset
         dataset = d4rl.qlearning_dataset(env)
@@ -343,11 +341,11 @@ def train_base(config, env, trainer):
                 eval_success_rate = eval_successes.mean()
             else:
                 eval_success_rate = -np.inf
-            normalized_eval_score = eval_score  # env.get_normalized_score(eval_score) * 100.0
+            normalized_eval_score = env.get_normalized_score(eval_score) * 100.0
             print("---------------------------------------")
             print(
-                f"Evaluation over {config.n_episodes} episodes: "
-                f"{eval_score:.3f} , D4RL score: {normalized_eval_score:.3f} "
+                f"Return over {config.n_episodes} episodes: "
+                f"{eval_score:.3f} , Normalized return: {normalized_eval_score:.3f} "
                 f"Success rate: {eval_success_rate:.3f}"
             )
             print("---------------------------------------")
@@ -355,6 +353,7 @@ def train_base(config, env, trainer):
             # log evaluations
             log_evaluations['timestep'].append(t)
             log_evaluations['return'].append(eval_score)
+            log_evaluations['normalized_return'].append(normalized_eval_score)
             log_evaluations['success_rate'].append(eval_success_rate)
             np.savez(os.path.join(config.save_dir, "evaluations.npz"), **log_evaluations)
 
@@ -381,7 +380,11 @@ def train_base(config, env, trainer):
 
             if config.use_wandb:
                 wandb.log(
-                    {"d4rl_normalized_score": normalized_eval_score},
+                    {"return": eval_score},
+                    step=trainer.total_it,
+                )
+                wandb.log(
+                    {"normalized_return": normalized_eval_score},
                     step=trainer.total_it,
                 )
                 wandb.log(
