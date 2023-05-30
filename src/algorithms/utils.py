@@ -290,6 +290,8 @@ def train_base(config, env, trainer):
     # create replay buffer
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
+    if config.buffer_size is None:
+        config.buffer_size = len(dataset['observations'])
     replay_buffer = ReplayBuffer(
         state_dim,
         action_dim,

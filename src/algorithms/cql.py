@@ -23,7 +23,7 @@ sys.path.append("..")
 @dataclass
 class TrainConfig(TrainConfigBase):
     # CQL
-    buffer_size: int = 2_000_000  # Replay buffer size
+    buffer_size: int = None  # Replay buffer size
     batch_size: int = 256  # Batch size for all networks
     discount: float = 0.99  # Discount factor
     alpha_multiplier: float = 1.0  # Multiplier for alpha in loss
