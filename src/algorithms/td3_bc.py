@@ -19,6 +19,7 @@ TensorBatch = List[torch.Tensor]
 @dataclass
 class TrainConfig(TrainConfigBase):
     # TD3
+    algo: str = "td3_bc"
     buffer_size: int = 2_000_000  # Replay buffer size
     batch_size: int = 256  # Batch size for all networks
     discount: float = 0.99  # Discount ffor

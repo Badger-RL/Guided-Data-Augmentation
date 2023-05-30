@@ -29,6 +29,7 @@ def get_latest_run_id(save_dir: str) -> int:
 
 def make_save_dir(config):
     # create save directories
+    config.save_dir += f"/{config.env}/{config.algo}/{config.save_subdir}"
     if config.run_id is not None:
         config.save_dir += f"/run_{config.run_id}"
     else:
@@ -148,7 +149,8 @@ class TrainConfigBase:
     project: str = "CORL"
     group: str = "CQL-D4RL"
     name: str = None
-    save_dir: str = "results"
+    save_dir: str = "results"   # <save_dir>/<env_id>/<algo>/<save_subdir>
+    save_subdir: str = ""
     run_id: str = None
     save_policy: bool = True
 
