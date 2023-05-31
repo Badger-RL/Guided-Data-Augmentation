@@ -51,12 +51,12 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
     def _sample_theta(self, **kwargs):
         return np.random.choice(self.thetas)
 
-    def _reward(self, obs):
+    def _reward(self, next_obs):
         # Rewar dshould intuitively be computed using next_obs, but D4RL uses the current obs (D4RL bug)
         if self.env.reward_type == 'sparse':
-            reward = 1.0 if np.linalg.norm(obs[0:2] - self.target) <= 0.5 else 0.0
+            reward = 1.0 if np.linalg.norm(next_obs[0:2] - self.target) <= 0.5 else 0.0
         elif self.env.reward_type == 'dense':
-            reward = np.exp(-np.linalg.norm(obs[0:2] - self.target))
+            reward = np.exp(-np.linalg.norm(next_obs[0:2] - self.target))
         else:
             raise ValueError('Unknown reward type %s' % self.env.reward_type)
 
