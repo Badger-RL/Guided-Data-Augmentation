@@ -6,6 +6,9 @@ from d4rl.pointmaze.maze_model import EMPTY, GOAL, WALL
 class PointMazeAugmentationFunction(AugmentationFunctionBase):
     def __init__(self, env, **kwargs):
         super().__init__(env=env, **kwargs)
+        self.contact_dist = 0.397
+        self.agent_offset = 0.2 # the agent and target coordinate systems are different for some reason.
+        self.effective_wall_width = 0.603
         self.thetas = np.array([0, np.pi/2, np.pi, np.pi*3/2])
         self.target = self.env.get_target()
         self.wall_locations = []
@@ -18,8 +21,8 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
                     self.wall_locations.append(box_location)
 
     def _is_in_wall(self, box_location, x, y):
-        xlo, ylo = box_location - 0.803
-        xhi, yhi = box_location + 0.403
+        xlo, ylo = box_location - self.agent_offset - self.effective_wall_width
+        xhi, yhi = box_location - self.agent_offset + self.effective_wall_width
 
         if (x > xlo and y > ylo) and (x < xhi and y < yhi):
             return True
@@ -43,16 +46,17 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
         # return qpos
 
         width, height = self.env.maze_arr.shape
-        return self.env.np_random.uniform(low=0.403, high=height-2 + 0.198, size=(self.env.model.nq,))
+        return self.env.np_random.uniform(low=0.403-self.agent_offset, high=height-2 + 0.198+self.agent_offset, size=(self.env.model.nq,))
 
     def _sample_theta(self, **kwargs):
         return np.random.choice(self.thetas)
 
-    def _reward(self, next_obs):
+    def _reward(self, obs):
+        # Rewar dshould intuitively be computed using next_obs, but D4RL uses the current obs (D4RL bug)
         if self.env.reward_type == 'sparse':
-            reward = 1.0 if np.linalg.norm(next_obs[0:2] - self.target) <= 0.5 else 0.0
+            reward = 1.0 if np.linalg.norm(obs[0:2] - self.target) <= 0.5 else 0.0
         elif self.env.reward_type == 'dense':
-            reward = np.exp(-np.linalg.norm(next_obs[0:2] - self.target))
+            reward = np.exp(-np.linalg.norm(obs[0:2] - self.target))
         else:
             raise ValueError('Unknown reward type %s' % self.env.reward_type)
 
