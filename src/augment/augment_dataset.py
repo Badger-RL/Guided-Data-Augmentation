@@ -26,7 +26,7 @@ if __name__ == '__main__':
     parser.add_argument('--observed-dataset-frac', '-frac', type=float, default=None)
     parser.add_argument('--observed-dataset-size', '-size', type=int, default=None)
 
-    parser.add_argument('--aug-func', type=str, default='random')
+    parser.add_argument('--aug-func', type=str, default='guided')
     parser.add_argument('--aug-ratio', '-m', type=int, default=1, help='Number of augmentations per observed transition')
     parser.add_argument('--save-dir', '-fd', type=str, default=None)
     parser.add_argument('--save-name', '-fn', type=str, default=None)
@@ -72,8 +72,8 @@ if __name__ == '__main__':
     aug_count = 0 # number of valid augmentations produced
     i = 0
     while aug_count < n*m:
-        if args.aug_func == 'guided' and aug_count == n//5:
-            f = AUG_FUNCTIONS[args.env_id]['guided'](env=env)
+        # if args.aug_func == 'guided' and aug_count == n//5:
+        #     f = AUG_FUNCTIONS[args.env_id]['guided'](env=env)
 
         idx = i % n
         obs, action, reward, next_obs, done = f.augment(
