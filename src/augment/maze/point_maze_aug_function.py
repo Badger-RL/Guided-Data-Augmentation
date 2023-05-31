@@ -3,22 +3,55 @@ from src.augment.augmentation_function_base import AugmentationFunctionBase
 from d4rl.pointmaze.maze_model import EMPTY, GOAL, WALL
 
 
+
 class PointMazeAugmentationFunction(AugmentationFunctionBase):
     def __init__(self, env, **kwargs):
         super().__init__(env=env, **kwargs)
-        self.contact_dist = 0.397
         self.agent_offset = 0.2 # the agent and target coordinate systems are different for some reason.
         self.effective_wall_width = 0.603
         self.thetas = np.array([0, np.pi/2, np.pi, np.pi*3/2])
         self.target = self.env.get_target()
         self.wall_locations = []
+        self.valid_locations = []
         width, height = self.env.maze_arr.shape
         for w in range(width):
             for h in range(height):
                 location_type = self.env.maze_arr[w, h]
+                box_location = np.array((w, h))
                 if location_type in [WALL]:
-                    box_location = np.array((w,h))
                     self.wall_locations.append(box_location)
+                elif location_type in [EMPTY, GOAL]:
+                    self.valid_locations.append(box_location)
+        self.valid_locations = np.array(self.valid_locations)
+
+
+    def _get_valid_boundaries(self, w, h):
+        w = int(w)
+        h = int(h)
+        xhi = w+1-0.5
+        yhi = h+1-0.5
+        xlo = w-1+0.5
+        ylo = h-1+0.5
+
+        # Empty/goal locations are surrounded by walls, so we don't need to check if w+1/w-1/h+1/h-1 are valid locations.
+        if self.env.maze_arr[w+1, h] in [WALL]:
+            xhi = w+1-self.effective_wall_width
+        if self.env.maze_arr[w, h+1] in [WALL]:
+            yhi = h+1-self.effective_wall_width
+        if self.env.maze_arr[w-1, h] in [WALL]:
+            xlo = w-1+self.effective_wall_width
+        if self.env.maze_arr[w, h-1] in [WALL]:
+            ylo = h-1+self.effective_wall_width
+
+        xlo -= self.agent_offset
+        ylo -= self.agent_offset
+        xhi -= self.agent_offset
+        yhi -= self.agent_offset
+
+        return (xlo, ylo, xhi, yhi)
+
+    def _sample_from_box(self, xlo, ylo, xhi, yhi):
+        return self.env.np_random.uniform(low=[xlo, ylo], high=[xhi,yhi])
 
     def _is_in_wall(self, box_location, x, y):
         xlo, ylo = box_location - self.agent_offset - self.effective_wall_width
@@ -40,13 +73,10 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
         return is_valid_position
 
     def _sample_pos(self, n=1):
-        # idx = np.random.choice(len(self.env.empty_and_goal_locations))
-        # reset_location = np.array(self.env.empty_and_goal_locations[idx]).astype(self.env.observation_space.dtype)
-        # qpos = reset_location + self.env.np_random.uniform(low=-1, high=1, size=(self.env.model.nq,))
-        # return qpos
-
-        width, height = self.env.maze_arr.shape
-        return self.env.np_random.uniform(low=0.403-self.agent_offset, high=height-2 + 0.198+self.agent_offset, size=(self.env.model.nq,))
+        idx = np.random.choice(len(self.env.empty_and_goal_locations))
+        location = np.array(self.env.empty_and_goal_locations[idx]).astype(self.env.observation_space.dtype)
+        boundaries = self._get_valid_boundaries(*location)
+        return self._sample_from_box(*boundaries)
 
     def _sample_theta(self, **kwargs):
         return np.random.choice(self.thetas)
@@ -111,6 +141,64 @@ class PointMazeGuidedAugmentationFunction(PointMazeAugmentationFunction):
     def __init__(self, env, **kwargs):
         super().__init__(env=env, **kwargs)
 
+        if self.env.maze_arr.shape[0] == 5:
+            self.guide_thetas = {
+                #left
+                (1, 1): [0, np.pi/2, np.pi, np.pi*3/2],
+                (1, 2): [np.pi*3/2],
+                (1, 3): [np.pi*3/2],
+                # top
+                (2, 3): [np.pi],
+                (3, 3): [np.pi],
+                # right
+                (3, 1): [np.pi/2],
+                (3, 2): [np.pi/2],
+            }
+        elif self.env.maze_arr.shape[0] == 8:
+            self.guide_thetas = {
+                (1, 1): [0],
+                (2, 1): [np.pi/2],
+                # (1, 1): [],
+                (4, 1): [np.pi/2],
+                (5, 1): [np.pi],
+                (6, 1): [np.pi/2],
+
+                (1, 2): [0],
+                (2, 2): [0],
+                (3, 2): [np.pi/2],
+                (4, 2): [np.pi],
+                # (5, 2): [np.pi],
+                (6, 2): [np.pi/2],
+
+                # (1, 3): [0],
+                # (2, 3): [0],
+                (3, 3): [np.pi / 2],
+                # (4, 3): [np.pi],
+                (5, 3): [np.pi/2],
+                (6, 3): [np.pi],
+
+                (1, 4): [0],
+                (2, 4): [0],
+                (3, 4): [0],
+                (4, 4): [np.pi/2],
+                (5, 4): [np.pi],
+                # (6, 4): [np.pi],
+
+                (1, 5): [0],
+                (2, 5): [np.pi*3/2],
+                # (3, 5): [np.pi / 2],
+                (4, 5): [np.pi/2],
+                # (5, 5): [np.pi],
+                (6, 5): [np.pi / 2],
+
+                (1, 6): [0],
+                (2, 6): [np.pi*3/2],
+                # (3, 6): [np.pi / 2],
+                (4, 6): [0],
+                (5, 6): [0],
+                (6, 6): [0, np.pi / 2, np.pi, np.pi * 3 / 2],
+            }
+
 
     def _sample_theta(self, obs, next_obs, **kwargs):
 
@@ -118,18 +206,9 @@ class PointMazeGuidedAugmentationFunction(PointMazeAugmentationFunction):
         delta_obs = next_obs - obs
         theta = np.arctan2(delta_obs[1], delta_obs[0])
 
-        guide_theta = theta
-
-        if x < 1.198 and y < 1.198:
-            guide_theta = np.random.choice(self.thetas)
-        elif x < 1.198:
-            guide_theta = np.pi * 3 / 2
-        elif x < 2.403:
-            guide_theta = np.pi
-        elif x > 2.403 and y > 2.403:
-            guide_theta = np.pi
-        elif x > 2.403 and y < 2.403:
-            guide_theta = np.pi/2
+        location = (int(np.round(x+self.agent_offset)), int(np.round(y+self.agent_offset)))
+        guide_thetas = self.guide_thetas[location]
+        guide_theta = np.random.choice(guide_thetas)
 
         aug_thetas = (self.thetas + theta)%(2*np.pi)
         dist = np.abs(guide_theta - aug_thetas)

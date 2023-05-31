@@ -138,7 +138,7 @@ class TrainConfigBase:
     device: str = "cpu"
     env: str = "maze2d-umaze-v1"  # OpenAI gym environment name
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
-    eval_freq: int = int(5000)  # How often (time steps) we evaluate
+    eval_freq: int = int(10e3)  # How often (time steps) we evaluate
     n_episodes: int = 50  # How many episodes run during evaluation
     max_timesteps: int = int(1e6)  # Max time steps to run environment
     load_model: str = ""  # Model load file name, "" doesn't load

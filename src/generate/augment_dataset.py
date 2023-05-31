@@ -16,13 +16,17 @@ AUG_FUNCTIONS = {
     'maze2d-umaze-v1': {
         'random': PointMazeAugmentationFunction,
         'guided': PointMazeGuidedAugmentationFunction,
+    },
+    'maze2d-medium-v1': {
+        'random': PointMazeAugmentationFunction,
+        'guided': PointMazeGuidedAugmentationFunction,
     }
 }
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--env-id', type=str, default='maze2d-umaze-v1')
-    parser.add_argument('--observed-dataset-path', type=str, default='../datasets/maze2d-umaze-v1/no_aug-sparse.hdf5')
+    parser.add_argument('--observed-dataset-path', type=str, default=None)
     parser.add_argument('--observed-dataset-frac', '-frac', type=float, default=None)
     parser.add_argument('--observed-dataset-size', '-size', type=int, default=None)
 
