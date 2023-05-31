@@ -306,7 +306,12 @@ class TD3_BC:  # noqa
             q = self.critic_1(state, pi)
             lmbda = self.alpha / q.abs().mean().detach()
 
-            actor_loss = -lmbda * q.mean() + F.mse_loss(pi, action)
+            q_loss = q.mean()
+            q_loss_lmbda = lmbda * q_loss
+            bc_loss = F.mse_loss(pi, action)
+            # actor_loss = -lmbda * q.mean() + F.mse_loss(pi, action)
+            actor_loss = -q_loss_lmbda + bc_loss
+
             log_dict["actor_loss"] = actor_loss.item()
             # Optimize the actor
             self.actor_optimizer.zero_grad()
@@ -317,6 +322,20 @@ class TD3_BC:  # noqa
             soft_update(self.critic_1_target, self.critic_1, self.tau)
             soft_update(self.critic_2_target, self.critic_2, self.tau)
             soft_update(self.actor_target, self.actor, self.tau)
+
+            self.last_lmbda = lmbda.item()
+            self.last_q_loss = q_loss.item()
+            self.last_q_loss_lmbda = q_loss_lmbda.item()
+            self.last_bc_loss = bc_loss.item()
+            self.last_actor_loss = actor_loss.item()
+
+        elif self.total_it >= self.policy_freq:
+            # These values exist only if at least one update was performed
+            log_dict["lambda"] = self.last_lmbda
+            log_dict["q_loss"] = self.last_q_loss
+            log_dict["q_loss_lmbda"] = self.last_q_loss_lmbda
+            log_dict["bc_loss"] = self.last_bc_loss
+            log_dict["actor_loss"] = self.last_actor_loss
 
         return log_dict
 
