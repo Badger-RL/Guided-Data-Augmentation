@@ -23,7 +23,7 @@ class TrainConfig(TrainConfigBase):
     eval_freq: int = 1000
     n_episodes: int = 10
 
-    hidden_dim: int = 64
+    hidden_dim: int = 256
     learning_rate: float = 3e-4
     gamma: float = 0.99
     tau: float = 5e-3
@@ -97,8 +97,8 @@ class Critic(nn.Module):
             nn.Linear(state_dim + action_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, hidden_dim),
-            # nn.ReLU(),
-            # nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
             nn.Linear(hidden_dim, 1),
         )

@@ -182,7 +182,6 @@ def eval_actor(
         if 'is_success' in info:
             successes.append(info['is_success'])
 
-    actor.train()
     return np.asarray(episode_rewards), np.array(successes)
 
 
