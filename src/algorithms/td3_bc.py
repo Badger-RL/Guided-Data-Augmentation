@@ -39,11 +39,11 @@ class Actor(nn.Module):
         super(Actor, self).__init__()
 
         self.net = nn.Sequential(
-            nn.Linear(state_dim, 64),
+            nn.Linear(state_dim, 256),
             nn.ReLU(),
-            # nn.Linear(64, 64),
-            # nn.ReLU(),
-            nn.Linear(64, action_dim),
+            nn.Linear(256, 256),
+            nn.ReLU(),
+            nn.Linear(256, action_dim),
             nn.Tanh(),
         )
 
@@ -63,13 +63,13 @@ class Critic(nn.Module):
         super(Critic, self).__init__()
 
         self.net = nn.Sequential(
-            nn.Linear(state_dim + action_dim, 64),
+            nn.Linear(state_dim + action_dim, 256),
             nn.ReLU(),
-            nn.Linear(64,64),
-            # nn.ReLU(),
-            # nn.Linear(64, 64),
+            nn.Linear(256,256),
             nn.ReLU(),
-            nn.Linear(64, 1),
+            nn.Linear(256, 256),
+            nn.ReLU(),
+            nn.Linear(256, 1),
         )
 
     def forward(self, state: torch.Tensor, action: torch.Tensor) -> torch.Tensor:
@@ -81,21 +81,21 @@ class CriticVIB(nn.Module):
         super(CriticVIB, self).__init__()
 
         self.mu = nn.Sequential(
-            nn.Linear(state_dim + action_dim, 64),
+            nn.Linear(state_dim + action_dim, 256),
             nn.ReLU(),
-            nn.Linear(64,64),
+            nn.Linear(256,256),
         )
 
         self.logstd = nn.Sequential(
-            nn.Linear(state_dim + action_dim, 64),
+            nn.Linear(state_dim + action_dim, 256),
             nn.ReLU(),
-            nn.Linear(64,64),
+            nn.Linear(256,256),
         )
 
         self.q = nn.Sequential(
-            nn.Linear(64, 64),
+            nn.Linear(256, 256),
             nn.ReLU(),
-            nn.Linear(64, 1),
+            nn.Linear(256, 1),
         )
 
     def forward(self, state: torch.Tensor, action: torch.Tensor) -> (torch.Tensor, torch.Tensor, torch.Tensor):
