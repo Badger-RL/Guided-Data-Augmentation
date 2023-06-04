@@ -19,12 +19,11 @@ from src.algorithms.utils import TrainConfigBase, train_base, TensorBatch
 @dataclass
 class TrainConfig(TrainConfigBase):
     buffer_size: int = 2_000_000
-    num_train_ops: int = 1_000_000
     batch_size: int = 256
     eval_freq: int = 1000
     n_episodes: int = 10
 
-    hidden_dim: int = 256
+    hidden_dim: int = 64
     learning_rate: float = 3e-4
     gamma: float = 0.99
     tau: float = 5e-3
@@ -179,16 +178,23 @@ class AdvantageWeightedActorCritic:
         q1_loss = nn.functional.mse_loss(q1, q_target)
         q2_loss = nn.functional.mse_loss(q2, q_target)
         loss = q1_loss + q2_loss
-        return loss
+
+        critic_stats = {
+            # 'avg_q1': q1.mean().item(),
+            # 'avg_q2': q1.mean().item(),
+            'avg_target_q': q_target.mean().item(),
+        }
+
+        return loss, critic_stats
 
     def _update_critic(self, states, actions, rewards, dones, next_states):
-        loss = self._critic_loss(states, actions, rewards, dones, next_states)
+        loss, critic_stats = self._critic_loss(states, actions, rewards, dones, next_states)
         self.critic_1_optimizer.zero_grad()
         self.critic_2_optimizer.zero_grad()
         loss.backward()
         self.critic_1_optimizer.step()
         self.critic_2_optimizer.step()
-        return loss.item()
+        return loss.item(), critic_stats
 
     def _update_actor(self, states, actions):
         loss = self._actor_loss(states, actions)
@@ -199,13 +205,14 @@ class AdvantageWeightedActorCritic:
 
     def update(self, batch: TensorBatch) -> Dict[str, float]:
         states, actions, rewards, next_states, dones = batch
-        critic_loss = self._update_critic(states, actions, rewards, dones, next_states)
+        critic_loss, critic_stats = self._update_critic(states, actions, rewards, dones, next_states)
         actor_loss = self._update_actor(states, actions)
 
         soft_update(self.target_critic_1, self.critic_1, self.tau)
         soft_update(self.target_critic_2, self.critic_2, self.tau)
 
         result = {"critic_loss": critic_loss, "actor_loss": actor_loss}
+        result.update(critic_stats)
         return result
 
     def state_dict(self) -> Dict[str, Any]:
