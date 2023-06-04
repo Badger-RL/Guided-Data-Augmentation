@@ -25,7 +25,7 @@ class TrainConfig(TrainConfigBase):
     # CQL
     buffer_size: int = None  # Replay buffer size
     batch_size: int = 256  # Batch size for all networks
-    discount: float = 0.99  # Discount factor
+    gamma: float = 0.99  # gamma factor
     alpha_multiplier: float = 1.0  # Multiplier for alpha in loss
     dataset_name: str = ""
     use_automatic_entropy_tuning: bool = True  # Tune entropy
@@ -236,7 +236,7 @@ class ContinuousCQL:
         actor,
         actor_optimizer,
         target_entropy: float,
-        discount: float = 0.99,
+        gamma: float = 0.99,
         alpha_multiplier: float = 1.0,
         use_automatic_entropy_tuning: bool = True,
         backup_entropy: bool = False,
@@ -259,7 +259,7 @@ class ContinuousCQL:
         super().__init__()
 
         self.action_space = action_space
-        self.discount = discount
+        self.gamma = gamma
         self.target_entropy = target_entropy
         self.alpha_multiplier = alpha_multiplier
         self.use_automatic_entropy_tuning = use_automatic_entropy_tuning
@@ -376,7 +376,7 @@ class ContinuousCQL:
             target_q_values = target_q_values - alpha * next_log_pi
 
         target_q_values = target_q_values.unsqueeze(-1)
-        td_target = rewards + (1.0 - dones) * self.discount * target_q_values
+        td_target = rewards + (1.0 - dones) * self.gamma * target_q_values
         td_target = td_target.squeeze(-1)
         qf1_loss = F.mse_loss(q1_predicted, td_target.detach())
         qf2_loss = F.mse_loss(q2_predicted, td_target.detach())
@@ -523,7 +523,7 @@ class ContinuousCQL:
 
         return qf_loss, alpha_prime, alpha_prime_loss
 
-    def train(self, batch: TensorBatch) -> Dict[str, float]:
+    def update(self, batch: TensorBatch) -> Dict[str, float]:
         (
             observations,
             actions,
@@ -644,7 +644,7 @@ def train(config: TrainConfig):
         "critic_2_optimizer": critic_2_optimizer,
         "actor": actor,
         "actor_optimizer": actor_optimizer,
-        "discount": config.discount,
+        "gamma": config.gamma,
         "soft_target_update_rate": config.soft_target_update_rate,
         "device": config.device,
         # CQL

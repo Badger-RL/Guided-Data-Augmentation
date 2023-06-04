@@ -8,6 +8,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Optional, Tuple, Union, Dict, List
 
+from tqdm import trange
+
 import d4rl
 import gym
 import h5py
@@ -143,6 +145,10 @@ class TrainConfigBase:
     max_timesteps: int = int(1e6)  # Max time steps to run environment
     load_model: str = ""  # Model load file name, "" doesn't load
     dataset_name: str = None
+    deterministic_torch: bool = True
+    # Normalization
+    normalize: bool = True  # Normalize states
+    normalize_reward: bool = False  # Normalize reward
     # Wandb logging
     use_wandb: bool = False
     project: str = "CORL"
@@ -319,14 +325,14 @@ def train_base(config, env, trainer):
     print(f"Training {trainer}, Env: {config.env}, Seed: {seed}")
     print("---------------------------------------")
 
-    for t in range(int(config.max_timesteps)+1):
+    for t in trange(int(config.max_timesteps), ncols=100):
         batch = replay_buffer.sample(config.batch_size)
         batch = [b.to(config.device) for b in batch]
-        stats_dict = trainer.train(batch)
+        stats_dict = trainer.update(batch)
 
         # log training statistics
         if config.use_wandb and t % 100 == 0:
-            wandb.log(stats_dict, step=trainer.total_it)
+            wandb.log(stats_dict, step=t)
 
         # evalutate agent
         if (t) % config.eval_freq == 0 or t == 0:
@@ -382,14 +388,9 @@ def train_base(config, env, trainer):
 
             if config.use_wandb:
                 wandb.log(
-                    {"return": eval_score},
-                    step=trainer.total_it,
-                )
-                wandb.log(
-                    {"normalized_return": normalized_eval_score},
-                    step=trainer.total_it,
-                )
-                wandb.log(
-                    {"success_rate": eval_success_rate},
-                    step=trainer.total_it,
+                    {"return": eval_score,
+                     "normalized_return": normalized_eval_score,
+                     "success_rate": eval_success_rate
+                     },
+                    step=t,
                 )
