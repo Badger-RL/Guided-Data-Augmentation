@@ -21,7 +21,6 @@ class TrainConfig(TrainConfigBase):
     buffer_size: int = None
     batch_size: int = 256
     eval_freq: int = 1000
-    n_episodes: int = 10
 
     hidden_dim: int = 256
     learning_rate: float = 3e-4
