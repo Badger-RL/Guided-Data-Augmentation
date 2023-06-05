@@ -109,7 +109,7 @@ def load_dataset(config, env):
     dataset = {}
     if config.dataset_name:
         # local dataset
-        data_hdf5 = h5py.File(f"./datasets/{config.dataset_name}", "r")
+        data_hdf5 = h5py.File(f"{config.dataset_name}", "r")
         for key in data_hdf5.keys():
             dataset[key] = np.array(data_hdf5[key])
             print(dataset[key].shape)
@@ -328,37 +328,39 @@ def train_base(config, env, trainer):
     print(f"Training {trainer}, Env: {config.env}, Seed: {seed}")
     print("---------------------------------------")
 
-    f = PointMazeGuidedAugmentationFunction(env)
-    
+    # f = PointMazeGuidedAugmentationFunction(env)
+
     for t in trange(int(config.max_timesteps), ncols=100):
         observed_batch = replay_buffer.sample(config.batch_size)
+        #
+        # if config.aug_online:
+        #     aug_count = 0
+        #     aug_batch_obs, aug_batch_action, aug_batch_reward, aug_batch_next_obs, aug_batch_done = [], [], [], [], []
+        #     while aug_count < config.aug_ratio:
+        #
+        #         obs, action, reward, next_obs, done = f.augment(*observed_batch)
+        #         aug_batch_obs.append(obs)
+        #         aug_batch_action.append(action)
+        #         aug_batch_reward.append(reward)
+        #         aug_batch_next_obs.append(next_obs)
+        #         aug_batch_done.append(done)
+        #         aug_count += len(aug_batch_obs)
+        #
+        #     aug_batch_obs = torch.concat(aug_batch_obs)
+        #     aug_batch_action = torch.concat(aug_batch_action)
+        #     aug_batch_reward = torch.concat(aug_batch_reward)
+        #     aug_batch_next_obs = torch.concat(aug_batch_next_obs)
+        #     aug_batch_done = torch.concat(aug_batch_done)
+        #
+        #     aug_batch = [aug_batch_obs, aug_batch_action, aug_batch_reward, aug_batch_next_obs, aug_batch_done]
+        #
+        #     observed_batch = [b.to(config.device) for b in observed_batch]
+        #     aug_batch = [b.to(config.device) for b in aug_batch]
+        #     combined_batch = [torch.concat([observed_batch[i], aug_batch[i]]) for i in range(len(observed_batch))]
+        # else:
+        #     combined_batch = observed_batch
 
-        if config.aug_online:
-            aug_count = 0
-            aug_batch_obs, aug_batch_action, aug_batch_reward, aug_batch_next_obs, aug_batch_done = [], [], [], [], []
-            while aug_count < config.aug_ratio:
-
-                obs, action, reward, next_obs, done = f.augment(*observed_batch)
-                aug_batch_obs.append(obs)
-                aug_batch_action.append(action)
-                aug_batch_reward.append(reward)
-                aug_batch_next_obs.append(next_obs)
-                aug_batch_done.append(done)
-                aug_count += len(aug_batch_obs)
-
-            aug_batch_obs = torch.concat(aug_batch_obs)
-            aug_batch_action = torch.concat(aug_batch_action)
-            aug_batch_reward = torch.concat(aug_batch_reward)
-            aug_batch_next_obs = torch.concat(aug_batch_next_obs)
-            aug_batch_done = torch.concat(aug_batch_done)
-
-            aug_batch = [aug_batch_obs, aug_batch_action, aug_batch_reward, aug_batch_next_obs, aug_batch_done]
-
-            observed_batch = [b.to(config.device) for b in observed_batch]
-            aug_batch = [b.to(config.device) for b in aug_batch]
-            combined_batch = [torch.concat([observed_batch[i], aug_batch[i]]) for i in range(len(observed_batch))]
-        else:
-            combined_batch = observed_batch
+        combined_batch = observed_batch
 
         stats_dict = trainer.update(combined_batch)
 
