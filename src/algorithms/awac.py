@@ -18,7 +18,7 @@ from src.algorithms.utils import TrainConfigBase, train_base, TensorBatch
 
 @dataclass
 class TrainConfig(TrainConfigBase):
-    buffer_size: int = 2_000_000
+    buffer_size: int = None
     batch_size: int = 256
     eval_freq: int = 1000
     n_episodes: int = 10
