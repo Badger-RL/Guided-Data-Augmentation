@@ -10,6 +10,13 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
         self.agent_offset = 0.2 # the agent and target coordinate systems are different for some reason.
         self.effective_wall_width = 0.603
         self.thetas = np.array([0, np.pi/2, np.pi, np.pi*3/2])
+        self.rotation_matrices = []
+        for theta in self.thetas:
+            M = np.array([
+                [np.cos(theta), -np.sin(theta)],
+                [np.sin(theta), np.cos(theta)]
+            ])
+            self.rotation_matrices.append(M)
         self.target = self.env.get_target()
         self.wall_locations = []
         self.valid_locations = []
@@ -81,6 +88,9 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
     def _sample_theta(self, **kwargs):
         return np.random.choice(self.thetas)
 
+    def _sample_rotation_matrix(self, **kwargs):
+        return np.random.choice(self.rotation_matrices)
+
     def _reward(self, next_obs):
         # Rewar dshould intuitively be computed using next_obs, but D4RL uses the current obs (D4RL bug)
         if self.env.reward_type == 'sparse':
@@ -111,11 +121,7 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
             delta_obs = next_obs - obs
             aug_next_obs[:2] = aug_obs[:2] + delta_obs[:2]
 
-            theta = self._sample_theta(obs=aug_obs, next_obs=aug_next_obs)
-            M = np.array([
-                [np.cos(theta), -np.sin(theta)],
-                [np.sin(theta), np.cos(theta)]
-            ])
+            M = self._sample_rotation_matrix(obs=aug_obs, next_obs=aug_next_obs)
 
             # rotate action
             aug_action = M.dot(action).T
