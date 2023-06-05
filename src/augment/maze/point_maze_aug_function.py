@@ -21,8 +21,8 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
         self.wall_locations = []
         self.valid_locations = []
         width, height = self.env.maze_arr.shape
-        for w in range(width):
-            for h in range(height):
+        for w in range(1,width-1):
+            for h in range(1,height-1):
                 location_type = self.env.maze_arr[w, h]
                 box_location = np.array((w, h))
                 if location_type in [WALL]:
@@ -89,7 +89,8 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
         return np.random.choice(self.thetas)
 
     def _sample_rotation_matrix(self, **kwargs):
-        return np.random.choice(self.rotation_matrices)
+        idx = np.random.randint(len(self.rotation_matrices))
+        return self.rotation_matrices[idx]
 
     def _reward(self, next_obs):
         # Rewar dshould intuitively be computed using next_obs, but D4RL uses the current obs (D4RL bug)
