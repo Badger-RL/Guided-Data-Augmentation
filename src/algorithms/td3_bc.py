@@ -20,6 +20,7 @@ TensorBatch = List[torch.Tensor]
 class TrainConfig(TrainConfigBase):
     # TD3
     hidden_dims: int = 64
+    n_layers: int = 2
     buffer_size: int = None  # Replay buffer size
     batch_size: int = 256  # Batch size for all networks
     gamma: float = 0.99  # gamma for
@@ -36,18 +37,27 @@ class TrainConfig(TrainConfigBase):
 
 
 class Actor(nn.Module):
-    def __init__(self, state_dim: int, action_dim: int, max_action: float, hidden_dims: int):
+    def __init__(self, state_dim: int, action_dim: int, max_action: float, hidden_dims: int, n_layers: int = 1):
         super(Actor, self).__init__()
 
-        self.net = nn.Sequential(
-            nn.Linear(state_dim, hidden_dims),
-            nn.ReLU(),
-            nn.Linear(hidden_dims, hidden_dims),
-            nn.ReLU(),
-            nn.Linear(hidden_dims, action_dim),
-            nn.Tanh(),
-        )
-
+        if n_layers == 1:
+            self.net = nn.Sequential(
+                nn.Linear(state_dim, hidden_dims),
+                nn.ReLU(),
+                # nn.Linear(hidden_dims, hidden_dims),
+                # nn.ReLU(),
+                nn.Linear(hidden_dims, action_dim),
+                nn.Tanh(),
+            )
+        if n_layers == 2:
+            self.net = nn.Sequential(
+                nn.Linear(state_dim, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, action_dim),
+                nn.Tanh(),
+            )
         self.max_action = max_action
 
     def forward(self, state: torch.Tensor) -> torch.Tensor:
@@ -60,18 +70,29 @@ class Actor(nn.Module):
 
 
 class Critic(nn.Module):
-    def __init__(self, state_dim: int, action_dim: int, hidden_dims: int):
+    def __init__(self, state_dim: int, action_dim: int, hidden_dims: int, n_layers: int = 2):
         super(Critic, self).__init__()
 
-        self.net = nn.Sequential(
-            nn.Linear(state_dim + action_dim, hidden_dims),
-            nn.ReLU(),
-            nn.Linear(hidden_dims, hidden_dims),
-            nn.ReLU(),
-            nn.Linear(hidden_dims, hidden_dims),
-            nn.ReLU(),
-            nn.Linear(hidden_dims, 1),
-        )
+        if n_layers == 1:
+            self.net = nn.Sequential(
+                nn.Linear(state_dim + action_dim, hidden_dims),
+                nn.ReLU(),
+                # nn.Linear(hidden_dims, hidden_dims),
+                # nn.ReLU(),
+                nn.Linear(hidden_dims, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, 1),
+            )
+        if n_layers == 2:
+            self.net = nn.Sequential(
+                nn.Linear(state_dim + action_dim, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, 1),
+            )
 
     def forward(self, state: torch.Tensor, action: torch.Tensor) -> torch.Tensor:
         sa = torch.cat([state, action], 1)
