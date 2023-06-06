@@ -19,9 +19,10 @@ TensorBatch = List[torch.Tensor]
 @dataclass
 class TrainConfig(TrainConfigBase):
     # TD3
+    hidden_dims: int = 64
     buffer_size: int = None  # Replay buffer size
     batch_size: int = 256  # Batch size for all networks
-    gamma: float = 0.95  # gamma for
+    gamma: float = 0.99  # gamma for
     expl_noise: float = 0.1  # Std of Gaussian exploration noise
     tau: float = 0.005  # Target network update rate
     policy_noise: float = 0.2  # Noise added to target actor during critic update
@@ -35,15 +36,15 @@ class TrainConfig(TrainConfigBase):
 
 
 class Actor(nn.Module):
-    def __init__(self, state_dim: int, action_dim: int, max_action: float):
+    def __init__(self, state_dim: int, action_dim: int, max_action: float, hidden_dims: int):
         super(Actor, self).__init__()
 
         self.net = nn.Sequential(
-            nn.Linear(state_dim, 256),
+            nn.Linear(state_dim, hidden_dims),
             nn.ReLU(),
-            nn.Linear(256, 256),
+            nn.Linear(hidden_dims, hidden_dims),
             nn.ReLU(),
-            nn.Linear(256, action_dim),
+            nn.Linear(hidden_dims, action_dim),
             nn.Tanh(),
         )
 
@@ -59,17 +60,17 @@ class Actor(nn.Module):
 
 
 class Critic(nn.Module):
-    def __init__(self, state_dim: int, action_dim: int):
+    def __init__(self, state_dim: int, action_dim: int, hidden_dims: int):
         super(Critic, self).__init__()
 
         self.net = nn.Sequential(
-            nn.Linear(state_dim + action_dim, 256),
+            nn.Linear(state_dim + action_dim, hidden_dims),
             nn.ReLU(),
-            nn.Linear(256,256),
+            nn.Linear(hidden_dims, hidden_dims),
             nn.ReLU(),
-            nn.Linear(256, 256),
+            nn.Linear(hidden_dims, hidden_dims),
             nn.ReLU(),
-            nn.Linear(256, 1),
+            nn.Linear(hidden_dims, 1),
         )
 
     def forward(self, state: torch.Tensor, action: torch.Tensor) -> torch.Tensor:
@@ -77,25 +78,25 @@ class Critic(nn.Module):
         return self.net(sa), None, None
 
 class CriticVIB(nn.Module):
-    def __init__(self, state_dim: int, action_dim: int):
+    def __init__(self, state_dim: int, action_dim: int, hidden_dims: int):
         super(CriticVIB, self).__init__()
 
         self.mu = nn.Sequential(
-            nn.Linear(state_dim + action_dim, 256),
+            nn.Linear(state_dim + action_dim, hidden_dims),
             nn.ReLU(),
-            nn.Linear(256,256),
+            nn.Linear(hidden_dims, hidden_dims),
         )
 
         self.logstd = nn.Sequential(
-            nn.Linear(state_dim + action_dim, 256),
+            nn.Linear(state_dim + action_dim, hidden_dims),
             nn.ReLU(),
-            nn.Linear(256,256),
+            nn.Linear(hidden_dims, hidden_dims),
         )
 
         self.q = nn.Sequential(
-            nn.Linear(256, 256),
+            nn.Linear(hidden_dims, hidden_dims),
             nn.ReLU(),
-            nn.Linear(256, 1),
+            nn.Linear(hidden_dims, 1),
         )
 
     def forward(self, state: torch.Tensor, action: torch.Tensor) -> (torch.Tensor, torch.Tensor, torch.Tensor):
@@ -274,12 +275,12 @@ def train(config: TrainConfig):
     action_dim = env.action_space.shape[0]
     max_action = float(env.action_space.high[0])
 
-    actor = Actor(state_dim, action_dim, max_action).to(config.device)
+    actor = Actor(state_dim, action_dim, max_action, config.hidden_dims).to(config.device)
     actor_optimizer = torch.optim.Adam(actor.parameters(), lr=config.actor_lr)
 
-    critic_1 = Critic(state_dim, action_dim).to(config.device)
+    critic_1 = Critic(state_dim, action_dim, config.hidden_dims).to(config.device)
     critic_1_optimizer = torch.optim.Adam(critic_1.parameters(), lr=config.critic_lr)
-    critic_2 = Critic(state_dim, action_dim).to(config.device)
+    critic_2 = Critic(state_dim, action_dim, config.hidden_dims).to(config.device)
     critic_2_optimizer = torch.optim.Adam(critic_2.parameters(), lr=config.critic_lr)
 
     kwargs = {
