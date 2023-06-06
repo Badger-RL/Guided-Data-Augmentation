@@ -42,8 +42,8 @@ class Actor(nn.Module):
         self.net = nn.Sequential(
             nn.Linear(state_dim, hidden_dims),
             nn.ReLU(),
-            nn.Linear(hidden_dims, hidden_dims),
-            nn.ReLU(),
+            # nn.Linear(hidden_dims, hidden_dims),
+            # nn.ReLU(),
             nn.Linear(hidden_dims, action_dim),
             nn.Tanh(),
         )
@@ -66,8 +66,8 @@ class Critic(nn.Module):
         self.net = nn.Sequential(
             nn.Linear(state_dim + action_dim, hidden_dims),
             nn.ReLU(),
-            nn.Linear(hidden_dims, hidden_dims),
-            nn.ReLU(),
+            # nn.Linear(hidden_dims, hidden_dims),
+            # nn.ReLU(),
             nn.Linear(hidden_dims, hidden_dims),
             nn.ReLU(),
             nn.Linear(hidden_dims, 1),
