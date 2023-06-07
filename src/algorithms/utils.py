@@ -160,7 +160,7 @@ class TrainConfigBase:
     name: str = None
     save_dir: str = "results"
     run_id: str = None
-    save_policy: bool = True
+    save_policy: bool = False
 
     def __post_init__(self):
         self.name = self.name
@@ -405,14 +405,14 @@ def train_base(config, env, trainer):
                 log_stats[key].append(val)
             np.savez(os.path.join(config.save_dir, "stats.npz"), **log_stats)
 
-            # save current model
-            torch.save(
-                trainer.state_dict(),
-                os.path.join(config.save_dir, f"model.pt"),
-            )
-
-            # save best model
             if config.save_policy:
+                # save current model
+                torch.save(
+                    trainer.state_dict(),
+                    os.path.join(config.save_dir, f"model.pt"),
+                )
+
+                # save best model
                 if eval_score > best_eval_score:
                     best_eval_score = eval_score
                     torch.save(
