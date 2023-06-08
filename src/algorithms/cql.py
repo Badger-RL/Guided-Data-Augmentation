@@ -387,6 +387,7 @@ class ContinuousCQL:
         cql_random_actions = actions.new_empty(
             (batch_size, self.cql_n_actions, action_dim), requires_grad=False
         ).uniform_(0, 1) * (self.action_space.high - self.action_space.low) + self.action_space.low
+        cql_random_actions = cql_random_actions.to(self._device)
         cql_current_actions, cql_current_log_pis = self.actor(
             observations, repeat=self.cql_n_actions
         )
