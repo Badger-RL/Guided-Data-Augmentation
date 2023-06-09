@@ -3,6 +3,7 @@ import glob
 import json
 import os
 import random
+import sys
 import uuid
 from collections import defaultdict
 from pathlib import Path
@@ -30,6 +31,12 @@ def get_latest_run_id(save_dir: str) -> int:
         if ext.isdigit() and int(ext) > max_run_id:
             max_run_id = int(ext)
     return max_run_id
+
+def load_config(config):
+
+    with open(os.path.join(config.config_dir, "config.json"), "w") as f:
+        config_dict = json.load(f)
+    return config_dict
 
 def make_save_dir(config):
     # create save directories
@@ -160,7 +167,7 @@ class TrainConfigBase:
     name: str = None
     save_dir: str = "results"
     run_id: str = None
-    save_policy: bool = False
+    save_policy: bool = False 
 
     def __post_init__(self):
         self.name = self.name
@@ -285,6 +292,9 @@ def train_base(config, env, trainer):
 
     # create save directories
     make_save_dir(config=config)
+    # if config.config_dir:
+    #     config_dict = load_config(config)
+
 
     # setup wandb logging
     if config.use_wandb:
@@ -385,13 +395,13 @@ def train_base(config, env, trainer):
             else:
                 eval_success_rate = -np.inf
             normalized_eval_score = env.get_normalized_score(eval_score) * 100.0
-            print("---------------------------------------")
+            print("---------------------------------------", file=sys.stderr)
             print(
                 f"Return over {config.n_episodes} episodes: "
                 f"{eval_score:.3f} , Normalized return: {normalized_eval_score:.3f} "
-                f"Success rate: {eval_success_rate:.3f}"
+                f"Success rate: {eval_success_rate:.3f}", file=sys.stderr
             )
-            print("---------------------------------------")
+            print("---------------------------------------", file=sys.stderr)
 
             # log evaluations
             log_evaluations['timestep'].append(t)
