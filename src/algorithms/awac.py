@@ -20,9 +20,10 @@ from src.algorithms.utils import TrainConfigBase, train_base, TensorBatch
 class TrainConfig(TrainConfigBase):
     buffer_size: int = None
     batch_size: int = 256
-    eval_freq: int = 1000
+    eval_freq: int = 10000
 
-    hidden_dim: int = 256
+    n_layers: int = 1
+    hidden_dim: int = 128
     learning_rate: float = 3e-4
     gamma: float = 0.99
     tau: float = 5e-3
@@ -38,17 +39,27 @@ class Actor(nn.Module):
         max_log_std: float = 2.0,
         min_action: float = -1.0,
         max_action: float = 1.0,
+        n_layers: int = 1,
     ):
         super().__init__()
-        self.mlp = nn.Sequential(
-            nn.Linear(state_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, action_dim),
-        )
+        if n_layers == 1:
+            self.mlp = nn.Sequential(
+                nn.Linear(state_dim, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, action_dim),
+            )
+        else:
+            self.mlp = nn.Sequential(
+                nn.Linear(state_dim, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, action_dim),
+            )
         self.log_std = nn.Parameter(torch.zeros(action_dim, dtype=torch.float32))
         self.min_log_std = min_log_std
         self.max_log_std = max_log_std
@@ -90,17 +101,27 @@ class Critic(nn.Module):
         state_dim: int,
         action_dim: int,
         hidden_dim: int,
+        n_layers: int = 1,
     ):
         super().__init__()
-        self.mlp = nn.Sequential(
-            nn.Linear(state_dim + action_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, 1),
-        )
+        if n_layers == 1:
+            self.mlp = nn.Sequential(
+                nn.Linear(state_dim + action_dim, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, 1),
+            )
+        else:
+            self.mlp = nn.Sequential(
+                nn.Linear(state_dim + action_dim, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, hidden_dim),
+                nn.ReLU(),
+                nn.Linear(hidden_dim, 1),
+            )
 
     def forward(self, state: torch.Tensor, action: torch.Tensor) -> torch.Tensor:
         q_value = self.mlp(torch.cat([state, action], dim=-1))
@@ -236,6 +257,7 @@ def train(config: TrainConfig):
         "state_dim": state_dim,
         "action_dim": action_dim,
         "hidden_dim": config.hidden_dim,
+        "n_layers": config.n_layers
     }
 
     actor = Actor(**actor_critic_kwargs)
