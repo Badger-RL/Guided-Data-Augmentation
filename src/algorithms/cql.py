@@ -128,11 +128,11 @@ class TanhGaussianPolicy(nn.Module):
         self.no_tanh = no_tanh
 
         self.base_network = nn.Sequential(
-            nn.Linear(state_dim, 256),
+            nn.Linear(state_dim, 128),
             nn.ReLU(),
-            nn.Linear(256, 256),
+            nn.Linear(128, 128),
             nn.ReLU(),
-            nn.Linear(256, 2 * action_dim),
+            nn.Linear(128, 2 * action_dim),
         )
 
         if orthogonal_init:
@@ -189,11 +189,11 @@ class FullyConnectedQFunction(nn.Module):
         self.orthogonal_init = orthogonal_init
 
         self.network = nn.Sequential(
-            nn.Linear(observation_dim + action_dim, 256),
+            nn.Linear(observation_dim + action_dim, 128),
             nn.ReLU(),
-            nn.Linear(256,256),
+            nn.Linear(128,128),
             nn.ReLU(),
-            nn.Linear(256, 1),
+            nn.Linear(128, 1),
         )
         if orthogonal_init:
             self.network.apply(lambda m: init_module_weights(m, True))
@@ -311,6 +311,9 @@ class ContinuousCQL:
 
         self.total_it = 0
 
+        self.random_action_scale = torch.Tensor(self.action_space.high - self.action_space.low).to(self._device)
+        self.random_action_offset = torch.Tensor(self.action_space.low).to(self._device)
+
     def update_target_network(self, soft_target_update_rate: float):
         soft_update(self.target_critic_1, self.critic_1, soft_target_update_rate)
         soft_update(self.target_critic_2, self.critic_2, soft_target_update_rate)
@@ -386,8 +389,7 @@ class ContinuousCQL:
         action_dim = actions.shape[-1]
         cql_random_actions = actions.new_empty(
             (batch_size, self.cql_n_actions, action_dim), requires_grad=False
-        ).uniform_(0, 1) * (self.action_space.high - self.action_space.low) + self.action_space.low
-        cql_random_actions = cql_random_actions.to(self._device)
+        ).uniform_(0, 1) * self.random_action_scale + self.random_action_offset
         cql_current_actions, cql_current_log_pis = self.actor(
             observations, repeat=self.cql_n_actions
         )
