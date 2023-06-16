@@ -76,10 +76,11 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
 
         w, h = int(location[0]), int(location[1])
         for loc in [(w + 1, h + 1), (w + 1, h - 1), (w - 1, h + 1), (w - 1, h - 1)]:
-            loc = np.array(loc)
-            if self._is_in_wall(loc, x, y):
-                is_valid_position = False
-                break
+            if self.env.maze_arr[loc[0], loc[1]] == WALL:
+                loc = np.array(loc)
+                if self._is_in_wall(loc, x, y):
+                    is_valid_position = False
+                    break
 
         return is_valid_position
 
