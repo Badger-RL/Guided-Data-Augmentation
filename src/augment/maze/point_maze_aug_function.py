@@ -173,7 +173,7 @@ class PointMazeGuidedAugmentationFunction(PointMazeAugmentationFunction):
             self.guide_thetas = {
                 (1, 1): [0],
                 (2, 1): [np.pi/2],
-                (1, 1): [],
+                (3, 1): [],
                 (4, 1): [np.pi/2],
                 (5, 1): [np.pi],
                 (6, 1): [np.pi/2],
@@ -300,14 +300,24 @@ class PointMazeGuidedAugmentationFunction(PointMazeAugmentationFunction):
         x, y = obs[0], obs[1]
         delta_obs = next_obs - obs
         theta = np.arctan2(delta_obs[1], delta_obs[0])
+        if theta < 0:
+            theta += 2*np.pi
 
         location = (int(np.round(x+self.agent_offset)), int(np.round(y+self.agent_offset)))
         guide_thetas = self.guide_thetas[location]
         guide_theta = np.random.choice(guide_thetas)
 
         aug_thetas = (self.thetas + theta)%(2*np.pi)
-        dist = np.abs(guide_theta - aug_thetas)
-        idx = np.argmin(dist)
+
+        # need to handle 0/2*np.pi separately
+        if np.isclose(guide_theta, 0):
+            dist1 = np.abs(0 - aug_thetas)
+            dist2 = np.abs(2* np.pi - aug_thetas)
+            idx = np.argmin(np.concatenate([dist1, dist2])) % 4
+        else:
+            dist = np.abs(guide_theta - aug_thetas)
+            idx = np.argmin(dist)
+
         return self.rotation_matrices[idx]
 
 
