@@ -11,7 +11,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.algorithms.utils import TrainConfigBase, train_base, return_reward_range, soft_update
+from src.algorithms.utils import soft_update, TrainConfigBase, train_base
 
 TensorBatch = List[torch.Tensor]
 

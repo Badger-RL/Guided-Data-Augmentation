@@ -9,8 +9,6 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Optional, Tuple, Union, Dict, List
 
-from tqdm import trange
-
 import d4rl
 import gym
 import h5py
@@ -18,8 +16,6 @@ import numpy as np
 import torch
 import wandb
 from torch import nn
-
-from src.augment.maze.augment_torch import PointMazeAugmentationFunction, PointMazeGuidedAugmentationFunction
 
 TensorBatch = List[torch.Tensor]
 DATASET_SIZES = {
@@ -31,6 +27,8 @@ DATASET_SIZES = {
     'antmaze-large-diverse-v1': 1,
 
 }
+
+### SAVE UTILS #########################################################################################################
 
 def get_latest_run_id(save_dir: str) -> int:
     max_run_id = 0
@@ -78,6 +76,7 @@ def wandb_init(config):
     )
     wandb.run.save()
 
+### TRAINING UTILS #####################################################################################################
 
 def set_seed(seed: int, env: Optional[gym.Env] = None, deterministic_torch: bool = False):
     if env is not None:
@@ -88,7 +87,6 @@ def set_seed(seed: int, env: Optional[gym.Env] = None, deterministic_torch: bool
     random.seed(seed)
     torch.manual_seed(seed)
     torch.use_deterministic_algorithms(deterministic_torch)
-
 
 def return_reward_range(dataset, max_episode_steps):
     returns, lengths = [], []
@@ -120,7 +118,6 @@ def compute_mean_std(states: np.ndarray, eps: float) -> Tuple[np.ndarray, np.nda
 def normalize_states(states: np.ndarray, mean: np.ndarray, std: np.ndarray):
     return (states - mean) / std
 
-
 def load_dataset(config, env):
     dataset = {}
     if config.dataset_name:
@@ -150,62 +147,6 @@ def load_dataset(config, env):
 
     return dataset, state_mean, state_std
 
-
-
-@dataclasses.dataclass
-class TrainConfigBase:
-    # Experiment
-    device: str = "cpu"
-    env: str = "maze2d-umaze-v1"  # OpenAI gym environment name
-    seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
-    eval_freq: int = int(10e3)  # How often (time steps) we evaluate
-    n_episodes: int = 50  # How many episodes run during evaluation
-    max_timesteps: int = int(1e6)  # Max time steps to run environment
-    load_model: str = ""  # Model load file name, "" doesn't load
-    dataset_name: str = None
-    deterministic_torch: bool = True
-    # Normalization
-    normalize: bool = True  # Normalize states
-    normalize_reward: bool = False  # Normalize reward
-    # Augmentation
-    aug_ratio: int = 8
-    # Wandb logging
-    use_wandb: bool = False
-    project: str = "td3bc"
-    group: str = "no_aug"
-    name: str = None
-    save_dir: str = "results"
-    run_id: str = None
-    save_policy: bool = False 
-
-    def __post_init__(self):
-        self.name = self.name
-
-
-@torch.no_grad()
-def eval_actor(
-    env: gym.Env, actor: nn.Module, device: str, n_episodes: int, seed: int
-) -> (np.ndarray, np.ndarray):
-    env.seed(seed)
-    actor.eval()
-    episode_rewards = []
-    successes = []
-    info = {}
-    for _ in range(n_episodes):
-        state, done = env.reset(), False
-        episode_reward = 0.0
-        while not done:
-            action = actor.act(state, device)
-            state, reward, done, info = env.step(action)
-            episode_reward += reward
-        episode_rewards.append(episode_reward)
-        if 'is_success' in info:
-            successes.append(info['is_success'])
-
-    return np.asarray(episode_rewards), np.array(successes)
-
-
-
 def wrap_env(
     env: gym.Env,
     state_mean: Union[np.ndarray, float] = 0.0,
@@ -227,6 +168,12 @@ def wrap_env(
         env = gym.wrappers.TransformReward(env, scale_reward)
     return env
 
+def soft_update(target: nn.Module, source: nn.Module, tau: float):
+    for target_param, source_param in zip(target.parameters(), source.parameters()):
+        target_param.data.copy_((1 - tau) * target_param.data + tau * source_param.data)
+
+def extend_and_repeat(tensor: torch.Tensor, dim: int, repeat: int) -> torch.Tensor:
+    return tensor.unsqueeze(dim).repeat_interleave(repeat, dim=dim)
 
 class ReplayBuffer:
     def __init__(
@@ -289,21 +236,66 @@ class ReplayBuffer:
         # I left it unimplemented since now we do not do fine-tuning.
         raise NotImplementedError
 
-def soft_update(target: nn.Module, source: nn.Module, tau: float):
-    for target_param, source_param in zip(target.parameters(), source.parameters()):
-        target_param.data.copy_((1 - tau) * target_param.data + tau * source_param.data)
+### TRAINING AND EVAL ##################################################################################################
 
-def extend_and_repeat(tensor: torch.Tensor, dim: int, repeat: int) -> torch.Tensor:
-    return tensor.unsqueeze(dim).repeat_interleave(repeat, dim=dim)
 
+
+@dataclasses.dataclass
+class TrainConfigBase:
+    # Experiment
+    device: str = "cpu"
+    env: str = "maze2d-umaze-v1"  # OpenAI gym environment name
+    seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
+    eval_freq: int = int(10e3)  # How often (time steps) we evaluate
+    n_episodes: int = 50  # How many episodes run during evaluation
+    max_timesteps: int = int(1e6)  # Max time steps to run environment
+    load_model: str = ""  # Model load file name, "" doesn't load
+    dataset_name: str = None
+    deterministic_torch: bool = True
+    # Normalization
+    normalize: bool = True  # Normalize states
+    normalize_reward: bool = False  # Normalize reward
+    # Augmentation
+    aug_ratio: int = 8
+    # Wandb logging
+    use_wandb: bool = False
+    project: str = "td3bc"
+    group: str = "no_aug"
+    name: str = None
+    save_dir: str = "results"
+    run_id: str = None
+    save_policy: bool = False
+
+    def __post_init__(self):
+        self.name = self.name
+
+
+@torch.no_grad()
+def eval_actor(
+    env: gym.Env, actor: nn.Module, device: str, n_episodes: int, seed: int
+) -> (np.ndarray, np.ndarray):
+    env.seed(seed)
+    actor.eval()
+    episode_rewards = []
+    successes = []
+    info = {}
+    for _ in range(n_episodes):
+        state, done = env.reset(), False
+        episode_reward = 0.0
+        while not done:
+            action = actor.act(state, device)
+            state, reward, done, info = env.step(action)
+            episode_reward += reward
+        episode_rewards.append(episode_reward)
+        if 'is_success' in info:
+            successes.append(info['is_success'])
+
+    return np.asarray(episode_rewards), np.array(successes)
 
 def train_base(config, env, trainer):
 
     # create save directories
     make_save_dir(config=config)
-    # if config.config_dir:
-    #     config_dict = load_config(config)
-
 
     # setup wandb logging
     if config.use_wandb:
@@ -406,9 +398,11 @@ def train_base(config, env, trainer):
             normalized_eval_score = env.get_normalized_score(eval_score) * 100.0
             print("---------------------------------------", file=sys.stderr)
             print(
-                f"Return over {config.n_episodes} episodes: "
-                f"{eval_score:.3f} , Normalized return: {normalized_eval_score:.3f} "
-                f"Success rate: {eval_success_rate:.3f}", file=sys.stderr
+                f"Iteration {t}: "
+                f"Return: {eval_score:.3f}, "
+                f"Normalized return: {normalized_eval_score:.3f}, "
+                f"Success rate: {eval_success_rate:.3f}",
+                file=sys.stderr
             )
             print("---------------------------------------", file=sys.stderr)
 

@@ -14,11 +14,7 @@ from torch.distributions import Normal, TanhTransform, TransformedDistribution
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.algorithms.utils import TrainConfigBase, TensorBatch, train_base, soft_update
-
-sys.path.append("..")
-
-
+from src.algorithms.utils import TensorBatch, soft_update, TrainConfigBase, train_base
 
 @dataclass
 class TrainConfig(TrainConfigBase):
