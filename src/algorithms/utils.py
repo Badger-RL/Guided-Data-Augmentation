@@ -3,10 +3,13 @@ import glob
 import json
 import os
 import random
+import sys
 import uuid
 from collections import defaultdict
 from pathlib import Path
 from typing import Optional, Tuple, Union, Dict, List
+
+from tqdm import trange
 
 import d4rl
 import gym
@@ -15,6 +18,8 @@ import numpy as np
 import torch
 import wandb
 from torch import nn
+
+from src.augment.maze.augment_torch import PointMazeAugmentationFunction, PointMazeGuidedAugmentationFunction
 
 TensorBatch = List[torch.Tensor]
 
@@ -26,6 +31,12 @@ def get_latest_run_id(save_dir: str) -> int:
         if ext.isdigit() and int(ext) > max_run_id:
             max_run_id = int(ext)
     return max_run_id
+
+def load_config(config):
+
+    with open(os.path.join(config.config_dir, "config.json"), "w") as f:
+        config_dict = json.load(f)
+    return config_dict
 
 def make_save_dir(config):
     # create save directories
@@ -43,10 +54,7 @@ def make_save_dir(config):
 
 def wandb_init(config):
     # wandb logging
-    with open("../../wandb_credentials.json", 'r') as json_file:
-        credential_json = json.load(json_file)
-        key = credential_json["wandb_key"]
-    wandb.login(key=key)
+    wandb.login(key='7313077863c8908c24cc6058b99c2b2cc35d326b')
 
     if config.use_wandb and config.name is None:
         config.name = config.save_dir.replace('/', '_')
@@ -108,9 +116,10 @@ def load_dataset(config, env):
     dataset = {}
     if config.dataset_name:
         # local dataset
-        data_hdf5 = h5py.File(f"./datasets/{config.dataset_name}", "r")
+        data_hdf5 = h5py.File(f"{config.dataset_name}", "r")
         for key in data_hdf5.keys():
             dataset[key] = np.array(data_hdf5[key])
+            print(dataset[key].shape)
     else:
         # remote dataset
         dataset = d4rl.qlearning_dataset(env)
@@ -140,19 +149,25 @@ class TrainConfigBase:
     device: str = "cpu"
     env: str = "maze2d-umaze-v1"  # OpenAI gym environment name
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
-    eval_freq: int = int(5000)  # How often (time steps) we evaluate
-    n_episodes: int = 10  # How many episodes run during evaluation
-    max_timesteps: int = int(2e6)  # Max time steps to run environment
+    eval_freq: int = int(10e3)  # How often (time steps) we evaluate
+    n_episodes: int = 50  # How many episodes run during evaluation
+    max_timesteps: int = int(1e6)  # Max time steps to run environment
     load_model: str = ""  # Model load file name, "" doesn't load
     dataset_name: str = None
+    deterministic_torch: bool = True
+    # Normalization
+    normalize: bool = True  # Normalize states
+    normalize_reward: bool = False  # Normalize reward
+    # Augmentation
+    aug_ratio: int = 8
     # Wandb logging
-    use_wandb: bool = True
-    project: str = "CORL"
-    group: str = "CQL-D4RL"
+    use_wandb: bool = False
+    project: str = "td3bc"
+    group: str = "no_aug"
     name: str = None
     save_dir: str = "results"
     run_id: str = None
-    save_policy: bool = True
+    save_policy: bool = False 
 
     def __post_init__(self):
         self.name = self.name
@@ -178,7 +193,6 @@ def eval_actor(
         if 'is_success' in info:
             successes.append(info['is_success'])
 
-    actor.train()
     return np.asarray(episode_rewards), np.array(successes)
 
 
@@ -278,6 +292,9 @@ def train_base(config, env, trainer):
 
     # create save directories
     make_save_dir(config=config)
+    # if config.config_dir:
+    #     config_dict = load_config(config)
+
 
     # setup wandb logging
     if config.use_wandb:
@@ -292,6 +309,8 @@ def train_base(config, env, trainer):
     # create replay buffer
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
+    if config.buffer_size is None:
+        config.buffer_size = len(dataset['observations'])
     replay_buffer = ReplayBuffer(
         state_dim,
         action_dim,
@@ -319,14 +338,46 @@ def train_base(config, env, trainer):
     print(f"Training {trainer}, Env: {config.env}, Seed: {seed}")
     print("---------------------------------------")
 
-    for t in range(int(config.max_timesteps)+1):
-        batch = replay_buffer.sample(config.batch_size)
-        batch = [b.to(config.device) for b in batch]
-        stats_dict = trainer.train(batch)
+    # f = PointMazeGuidedAugmentationFunction(env)
+
+    # for t in trange(int(config.max_timesteps), ncols=100):
+    for t in range(int(config.max_timesteps)):
+        observed_batch = replay_buffer.sample(config.batch_size)
+        #
+        # if config.aug_online:
+        #     aug_count = 0
+        #     aug_batch_obs, aug_batch_action, aug_batch_reward, aug_batch_next_obs, aug_batch_done = [], [], [], [], []
+        #     while aug_count < config.aug_ratio:
+        #
+        #         obs, action, reward, next_obs, done = f.augment(*observed_batch)
+        #         aug_batch_obs.append(obs)
+        #         aug_batch_action.append(action)
+        #         aug_batch_reward.append(reward)
+        #         aug_batch_next_obs.append(next_obs)
+        #         aug_batch_done.append(done)
+        #         aug_count += len(aug_batch_obs)
+        #
+        #     aug_batch_obs = torch.concat(aug_batch_obs)
+        #     aug_batch_action = torch.concat(aug_batch_action)
+        #     aug_batch_reward = torch.concat(aug_batch_reward)
+        #     aug_batch_next_obs = torch.concat(aug_batch_next_obs)
+        #     aug_batch_done = torch.concat(aug_batch_done)
+        #
+        #     aug_batch = [aug_batch_obs, aug_batch_action, aug_batch_reward, aug_batch_next_obs, aug_batch_done]
+        #
+        #     observed_batch = [b.to(config.device) for b in observed_batch]
+        #     aug_batch = [b.to(config.device) for b in aug_batch]
+        #     combined_batch = [torch.concat([observed_batch[i], aug_batch[i]]) for i in range(len(observed_batch))]
+        # else:
+        #     combined_batch = observed_batch
+
+        combined_batch = observed_batch
+
+        stats_dict = trainer.update(combined_batch)
 
         # log training statistics
         if config.use_wandb and t % 100 == 0:
-            wandb.log(stats_dict, step=trainer.total_it)
+            wandb.log(stats_dict, step=t)
 
         # evalutate agent
         if (t) % config.eval_freq == 0 or t == 0:
@@ -343,18 +394,19 @@ def train_base(config, env, trainer):
                 eval_success_rate = eval_successes.mean()
             else:
                 eval_success_rate = -np.inf
-            normalized_eval_score = eval_score  # env.get_normalized_score(eval_score) * 100.0
-            print("---------------------------------------")
+            normalized_eval_score = env.get_normalized_score(eval_score) * 100.0
+            print("---------------------------------------", file=sys.stderr)
             print(
-                f"Evaluation over {config.n_episodes} episodes: "
-                f"{eval_score:.3f} , D4RL score: {normalized_eval_score:.3f} "
-                f"Success rate: {eval_success_rate:.3f}"
+                f"Return over {config.n_episodes} episodes: "
+                f"{eval_score:.3f} , Normalized return: {normalized_eval_score:.3f} "
+                f"Success rate: {eval_success_rate:.3f}", file=sys.stderr
             )
-            print("---------------------------------------")
+            print("---------------------------------------", file=sys.stderr)
 
             # log evaluations
             log_evaluations['timestep'].append(t)
             log_evaluations['return'].append(eval_score)
+            log_evaluations['normalized_return'].append(normalized_eval_score)
             log_evaluations['success_rate'].append(eval_success_rate)
             np.savez(os.path.join(config.save_dir, "evaluations.npz"), **log_evaluations)
 
@@ -364,14 +416,14 @@ def train_base(config, env, trainer):
                 log_stats[key].append(val)
             np.savez(os.path.join(config.save_dir, "stats.npz"), **log_stats)
 
-            # save current model
-            torch.save(
-                trainer.state_dict(),
-                os.path.join(config.save_dir, f"model.pt"),
-            )
-
-            # save best model
             if config.save_policy:
+                # save current model
+                torch.save(
+                    trainer.state_dict(),
+                    os.path.join(config.save_dir, f"model.pt"),
+                )
+
+                # save best model
                 if eval_score > best_eval_score:
                     best_eval_score = eval_score
                     torch.save(
@@ -381,10 +433,9 @@ def train_base(config, env, trainer):
 
             if config.use_wandb:
                 wandb.log(
-                    {"d4rl_normalized_score": normalized_eval_score},
-                    step=trainer.total_it,
-                )
-                wandb.log(
-                    {"success_rate": eval_success_rate},
-                    step=trainer.total_it,
+                    {"return": eval_score,
+                     "normalized_return": normalized_eval_score,
+                     "success_rate": eval_success_rate
+                     },
+                    step=t,
                 )

@@ -1,31 +1,20 @@
 # source: https://github.com/young-geng/CQL/tree/934b0e8354ca431d6c083c4e3a29df88d4b0a24d
 # STRONG UNDER-PERFORMANCE ON PART OF ANTMAZE TASKS. BUT IN IQL PAPER IT WORKS SOMEHOW
 # https://arxiv.org/pdf/2006.04779.pdf
-import dataclasses
-from collections import defaultdict
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict,  Tuple
 from copy import deepcopy
-from dataclasses import asdict, dataclass
-import os
-from pathlib import Path
-import random
-import uuid
-import json
+from dataclasses import  dataclass
 import sys
 
-import h5py
 import gym, custom_envs
-import d4rl
 import numpy as np
 import pyrallis
 import torch
 from torch.distributions import Normal, TanhTransform, TransformedDistribution
 import torch.nn as nn
 import torch.nn.functional as F
-import wandb
 
-from src.algorithms.utils import get_latest_run_id, make_save_dir, load_dataset, wandb_init, set_seed, TrainConfigBase, \
-    TensorBatch, train_base, soft_update
+from src.algorithms.utils import TrainConfigBase, TensorBatch, train_base, soft_update
 
 sys.path.append("..")
 
@@ -34,9 +23,9 @@ sys.path.append("..")
 @dataclass
 class TrainConfig(TrainConfigBase):
     # CQL
-    buffer_size: int = 2_000_000  # Replay buffer size
+    buffer_size: int = None  # Replay buffer size
     batch_size: int = 256  # Batch size for all networks
-    discount: float = 0.99  # Discount factor
+    gamma: float = 0.99  # gamma factor
     alpha_multiplier: float = 1.0  # Multiplier for alpha in loss
     dataset_name: str = ""
     use_automatic_entropy_tuning: bool = True  # Tune entropy
@@ -49,7 +38,7 @@ class TrainConfig(TrainConfigBase):
     cql_n_actions: int = 10  # Number of sampled actions
     cql_importance_sample: bool = True  # Use importance sampling
     cql_lagrange: bool = True  # Use Lagrange version of CQL
-    cql_target_action_gap: float = 10  # Action gap
+    cql_target_action_gap: float = 5  # Action gap
     cql_temp: float = 1.0  # CQL temperature
     cql_min_q_weight: float = 10.0  # Minimal Q weight
     cql_max_target_backup: bool = False  # Use max target backup
@@ -139,11 +128,11 @@ class TanhGaussianPolicy(nn.Module):
         self.no_tanh = no_tanh
 
         self.base_network = nn.Sequential(
-            nn.Linear(state_dim, 64),
+            nn.Linear(state_dim, 128),
             nn.ReLU(),
-            nn.Linear(64, 64),
+            nn.Linear(128, 128),
             nn.ReLU(),
-            nn.Linear(64, 2 * action_dim),
+            nn.Linear(128, 2 * action_dim),
         )
 
         if orthogonal_init:
@@ -200,11 +189,11 @@ class FullyConnectedQFunction(nn.Module):
         self.orthogonal_init = orthogonal_init
 
         self.network = nn.Sequential(
-            nn.Linear(observation_dim + action_dim, 64),
+            nn.Linear(observation_dim + action_dim, 128),
             nn.ReLU(),
-            nn.Linear(64, 64),
+            nn.Linear(128,128),
             nn.ReLU(),
-            nn.Linear(64, 1),
+            nn.Linear(128, 1),
         )
         if orthogonal_init:
             self.network.apply(lambda m: init_module_weights(m, True))
@@ -247,7 +236,7 @@ class ContinuousCQL:
         actor,
         actor_optimizer,
         target_entropy: float,
-        discount: float = 0.99,
+        gamma: float = 0.99,
         alpha_multiplier: float = 1.0,
         use_automatic_entropy_tuning: bool = True,
         backup_entropy: bool = False,
@@ -270,7 +259,7 @@ class ContinuousCQL:
         super().__init__()
 
         self.action_space = action_space
-        self.discount = discount
+        self.gamma = gamma
         self.target_entropy = target_entropy
         self.alpha_multiplier = alpha_multiplier
         self.use_automatic_entropy_tuning = use_automatic_entropy_tuning
@@ -321,6 +310,9 @@ class ContinuousCQL:
         )
 
         self.total_it = 0
+
+        self.random_action_scale = torch.Tensor(self.action_space.high - self.action_space.low).to(self._device)
+        self.random_action_offset = torch.Tensor(self.action_space.low).to(self._device)
 
     def update_target_network(self, soft_target_update_rate: float):
         soft_update(self.target_critic_1, self.critic_1, soft_target_update_rate)
@@ -387,7 +379,7 @@ class ContinuousCQL:
             target_q_values = target_q_values - alpha * next_log_pi
 
         target_q_values = target_q_values.unsqueeze(-1)
-        td_target = rewards + (1.0 - dones) * self.discount * target_q_values
+        td_target = rewards + (1.0 - dones) * self.gamma * target_q_values
         td_target = td_target.squeeze(-1)
         qf1_loss = F.mse_loss(q1_predicted, td_target.detach())
         qf2_loss = F.mse_loss(q2_predicted, td_target.detach())
@@ -397,7 +389,7 @@ class ContinuousCQL:
         action_dim = actions.shape[-1]
         cql_random_actions = actions.new_empty(
             (batch_size, self.cql_n_actions, action_dim), requires_grad=False
-        ).uniform_(0, 1) * (self.action_space.high - self.action_space.low) + self.action_space.low
+        ).uniform_(0, 1) * self.random_action_scale + self.random_action_offset
         cql_current_actions, cql_current_log_pis = self.actor(
             observations, repeat=self.cql_n_actions
         )
@@ -534,7 +526,7 @@ class ContinuousCQL:
 
         return qf_loss, alpha_prime, alpha_prime_loss
 
-    def train(self, batch: TensorBatch) -> Dict[str, float]:
+    def update(self, batch: TensorBatch) -> Dict[str, float]:
         (
             observations,
             actions,
@@ -655,7 +647,7 @@ def train(config: TrainConfig):
         "critic_2_optimizer": critic_2_optimizer,
         "actor": actor,
         "actor_optimizer": actor_optimizer,
-        "discount": config.discount,
+        "gamma": config.gamma,
         "soft_target_update_rate": config.soft_target_update_rate,
         "device": config.device,
         # CQL
