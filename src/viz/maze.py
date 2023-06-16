@@ -11,6 +11,7 @@ from algorithms.utils import load_dataset
 
 env_id = 'maze2d-umaze-v1'
 # env_id = 'maze2d-medium-v1'
+env_id = 'maze2d-medium-v1'
 
 env = gym.make(env_id)
 
@@ -73,7 +74,6 @@ for env_id in ['maze2d-umaze-v1', 'maze2d-medium-v1']:
     plt.figure(figsize=(12, 12))
     for aug in ['no_aug', 'random']:
         dataset_name = f'../datasets_good/{env_id}/random/m_1.hdf5'
-
         dataset = {}
         if dataset_name:
             # local dataset
