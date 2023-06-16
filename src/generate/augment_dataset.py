@@ -131,6 +131,8 @@ if __name__ == '__main__':
     for k in aug_dataset:
         data = np.concatenate([observed_dataset[k], aug_dataset[k]])
         new_dataset.create_dataset(k, data=data, compression='gzip')
+    new_dataset.create_dataset('original_size', data=n)
+    new_dataset.create_dataset('aug_size', data=aug_count)
 
     print(f"New dataset size: {len(new_dataset['observations'])}")
 
