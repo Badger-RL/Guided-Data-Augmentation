@@ -30,6 +30,11 @@ def gen_td3_bc(
         eval_freq=5000,
         actor_lr=3e-4,
         critic_lr=3e-4,
+        alpha=2.5,
+        tau=5e-3,
+        n_layers=1,
+        hidden_dims=2,
+        batch_size=256,
         alpha=2.5
 ):
     command = f'python -u algorithms/td3_bc.py --max_timesteps {max_timesteps} --eval_freq {eval_freq}' \
@@ -37,7 +42,11 @@ def gen_td3_bc(
               f' --env {env_id}' \
               f' --actor_lr {actor_lr}' \
               f' --critic_lr {critic_lr}' \
-              f' --alpha {alpha}'
+              f' --batch_size {batch_size}' \
+              f' --alpha {alpha}' \
+              f' --tau {tau}' \
+              f' --n_layers {n_layers}' \
+              f' --hidden_dims {hidden_dims}'
 
     if dataset_name:
         command += f' --dataset_name {dataset_name}'
@@ -58,7 +67,8 @@ def gen_awac(
               f' --save_dir {save_dir} ' \
               f' --env {env_id}' \
               f' --learning_rate {lr}' \
-              f' --lambda {lmbda}' \
+              f' --awac_lambda {lmbda}' \
+
 
     if dataset_name:
         command += f' --dataset_name {dataset_name}'
