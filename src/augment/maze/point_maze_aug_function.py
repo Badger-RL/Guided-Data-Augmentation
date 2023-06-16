@@ -21,8 +21,8 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
         self.wall_locations = []
         self.valid_locations = []
         width, height = self.env.maze_arr.shape
-        for w in range(1,width-1):
-            for h in range(1,height-1):
+        for w in range(width):
+            for h in range(height):
                 location_type = self.env.maze_arr[w, h]
                 box_location = np.array((w, h))
                 if location_type in [WALL]:

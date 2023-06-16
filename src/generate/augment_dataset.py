@@ -9,6 +9,7 @@ import h5py
 import argparse
 
 import d4rl
+from src.augment.antmaze.antmaze_aug_function import AntMazeAugmentationFunction, AntMazeGuidedAugmentationFunction
 from src.augment.maze.point_maze_aug_function import PointMazeAugmentationFunction, PointMazeGuidedAugmentationFunction
 from src.generate.utils import reset_data, append_data, load_dataset, npify
 
@@ -16,11 +17,38 @@ AUG_FUNCTIONS = {
     'maze2d-umaze-v1': {
         'random': PointMazeAugmentationFunction,
         'guided': PointMazeGuidedAugmentationFunction,
+        'guided_mix': PointMazeAugmentationFunction,
     },
     'maze2d-medium-v1': {
         'random': PointMazeAugmentationFunction,
         'guided': PointMazeGuidedAugmentationFunction,
-    }
+        'guided_mix': PointMazeAugmentationFunction,
+    },
+    'maze2d-large-v1': {
+        'random': PointMazeAugmentationFunction,
+        'guided': PointMazeGuidedAugmentationFunction,
+        'guided_mix': PointMazeAugmentationFunction,
+    },
+    'antmaze-umaze-v1': {
+        'random': AntMazeAugmentationFunction,
+        'guided': AntMazeGuidedAugmentationFunction,
+        # 'guided_mix': AntMazeAugmentationFunction,
+    },
+    'antmaze-umaze-diverse-v1': {
+        'random': AntMazeAugmentationFunction,
+        'guided': AntMazeGuidedAugmentationFunction,
+        # 'guided_mix': AntMazeAugmentationFunction,
+    },
+    'antmaze-medium-diverse-v1': {
+        'random': AntMazeAugmentationFunction,
+        'guided': AntMazeGuidedAugmentationFunction,
+        # 'guided_mix': AntMazeAugmentationFunction,
+    },
+    'antmaze-large-diverse-v1': {
+        'random': AntMazeAugmentationFunction,
+        'guided': AntMazeGuidedAugmentationFunction,
+        # 'guided_mix': AntMazeAugmentationFunction,
+    },
 }
 
 if __name__ == '__main__':
@@ -76,8 +104,8 @@ if __name__ == '__main__':
     aug_count = 0 # number of valid augmentations produced
     i = 0
     while aug_count < n*m:
-        # if args.aug_func == 'guided' and aug_count == n//5:
-        #     f = AUG_FUNCTIONS[args.env_id]['guided'](env=env)
+        if args.aug_func == 'guided_mix' and aug_count == n//5:
+            f = AUG_FUNCTIONS[args.env_id]['guided'](env=env)
 
         idx = i % n
         obs, action, reward, next_obs, done = f.augment(
