@@ -22,6 +22,15 @@ from torch import nn
 from src.augment.maze.augment_torch import PointMazeAugmentationFunction, PointMazeGuidedAugmentationFunction
 
 TensorBatch = List[torch.Tensor]
+DATASET_SIZES = {
+    'maze2d-umaze-v1': 987540,
+    'maze2d-medium-v1': 1988111,
+    'maze2d-large-v1': 3983273,
+    'antmaze-umaze-diverse-v1': 1,
+    'antmaze-medium-diverse-v1': 1,
+    'antmaze-large-diverse-v1': 1,
+
+}
 
 def get_latest_run_id(save_dir: str) -> int:
     max_run_id = 0

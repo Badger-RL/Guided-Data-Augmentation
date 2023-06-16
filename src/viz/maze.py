@@ -1,3 +1,5 @@
+import os
+
 import d4rl
 import gym
 import h5py
@@ -8,7 +10,7 @@ from algorithms.utils import load_dataset
 
 
 env_id = 'maze2d-umaze-v1'
-env_id = 'maze2d-medium-v1'
+# env_id = 'maze2d-medium-v1'
 
 env = gym.make(env_id)
 
@@ -37,8 +39,8 @@ for env_id in ['maze2d-umaze-v1', 'maze2d-medium-v1']:
             start = int(0e6)
             end = start + int(5e3)
         else:
-            start = len(dataset['observations']) - int(5e3)
-            end = start + int(5e3)
+            start = len(dataset['observations']) - int(3e3)
+            end = start + int(3e3)
         observations = dataset['observations'][start:end]
         next_observations = dataset['next_observations'][start:end]
         rewards = dataset['rewards'][start:end]
@@ -61,14 +63,16 @@ for env_id in ['maze2d-umaze-v1', 'maze2d-medium-v1']:
             plt.quiver(x, y, u, v)
         plt.scatter(x[at_goal],y[at_goal], alpha=0.3, color='g')
 
-    plt.title(f'{env_id}')
-    plt.xlabel('x position')
-    plt.ylabel('y position')
-    plt.show()
+    plt.title(f'{env_id}: {aug}', fontsize=24)
+    plt.xlabel('x position', fontsize=24)
+    plt.ylabel('y position', fontsize=24)
+    # plt.show()
+    os.makedirs(f'figures/{env_id}', exist_ok=True)
+    plt.savefig(f'figures/{env_id}/guided.png')
 
     plt.figure(figsize=(12, 12))
     for aug in ['no_aug', 'random']:
-        dataset_name = f'../datasets/{env_id}/random/m_1.hdf5'
+        dataset_name = f'../datasets_good/{env_id}/random/m_1.hdf5'
 
         dataset = {}
         if dataset_name:
@@ -85,8 +89,8 @@ for env_id in ['maze2d-umaze-v1', 'maze2d-medium-v1']:
             start = int(0e6)
             end = start + int(5e3)
         else:
-            start = len(dataset['observations']) - int(5e3)
-            end = start + int(5e3)
+            start = len(dataset['observations']) - int(3e3)
+            end = start + int(3e3)
         observations = dataset['observations'][start:end]
         next_observations = dataset['next_observations'][start:end]
         rewards = dataset['rewards'][start:end]
@@ -110,7 +114,8 @@ for env_id in ['maze2d-umaze-v1', 'maze2d-medium-v1']:
             plt.quiver(x, y, u, v)
         plt.scatter(x[at_goal], y[at_goal], alpha=0.3, color='g')
 
-    plt.title(f'{env_id}')
-    plt.xlabel('x position')
-    plt.ylabel('y position')
-    plt.show()
+    plt.title(f'{env_id}: {aug}', fontsize=24)
+    plt.xlabel('x position', fontsize=24)
+    plt.ylabel('y position', fontsize=24)
+    # plt.show()
+    plt.savefig(f'figures/{env_id}/random.png')
