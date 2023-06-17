@@ -19,8 +19,8 @@ TensorBatch = List[torch.Tensor]
 @dataclass
 class TrainConfig(TrainConfigBase):
     # TD3
-    hidden_dims: int = 64
-    n_layers: int = 2
+    hidden_dims: int =128
+    n_layers: int = 1
     buffer_size: int = None  # Replay buffer size
     batch_size: int = 256  # Batch size for all networks
     gamma: float = 0.99  # gamma for
