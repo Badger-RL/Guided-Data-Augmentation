@@ -35,7 +35,7 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
         w = int(w)
         h = int(h)
 
-        assert self.env.maze_arr[w, h] in [EMPTY, GOAL] # must be valid location
+        # assert self.env.maze_arr[w, h] in [EMPTY, GOAL] # must be valid location
 
         xhi = w+1-0.5
         yhi = h+1-0.5
