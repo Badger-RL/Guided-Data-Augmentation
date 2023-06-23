@@ -1,17 +1,11 @@
 # source: https://github.com/young-geng/CQL/tree/934b0e8354ca431d6c083c4e3a29df88d4b0a24d
 # STRONG UNDER-PERFORMANCE ON PART OF ANTMAZE TASKS. BUT IN IQL PAPER IT WORKS SOMEHOW
 # https://arxiv.org/pdf/2006.04779.pdf
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict,  Tuple
 from copy import deepcopy
-from dataclasses import asdict, dataclass
-import os
-from pathlib import Path
-import random
-import uuid
-import json
+from dataclasses import  dataclass
 import sys
 
-import h5py
 import gym, custom_envs
 import numpy as np
 import pyrallis
@@ -19,40 +13,28 @@ import torch
 from torch.distributions import Normal, TanhTransform, TransformedDistribution
 import torch.nn as nn
 import torch.nn.functional as F
-import wandb
 
-sys.path.append("..")
-
-TensorBatch = List[torch.Tensor]
+from src.algorithms.utils import TensorBatch, soft_update, TrainConfigBase, train_base
 
 @dataclass
-class TrainConfig:
-    # Experiment
-    device: str = "cpu"
-    env: str = "PushBallToGoal-v0"  # OpenAI gym environment name
-    seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
-    eval_freq: int = int(500)  # How often (time steps) we evaluate
-    n_episodes: int = 100  # How many episodes run during evaluation
-    max_timesteps: int = int(100000)  # Max time steps to run environment
-    checkpoints_path: Optional[str] = "./policy"  # Save path
-    load_model: str = ""  # Model load file name, "" doesn't load
+class TrainConfig(TrainConfigBase):
     # CQL
-    buffer_size: int = 2_000_000  # Replay buffer size
+    buffer_size: int = None  # Replay buffer size
     batch_size: int = 256  # Batch size for all networks
-    discount: float = 0.99  # Discount factor
+    gamma: float = 0.99  # gamma factor
     alpha_multiplier: float = 1.0  # Multiplier for alpha in loss
     dataset_name: str = ""
     use_automatic_entropy_tuning: bool = True  # Tune entropy
     backup_entropy: bool = False  # Use backup entropy
     policy_lr: float = 3e-5  # Policy learning rate
-    qf_lr: float = 3e-6  # Critics learning rate
+    qf_lr: float = 3e-4  # Critics learning rate
     soft_target_update_rate: float = 0.005  # Target network update rate
     bc_steps: int = int(0)  # Number of BC steps at start
     target_update_period: int = 1  # Frequency of target nets updates
     cql_n_actions: int = 10  # Number of sampled actions
     cql_importance_sample: bool = True  # Use importance sampling
-    cql_lagrange: bool = False  # Use Lagrange version of CQL
-    cql_target_action_gap: float = -1.0  # Action gap
+    cql_lagrange: bool = True  # Use Lagrange version of CQL
+    cql_target_action_gap: float = 5  # Action gap
     cql_temp: float = 1.0  # CQL temperature
     cql_min_q_weight: float = 10.0  # Minimal Q weight
     cql_max_target_backup: bool = False  # Use max target backup
@@ -61,185 +43,9 @@ class TrainConfig:
     orthogonal_init: bool = True  # Orthogonal initialization
     normalize: bool = True  # Normalize states
     normalize_reward: bool = False  # Normalize reward
-    # Wandb logging
-    project: str = "CORL"
-    group: str = "CQL-D4RL"
-    name: str = "CQL"
 
     def __post_init__(self):
         self.name = self.name
-        if self.checkpoints_path is not None:
-            self.checkpoints_path = os.path.join(self.checkpoints_path, self.name)
-
-
-def soft_update(target: nn.Module, source: nn.Module, tau: float):
-    for target_param, source_param in zip(target.parameters(), source.parameters()):
-        target_param.data.copy_((1 - tau) * target_param.data + tau * source_param.data)
-
-
-def compute_mean_std(states: np.ndarray, eps: float) -> Tuple[np.ndarray, np.ndarray]:
-    mean = states.mean(0)
-    std = states.std(0) + eps
-    return mean, std
-
-
-def normalize_states(states: np.ndarray, mean: np.ndarray, std: np.ndarray):
-    return (states - mean) / std
-
-
-def wrap_env(
-    env: gym.Env,
-    state_mean: Union[np.ndarray, float] = 0.0,
-    state_std: Union[np.ndarray, float] = 1.0,
-    reward_scale: float = 1.0,
-) -> gym.Env:
-    # PEP 8: E731 do not assign a lambda expression, use a def
-    def normalize_state(state):
-        return (
-            state - state_mean
-        ) / state_std  # epsilon should be already added in std.
-
-    def scale_reward(reward):
-        # Please be careful, here reward is multiplied by scale!
-        return reward_scale * reward
-
-    env = gym.wrappers.TransformObservation(env, normalize_state)
-    if reward_scale != 1.0:
-        env = gym.wrappers.TransformReward(env, scale_reward)
-    return env
-
-
-class ReplayBuffer:
-    def __init__(
-        self,
-        state_dim: int,
-        action_dim: int,
-        buffer_size: int,
-        device: str = "cpu",
-    ):
-        self._buffer_size = buffer_size
-        self._pointer = 0
-        self._size = 0
-
-        self._states = torch.zeros(
-            (buffer_size, state_dim), dtype=torch.float32, device=device
-        )
-        self._actions = torch.zeros(
-            (buffer_size, action_dim), dtype=torch.float32, device=device
-        )
-        self._rewards = torch.zeros((buffer_size, 1), dtype=torch.float32, device=device)
-        self._next_states = torch.zeros(
-            (buffer_size, state_dim), dtype=torch.float32, device=device
-        )
-        self._dones = torch.zeros((buffer_size, 1), dtype=torch.float32, device=device)
-        self._device = device
-
-    def _to_tensor(self, data: np.ndarray) -> torch.Tensor:
-        return torch.tensor(data, dtype=torch.float32, device=self._device)
-
-    # Loads data in d4rl format, i.e. from Dict[str, np.array].
-    def load_d4rl_dataset(self, data: Dict[str, np.ndarray]):
-        if self._size != 0:
-            raise ValueError("Trying to load data into non-empty replay buffer")
-        n_transitions = data["observations"].shape[0]
-        if n_transitions > self._buffer_size:
-            raise ValueError(
-                "Replay buffer is smaller than the dataset you are trying to load!"
-            )
-        self._states[:n_transitions] = self._to_tensor(data["observations"])
-        self._actions[:n_transitions] = self._to_tensor(data["actions"])
-        self._rewards[:n_transitions] = self._to_tensor(data["rewards"][..., None])
-        self._next_states[:n_transitions] = self._to_tensor(data["next_observations"])
-        self._dones[:n_transitions] = self._to_tensor(data["terminals"][..., None])
-        self._size += n_transitions
-        self._pointer = min(self._size, n_transitions)
-
-        print(f"Dataset size: {n_transitions}")
-
-    def sample(self, batch_size: int) -> TensorBatch:
-        indices = np.random.randint(0, min(self._size, self._pointer), size=batch_size)
-        states = self._states[indices]
-        actions = self._actions[indices]
-        rewards = self._rewards[indices]
-        next_states = self._next_states[indices]
-        dones = self._dones[indices]
-        return [states, actions, rewards, next_states, dones]
-
-    def add_transition(self):
-        # Use this method to add new data into the replay buffer during fine-tuning.
-        # I left it unimplemented since now we do not do fine-tuning.
-        raise NotImplementedError
-
-
-def set_seed(
-    seed: int, env: Optional[gym.Env] = None, deterministic_torch: bool = False
-):
-    if env is not None:
-        env.seed(seed)
-        env.action_space.seed(seed)
-    os.environ["PYTHONHASHSEED"] = str(seed)
-    np.random.seed(seed)
-    random.seed(seed)
-    torch.manual_seed(seed)
-    torch.use_deterministic_algorithms(deterministic_torch)
-
-
-def wandb_init(config: dict) -> None:
-    wandb.init(
-        config=config,
-        project=config["project"],
-        group=config["group"],
-        name=config["name"],
-        id=str(uuid.uuid4()),
-    )
-    wandb.run.save()
-
-
-@torch.no_grad()
-def eval_actor(
-    env: gym.Env, actor: nn.Module, device: str, n_episodes: int, seed: int
-) -> np.ndarray:
-    env.seed(seed)
-    actor.eval()
-    episode_rewards = []
-    successes = []
-    for _ in range(n_episodes):
-        state, done = env.reset(), False
-        episode_reward = 0.0
-        while not done:
-            action = actor.act(state, device)
-            state, reward, done, info = env.step(action)
-            episode_reward += reward
-        episode_rewards.append(episode_reward)
-        successes.append(info['is_success'])
-
-    actor.train()
-    return np.asarray(episode_rewards), np.array(successes)
-
-
-def return_reward_range(dataset, max_episode_steps):
-    returns, lengths = [], []
-    ep_ret, ep_len = 0.0, 0
-    for r, d in zip(dataset["rewards"], dataset["terminals"]):
-        ep_ret += float(r)
-        ep_len += 1
-        if d or ep_len == max_episode_steps:
-            returns.append(ep_ret)
-            lengths.append(ep_len)
-            ep_ret, ep_len = 0.0, 0
-    lengths.append(ep_len)  # but still keep track of number of steps
-    assert sum(lengths) == len(dataset["rewards"])
-    return min(returns), max(returns)
-
-
-def modify_reward(dataset, env_name, max_episode_steps=1000):
-    if any(s in env_name for s in ("halfcheetah", "hopper", "walker2d")):
-        min_ret, max_ret = return_reward_range(dataset, max_episode_steps)
-        dataset["rewards"] /= max_ret - min_ret
-        dataset["rewards"] *= max_episode_steps
-    elif "antmaze" in env_name:
-        dataset["rewards"] -= 1.0
-
 
 def extend_and_repeat(tensor: torch.Tensor, dim: int, repeat: int) -> torch.Tensor:
     return tensor.unsqueeze(dim).repeat_interleave(repeat, dim=dim)
@@ -318,13 +124,11 @@ class TanhGaussianPolicy(nn.Module):
         self.no_tanh = no_tanh
 
         self.base_network = nn.Sequential(
-            nn.Linear(state_dim, 256),
+            nn.Linear(state_dim, 128),
             nn.ReLU(),
-            nn.Linear(256, 256),
+            nn.Linear(128, 128),
             nn.ReLU(),
-            nn.Linear(256, 256),
-            nn.ReLU(),
-            nn.Linear(256, 2 * action_dim),
+            nn.Linear(128, 2 * action_dim),
         )
 
         if orthogonal_init:
@@ -381,13 +185,11 @@ class FullyConnectedQFunction(nn.Module):
         self.orthogonal_init = orthogonal_init
 
         self.network = nn.Sequential(
-            nn.Linear(observation_dim + action_dim, 256),
+            nn.Linear(observation_dim + action_dim, 128),
             nn.ReLU(),
-            nn.Linear(256, 256),
+            nn.Linear(128,128),
             nn.ReLU(),
-            nn.Linear(256, 256),
-            nn.ReLU(),
-            nn.Linear(256, 1),
+            nn.Linear(128, 1),
         )
         if orthogonal_init:
             self.network.apply(lambda m: init_module_weights(m, True))
@@ -430,7 +232,7 @@ class ContinuousCQL:
         actor,
         actor_optimizer,
         target_entropy: float,
-        discount: float = 0.99,
+        gamma: float = 0.99,
         alpha_multiplier: float = 1.0,
         use_automatic_entropy_tuning: bool = True,
         backup_entropy: bool = False,
@@ -453,7 +255,7 @@ class ContinuousCQL:
         super().__init__()
 
         self.action_space = action_space
-        self.discount = discount
+        self.gamma = gamma
         self.target_entropy = target_entropy
         self.alpha_multiplier = alpha_multiplier
         self.use_automatic_entropy_tuning = use_automatic_entropy_tuning
@@ -505,6 +307,9 @@ class ContinuousCQL:
 
         self.total_it = 0
 
+        self.random_action_scale = torch.Tensor(self.action_space.high - self.action_space.low).to(self._device)
+        self.random_action_offset = torch.Tensor(self.action_space.low).to(self._device)
+
     def update_target_network(self, soft_target_update_rate: float):
         soft_update(self.target_critic_1, self.critic_1, soft_target_update_rate)
         soft_update(self.target_critic_2, self.critic_2, soft_target_update_rate)
@@ -540,7 +345,7 @@ class ContinuousCQL:
         return policy_loss
 
     def _q_loss(
-        self, observations, actions, next_observations, rewards, dones, alpha, log_dict
+        self, observations, actions, next_observations, rewards, dones, alpha, stats_dict
     ):
         q1_predicted = self.critic_1(observations, actions)
         q2_predicted = self.critic_2(observations, actions)
@@ -570,7 +375,7 @@ class ContinuousCQL:
             target_q_values = target_q_values - alpha * next_log_pi
 
         target_q_values = target_q_values.unsqueeze(-1)
-        td_target = rewards + (1.0 - dones) * self.discount * target_q_values
+        td_target = rewards + (1.0 - dones) * self.gamma * target_q_values
         td_target = td_target.squeeze(-1)
         qf1_loss = F.mse_loss(q1_predicted, td_target.detach())
         qf2_loss = F.mse_loss(q2_predicted, td_target.detach())
@@ -580,7 +385,7 @@ class ContinuousCQL:
         action_dim = actions.shape[-1]
         cql_random_actions = actions.new_empty(
             (batch_size, self.cql_n_actions, action_dim), requires_grad=False
-        ).uniform_(0, 1) * (self.action_space.high - self.action_space.low) + self.action_space.low
+        ).uniform_(0, 1) * self.random_action_scale + self.random_action_offset
         cql_current_actions, cql_current_log_pis = self.actor(
             observations, repeat=self.cql_n_actions
         )
@@ -685,7 +490,7 @@ class ContinuousCQL:
 
         qf_loss = qf1_loss + qf2_loss + cql_min_qf1_loss + cql_min_qf2_loss
 
-        log_dict.update(
+        stats_dict.update(
             dict(
                 qf1_loss=qf1_loss.item(),
                 qf2_loss=qf2_loss.item(),
@@ -696,7 +501,7 @@ class ContinuousCQL:
             )
         )
 
-        log_dict.update(
+        stats_dict.update(
             dict(
                 cql_std_q1=cql_std_q1.mean().item(),
                 cql_std_q2=cql_std_q2.mean().item(),
@@ -717,7 +522,7 @@ class ContinuousCQL:
 
         return qf_loss, alpha_prime, alpha_prime_loss
 
-    def train(self, batch: TensorBatch) -> Dict[str, float]:
+    def update(self, batch: TensorBatch) -> Dict[str, float]:
         (
             observations,
             actions,
@@ -736,7 +541,7 @@ class ContinuousCQL:
             observations, actions, new_actions, alpha, log_pi
         )
 
-        log_dict = dict(
+        stats_dict = dict(
             log_pi=log_pi.mean().item(),
             policy_loss=policy_loss.item(),
             alpha_loss=alpha_loss.item(),
@@ -745,7 +550,7 @@ class ContinuousCQL:
 
         """ Q function loss """
         qf_loss, alpha_prime, alpha_prime_loss = self._q_loss(
-            observations, actions, next_observations, rewards, dones, alpha, log_dict
+            observations, actions, next_observations, rewards, dones, alpha, stats_dict
         )
 
         if self.use_automatic_entropy_tuning:
@@ -766,7 +571,7 @@ class ContinuousCQL:
         if self.total_it % self.target_update_period == 0:
             self.update_target_network(self.soft_target_update_rate)
 
-        return log_dict
+        return stats_dict
 
     def state_dict(self) -> Dict[str, Any]:
         return {
@@ -814,78 +619,20 @@ class ContinuousCQL:
 
 
 @pyrallis.wrap()
-def train( config: TrainConfig):
-
-
-    #if not len(sys.argv) == 2:
-    #    print("usage: python3 ./algorithms/cql.py <dataset name>")
-    #    exit(1)
-
-    #dataset_name = sys.argv[1]
-
+def train(config: TrainConfig):
+    # make env
     env = gym.make(config.env)
-    
-    #gym.make(config.env)
-
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
-    #dataset = d4rl.qlearning_dataset(env)
-    dataset = {}
-    data_hdf5 = h5py.File(f"./datasets/{config.dataset_name}", "r")
-    for key in data_hdf5.keys():
-        dataset[key] = np.array(data_hdf5[key])
-
-    #with open("./saved.json", "w") as json_file:
-        #json.dump(dataset, json_file)
-
-    if config.normalize_reward:
-        modify_reward(dataset, config.env)
-
-    if config.normalize:
-        state_mean, state_std = compute_mean_std(dataset["observations"], eps=1e-3)
-    else:
-        state_mean, state_std = 0, 1
-
-    dataset["observations"] = normalize_states(
-        dataset["observations"], state_mean, state_std
-    )
-    dataset["next_observations"] = normalize_states(
-        dataset["next_observations"], state_mean, state_std
-    )
-    env = wrap_env(env, state_mean=state_mean, state_std=state_std)
-    replay_buffer = ReplayBuffer(
-        state_dim,
-        action_dim,
-        config.buffer_size,
-        config.device,
-    )
-    replay_buffer.load_d4rl_dataset(dataset)
-
-    max_action = float(env.action_space.high[0])
-
-    if config.checkpoints_path is not None:
-        print(f"Checkpoints path: {config.checkpoints_path}")
-        os.makedirs(config.checkpoints_path, exist_ok=True)
-        with open(os.path.join(config.checkpoints_path, "config.yaml"), "w") as f:
-            pyrallis.dump(config, f)
-
-    # Set seeds
-    seed = config.seed
-    set_seed(seed, env)
-
-    critic_1 = FullyConnectedQFunction(state_dim, action_dim, config.orthogonal_init).to(
-        config.device
-    )
-    critic_2 = FullyConnectedQFunction(state_dim, action_dim, config.orthogonal_init).to(
-        config.device
-    )
+    # create nets
+    critic_1 = FullyConnectedQFunction(state_dim, action_dim, config.orthogonal_init).to(config.device)
+    critic_2 = FullyConnectedQFunction(state_dim, action_dim, config.orthogonal_init).to(config.device)
     critic_1_optimizer = torch.optim.Adam(list(critic_1.parameters()), config.qf_lr)
     critic_2_optimizer = torch.optim.Adam(list(critic_2.parameters()), config.qf_lr)
 
-    actor = TanhGaussianPolicy(
-        state_dim, action_dim, max_action, orthogonal_init=config.orthogonal_init
-    ).to(config.device)
+    max_action = float(env.action_space.high[0])
+    actor = TanhGaussianPolicy(state_dim, action_dim, max_action, orthogonal_init=config.orthogonal_init).to(config.device)
     actor_optimizer = torch.optim.Adam(actor.parameters(), config.policy_lr)
 
     kwargs = {
@@ -896,7 +643,7 @@ def train( config: TrainConfig):
         "critic_2_optimizer": critic_2_optimizer,
         "actor": actor,
         "actor_optimizer": actor_optimizer,
-        "discount": config.discount,
+        "gamma": config.gamma,
         "soft_target_update_rate": config.soft_target_update_rate,
         "device": config.device,
         # CQL
@@ -919,69 +666,11 @@ def train( config: TrainConfig):
         "cql_clip_diff_max": config.cql_clip_diff_max,
     }
 
-    print("---------------------------------------")
-    print(f"Training CQL, Env: {config.env}, Seed: {seed}")
-    print("---------------------------------------")
-
     # Initialize actor
     trainer = ContinuousCQL(**kwargs)
+    train_base(config, env, trainer)
 
-    if config.load_model != "":
-        policy_file = Path(config.load_model)
-        trainer.load_state_dict(torch.load(policy_file))
-        actor = trainer.actor
-
-    wandb_init(asdict(config))
-
-    evaluations = []
-    for t in range(int(config.max_timesteps)):
-        batch = replay_buffer.sample(config.batch_size)
-        batch = [b.to(config.device) for b in batch]
-        log_dict = trainer.train(batch)
-        wandb.log(log_dict, step=trainer.total_it)
-        # Evaluate episode
-        if (t + 1) % config.eval_freq == 0:
-            print(f"Time steps: {t + 1}")
-            eval_scores, eval_successes = eval_actor(
-                env,
-                actor,
-                device=config.device,
-                n_episodes=config.n_episodes,
-                seed=config.seed,
-            )
-            eval_score = eval_scores.mean()
-            eval_success_rate = eval_successes.mean()
-            normalized_eval_score = eval_score#env.get_normalized_score(eval_score) * 100.0
-            evaluations.append(eval_score)
-            print("---------------------------------------")
-            print(
-                f"Evaluation over {config.n_episodes} episodes: "
-                f"{eval_score:.3f} , D4RL score: {normalized_eval_score:.3f}"
-                f"Success rate: {eval_success_rate:.3f}"
-            )
-            print("---------------------------------------")
-            if config.checkpoints_path:
-                torch.save(
-                    trainer.state_dict(),
-                    os.path.join(config.checkpoints_path, f"checkpoint_{t}.pt"),
-                )
-            wandb.log(
-                {"d4rl_normalized_score": normalized_eval_score},
-                step=trainer.total_it,
-            )
-            wandb.log(
-                {"success_rate": eval_success_rate},
-                step=trainer.total_it,
-            )
 
 
 if __name__ == "__main__":
-
-
-    key = None
-    with open("../wandb_credentials.json", 'r') as json_file:
-        credential_json = json.load(json_file)
-        key = credential_json["wandb_key"]
-
-    wandb.login(key = key)
     train()

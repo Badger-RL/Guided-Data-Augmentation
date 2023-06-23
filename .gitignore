@@ -3,6 +3,7 @@ benchmark.py
 mlc_run.sh
 .ml-job-preset.yml
 wandb
+datasets
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -44,6 +45,9 @@ MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
 
+src/*.h5
+src/*.json
+src/export/*.pt
 # Unit test / coverage reports
 htmlcov/
 .tox/
