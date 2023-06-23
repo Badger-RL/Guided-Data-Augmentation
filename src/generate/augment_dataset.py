@@ -17,48 +17,48 @@ AUG_FUNCTIONS = {
     'maze2d-umaze-v1': {
         'random': PointMazeAugmentationFunction,
         'guided': PointMazeGuidedAugmentationFunction,
-        'guided_mix': PointMazeAugmentationFunction,
+        'mixed': PointMazeAugmentationFunction,
     },
     'maze2d-medium-v1': {
         'random': PointMazeAugmentationFunction,
         'guided': PointMazeGuidedAugmentationFunction,
-        'guided_mix': PointMazeAugmentationFunction,
+        'mixed': PointMazeAugmentationFunction,
     },
     'maze2d-large-v1': {
         'random': PointMazeAugmentationFunction,
         'guided': PointMazeGuidedAugmentationFunction,
-        'guided_mix': PointMazeAugmentationFunction,
+        'mixed': PointMazeAugmentationFunction,
     },
     'antmaze-umaze-v1': {
         'random': AntMazeAugmentationFunction,
         'guided': AntMazeGuidedAugmentationFunction,
-        # 'guided_mix': AntMazeAugmentationFunction,
+        # 'mixed': AntMazeAugmentationFunction,
     },
     'antmaze-umaze-diverse-v1': {
         'random': AntMazeAugmentationFunction,
         'guided': AntMazeGuidedAugmentationFunction,
-        # 'guided_mix': AntMazeAugmentationFunction,
+        # 'mixed': AntMazeAugmentationFunction,
     },
     'antmaze-medium-diverse-v1': {
         'random': AntMazeAugmentationFunction,
         'guided': AntMazeGuidedAugmentationFunction,
-        # 'guided_mix': AntMazeAugmentationFunction,
+        # 'mixed': AntMazeAugmentationFunction,
     },
     'antmaze-large-diverse-v1': {
         'random': AntMazeAugmentationFunction,
         'guided': AntMazeGuidedAugmentationFunction,
-        # 'guided_mix': AntMazeAugmentationFunction,
+        # 'mixed': AntMazeAugmentationFunction,
     },
 }
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--env-id', type=str, default='maze2d-umaze-v1')
+    parser.add_argument('--env-id', type=str, default='antmaze-umaze-v1')
     parser.add_argument('--observed-dataset-path', type=str, default=None)
     parser.add_argument('--observed-dataset-frac', '-frac', type=float, default=None)
     parser.add_argument('--observed-dataset-size', '-size', type=int, default=None)
 
-    parser.add_argument('--aug-func', type=str, default='guided')
+    parser.add_argument('--aug-func', type=str, default='random')
     parser.add_argument('--aug-ratio', '-m', type=int, default=1, help='Number of augmentations per observed transition')
     parser.add_argument('--save-dir', '-fd', type=str, default=None)
     parser.add_argument('--save-name', '-fn', type=str, default=None)
@@ -104,7 +104,8 @@ if __name__ == '__main__':
     aug_count = 0 # number of valid augmentations produced
     i = 0
     while aug_count < n*m:
-        if args.aug_func == 'guided_mix' and aug_count == n//5:
+        if args.aug_func == 'mixed' and aug_count == n//5:
+            print('Switching to guided aug')
             f = AUG_FUNCTIONS[args.env_id]['guided'](env=env)
 
         idx = i % n
@@ -119,7 +120,7 @@ if __name__ == '__main__':
         i += 1
         if obs is not None:
             aug_count += 1
-            if aug_count % 1000 == 0: print('aug_count:', aug_count)
+            if aug_count % 10000 == 0: print('aug_count:', aug_count)
             append_data(aug_dataset, obs, action, reward, next_obs, done)
         if aug_count >= n * m:
             break
