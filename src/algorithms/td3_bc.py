@@ -11,7 +11,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from src.algorithms.utils import TrainConfigBase, train_base, return_reward_range, soft_update
+from src.algorithms.utils import soft_update, TrainConfigBase, train_base
 
 TensorBatch = List[torch.Tensor]
 
@@ -19,8 +19,8 @@ TensorBatch = List[torch.Tensor]
 @dataclass
 class TrainConfig(TrainConfigBase):
     # TD3
-    hidden_dims: int = 64
-    n_layers: int = 2
+    hidden_dims: int =128
+    n_layers: int = 1
     buffer_size: int = None  # Replay buffer size
     batch_size: int = 256  # Batch size for all networks
     gamma: float = 0.99  # gamma for

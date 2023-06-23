@@ -2,8 +2,6 @@ import numpy as np
 from src.augment.augmentation_function_base import AugmentationFunctionBase
 from d4rl.pointmaze.maze_model import EMPTY, GOAL, WALL
 
-
-
 class PointMazeAugmentationFunction(AugmentationFunctionBase):
     def __init__(self, env, **kwargs):
         super().__init__(env=env, **kwargs)
@@ -33,14 +31,17 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
 
 
     def _get_valid_boundaries(self, w, h):
+
         w = int(w)
         h = int(h)
+
+        # assert self.env.maze_arr[w, h] in [EMPTY, GOAL] # must be valid location
+
         xhi = w+1-0.5
         yhi = h+1-0.5
         xlo = w-1+0.5
         ylo = h-1+0.5
 
-        # Empty/goal locations are surrounded by walls, so we don't need to check if w+1/w-1/h+1/h-1 are valid locations.
         if self.env.maze_arr[w+1, h] in [WALL]:
             xhi = w+1-self.effective_wall_width
         if self.env.maze_arr[w, h+1] in [WALL]:
@@ -69,13 +70,17 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
         else:
             return False
 
-    def _is_valid_position(self, xy):
+    def _check_corners(self, xy, location):
         x, y = xy[0], xy[1]
         is_valid_position = True
-        for box_location in self.wall_locations:
-            if self._is_in_wall(box_location, x, y):
-                is_valid_position = False
-                break
+
+        w, h = int(location[0]), int(location[1])
+        for loc in [(w + 1, h + 1), (w + 1, h - 1), (w - 1, h + 1), (w - 1, h - 1)]:
+            if self.env.maze_arr[loc[0], loc[1]] == WALL:
+                loc = np.array(loc)
+                if self._is_in_wall(loc, x, y):
+                    is_valid_position = False
+                    break
 
         return is_valid_position
 
@@ -83,7 +88,7 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
         idx = np.random.choice(len(self.env.empty_and_goal_locations))
         location = np.array(self.env.empty_and_goal_locations[idx]).astype(self.env.observation_space.dtype)
         boundaries = self._get_valid_boundaries(*location)
-        return self._sample_from_box(*boundaries)
+        return self._sample_from_box(*boundaries), location
 
     def _sample_theta(self, **kwargs):
         return np.random.choice(self.thetas)
@@ -112,32 +117,36 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
                 done: np.ndarray,
                 **kwargs,):
 
-        is_valid = False
-        while not is_valid:
-            aug_obs = obs.copy()
-            aug_next_obs = next_obs.copy()
+        aug_obs = obs.copy()
+        aug_next_obs = next_obs.copy()
 
+        while True:
             # translate
-            aug_obs[:2] = self._sample_pos()
+            aug_obs[:2], aug_location = self._sample_pos()
             delta_obs = next_obs - obs
             aug_next_obs[:2] = aug_obs[:2] + delta_obs[:2]
 
             M = self._sample_rotation_matrix(obs=aug_obs, next_obs=aug_next_obs)
 
-            # rotate action
-            aug_action = M.dot(action).T
-
             # rotate next_obs about obs
             rotated_delta_obs = M.dot(delta_obs[:2]).T
             aug_next_obs[:2] = aug_obs[:2] + rotated_delta_obs
 
+            # corner case (literally): check that the agent isn't inside a wall
+            pos_is_valid = self._check_corners(aug_obs[:2], aug_location)
+            next_pos_is_valid = self._check_corners(aug_next_obs[:2], aug_location)
+
+            # if new positions are not valid, immediately sample a new position
+            if not (pos_is_valid and next_pos_is_valid):
+                continue
+
+            # rotate action
+            aug_action = M.dot(action).T
+
             # rotate velocity
             aug_obs[2:] = M.dot(aug_obs[2:]).T
             aug_next_obs[2:] = M.dot(aug_next_obs[2:]).T
-
-            # initial pos is always valid, so we only need to check that the next pos isn't inside a wall
-            next_pos = aug_next_obs[:2]
-            is_valid = self._is_valid_position(next_pos)
+            break
 
         aug_reward = self._reward(aug_next_obs)
         aug_done = done
@@ -165,7 +174,7 @@ class PointMazeGuidedAugmentationFunction(PointMazeAugmentationFunction):
             self.guide_thetas = {
                 (1, 1): [0],
                 (2, 1): [np.pi/2],
-                # (1, 1): [],
+                (3, 1): [],
                 (4, 1): [np.pi/2],
                 (5, 1): [np.pi],
                 (6, 1): [np.pi/2],
@@ -174,13 +183,13 @@ class PointMazeGuidedAugmentationFunction(PointMazeAugmentationFunction):
                 (2, 2): [0],
                 (3, 2): [np.pi/2],
                 (4, 2): [np.pi],
-                # (5, 2): [np.pi],
+                (5, 2): [],
                 (6, 2): [np.pi/2],
 
-                # (1, 3): [0],
-                # (2, 3): [0],
+                (1, 3): [],
+                (2, 3): [],
                 (3, 3): [np.pi / 2],
-                # (4, 3): [np.pi],
+                (4, 3): [],
                 (5, 3): [np.pi/2],
                 (6, 3): [np.pi],
 
@@ -189,18 +198,18 @@ class PointMazeGuidedAugmentationFunction(PointMazeAugmentationFunction):
                 (3, 4): [0],
                 (4, 4): [np.pi/2],
                 (5, 4): [np.pi],
-                # (6, 4): [np.pi],
+                (6, 4): [],
 
                 (1, 5): [0],
                 (2, 5): [np.pi*3/2],
-                # (3, 5): [np.pi / 2],
+                (3, 5): [],
                 (4, 5): [np.pi/2],
-                # (5, 5): [np.pi],
+                (5, 5): [],
                 (6, 5): [np.pi / 2],
 
                 (1, 6): [0],
                 (2, 6): [np.pi*3/2],
-                # (3, 6): [np.pi / 2],
+                (3, 6): [],
                 (4, 6): [0],
                 (5, 6): [0],
                 (6, 6): [0, np.pi / 2, np.pi, np.pi * 3 / 2],
@@ -212,39 +221,39 @@ class PointMazeGuidedAugmentationFunction(PointMazeAugmentationFunction):
                 (3, 1): [np.pi/2],
                 (4, 1): [np.pi],
                 (5, 1): [np.pi],
-                # (6, 1): [np.pi / 2],
+                (6, 1): [],
                 (7, 1): [np.pi/2],
 
                 (1, 2): [np.pi/2],
-                # (2, 2): [0],
+                (2, 2): [],
                 (3, 2): [np.pi / 2],
-                # (4, 2): [np.pi],
+                (4, 2): [],
                 (5, 2): [np.pi*3/2],
                 (6, 2): [np.pi],
                 (7, 2): [np.pi],
 
                 (1, 3): [np.pi/2],
-                # (2, 3): [0],
+                (2, 3): [],
                 (3, 3): [np.pi / 2],
-                # (4, 3): [np.pi],
-                # (5, 3): [np.pi / 2],
-                # (6, 3): [np.pi],
-                # (7, 3): [np.pi],
+                (4, 3): [],
+                (5, 3): [],
+                (6, 3): [],
+                (7, 3): [],
 
                 (1, 4): [0],
                 (2, 4): [0],
                 (3, 4): [np.pi/2],
-                # (4, 4): [np.pi / 2],
+                (4, 4): [],
                 (5, 4): [0],
                 (6, 4): [0],
                 (7, 4): [np.pi/2],
 
-                # (1, 5): [0],
-                # (2, 5): [np.pi * 3 / 2],
+                (1, 5): [],
+                (2, 5): [],
                 (3, 5): [np.pi / 2],
-                # (4, 5): [np.pi / 2],
-                # (5, 5): [np.pi],
-                # (6, 5): [np.pi / 2],
+                (4, 5): [],
+                (5, 5): [],
+                (6, 5): [],
                 (7, 5): [np.pi / 2],
 
                 (1, 6): [0],
@@ -256,27 +265,27 @@ class PointMazeGuidedAugmentationFunction(PointMazeAugmentationFunction):
                 (7, 6): [np.pi],
 
                 (1, 7): [np.pi*3/2],
-                # (2, 7): [0],
-                # (3, 7): [0],
-                # (4, 7): [0],
+                (2, 7): [],
+                (3, 7): [],
+                (4, 7): [],
                 (5, 7): [np.pi / 2],
-                # (6, 7): [np.pi],
-                # (7, 7): [np.pi],
+                (6, 7): [],
+                (7, 7): [],
 
                 (1, 8): [np.pi/2],
                 (2, 8): [0],
                 (3, 8): [np.pi/2],
-                # (4, 8): [0],
+                (4, 8): [],
                 (5, 8): [0],
                 (6, 8): [0],
                 (7, 8): [np.pi/2],
 
                 (1, 9): [np.pi/2],
-                # (2, 9): [0],
+                (2, 9): [],
                 (3, 9): [np.pi/2],
-                # (4, 9): [0],
+                (4, 9): [],
                 (5, 9): [np.pi*3 / 2],
-                # (6, 9): [np.pi],
+                (6, 9): [],
                 (7, 9): [0, np.pi / 2, np.pi, np.pi * 3 / 2],
 
                 (1, 10): [0],
@@ -288,21 +297,29 @@ class PointMazeGuidedAugmentationFunction(PointMazeAugmentationFunction):
                 (7, 10): [np.pi*3/2],
             }
 
-    def _sample_theta(self, obs, next_obs, **kwargs):
-
+    def _sample_rotation_matrix(self, obs, next_obs, **kwargs):
         x, y = obs[0], obs[1]
         delta_obs = next_obs - obs
         theta = np.arctan2(delta_obs[1], delta_obs[0])
+        if theta < 0:
+            theta += 2*np.pi
 
         location = (int(np.round(x+self.agent_offset)), int(np.round(y+self.agent_offset)))
         guide_thetas = self.guide_thetas[location]
         guide_theta = np.random.choice(guide_thetas)
 
         aug_thetas = (self.thetas + theta)%(2*np.pi)
-        dist = np.abs(guide_theta - aug_thetas)
-        idx = np.argmin(dist)
-        return self.thetas[idx]
 
+        # need to handle 0/2*np.pi separately
+        if np.isclose(guide_theta, 0):
+            dist1 = np.abs(0 - aug_thetas)
+            dist2 = np.abs(2* np.pi - aug_thetas)
+            idx = np.argmin(np.concatenate([dist1, dist2])) % 4
+        else:
+            dist = np.abs(guide_theta - aug_thetas)
+            idx = np.argmin(dist)
+
+        return self.rotation_matrices[idx]
 
 
     def augment(self,
@@ -313,46 +330,38 @@ class PointMazeGuidedAugmentationFunction(PointMazeAugmentationFunction):
                 done: np.ndarray,
                 **kwargs,):
 
-        is_valid = False
-        while not is_valid:
-            aug_obs = obs.copy()
-            aug_next_obs = next_obs.copy()
+        aug_obs = obs.copy()
+        aug_next_obs = next_obs.copy()
 
+        while True:
             # translate
-            aug_obs[:2] = self._sample_pos()
+            aug_obs[:2], aug_location = self._sample_pos()
             delta_obs = next_obs - obs
             aug_next_obs[:2] = aug_obs[:2] + delta_obs[:2]
 
-            if np.random.random() <= 1:
-                theta = self._sample_theta(obs=aug_obs, next_obs=aug_next_obs)
-            else:
-                theta = super()._sample_theta()
-            M = np.array([
-                [np.cos(theta), -np.sin(theta)],
-                [np.sin(theta), np.cos(theta)]
-            ])
-
-            # rotate action
-            aug_action = M.dot(action).T
+            M = self._sample_rotation_matrix(obs=aug_obs, next_obs=aug_next_obs)
 
             # rotate next_obs about obs
             rotated_delta_obs = M.dot(delta_obs[:2]).T
             aug_next_obs[:2] = aug_obs[:2] + rotated_delta_obs
 
+            # corner case (literally): check that the agent isn't inside a wall
+            pos_is_valid = self._check_corners(aug_obs[:2], aug_location)
+            next_pos_is_valid = self._check_corners(aug_next_obs[:2], aug_location)
+
+            # if new positions are not valid, immediately sample a new position
+            if not (pos_is_valid and next_pos_is_valid):
+                continue
+
+            # rotate action
+            aug_action = M.dot(action).T
+
             # rotate velocity
             aug_obs[2:] = M.dot(aug_obs[2:]).T
             aug_next_obs[2:] = M.dot(aug_next_obs[2:]).T
-
-            # initial pos is always valid, so we only need to check that the next pos isn't inside a wall
-            next_pos = aug_next_obs[:2]
-            is_valid = self._is_valid_position(next_pos)
+            break
 
         aug_reward = self._reward(aug_next_obs)
         aug_done = done
 
         return aug_obs, aug_action, aug_reward, aug_next_obs, aug_done
-
-
-
-
-

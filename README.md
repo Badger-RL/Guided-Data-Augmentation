@@ -1,4 +1,4 @@
-# How to use
+## Installation
 
 First install the virtualenv from requirements.txt, and then run
 ```commandline
@@ -7,24 +7,26 @@ pip install -e .
 pip install -e src/custom-envs
 ```
 
-To generate datasets, run the script `generate/generate_d4rl_dataset.py` with appropriate parameters
+## Dataset Generation
+To generate datasets, run `aug.py` in `src/generate/maze2d`. 
+Datasets take a few minutes to generate. They will be saved to `datasets/<env_id>/<aug_name>/m_<aug_ratio>`. 
+By default, the augmentation ratio (number of augmentations per observed transition) is 1.
 
-To run CQL on the generate data set, run the command
+## Training
+To run an algorithm (*e.g.*, TD3+BC) on one of the D4RL benchmark tasks (*e.g.* maze2d-umaze-v1), execute the following command inside the `src` directory:
 
+````commandline
+python ./algorithms/td3_bc.py --env maze2d-umaze-v1
 ````
-python3 ./algorithms/cql.py --dataset_name <dataset name>
+To train using a local dataset, run
+````commandline
+python ./algorithms/td3_bc.py --env maze2d-umaze-v1 --dataset_name path/to/dataset.hdf5
 ````
-where the dataset is a `.hdf5` formatted dataset in the datasets folder.
-
-Checkpoints, including policies, will be saved to a folder in the `policy` folder.
-
-In order to visualize the real-time performance of a policy from a checkpoint, run the following command:
-
-````
-python3 ./try_policy.py <dataset> <checkpoint>
-````
-note that here the dataset is necessary because the normalization params used when training with CQL need to be reconstructed to use the policy
-
+The `TrainConfig` class in each algorithm file specifies arguments. You can pass different values in through the command line as follows:
+```commandline
+python -u algorithms/td3_bc.py --max_timesteps 1000000 --eval_freq 20000 --save_dir results  --env maze2d-large-v1 --dataset_name datasets/maze2d-large-v1/random/m_1.hdf5 --actor_lr 0.0003 --critic_lr 0.0003 --batch_size 256 --alpha 10 --tau 0.001 --n_layers 2 --hidden_dims 128
+```
+You can enable Weights and Biases logging using `--use_wandb True`. By default, this argument is set to `False`.
 
 # Running with Condor
 You need to copy `credentials.json` and `wandb_credentials.json` out of the templates folder into the top level folder, and add you wisc login and password and wandb api key. This will allow the staging scripts to automatically stage your bundle, though you will still need to do a two factor confirmation. The wandb api key is necessary for logging, you can get one with a free account.
