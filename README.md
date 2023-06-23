@@ -28,7 +28,17 @@ python -u algorithms/td3_bc.py --max_timesteps 1000000 --eval_freq 20000 --save_
 ```
 You can enable Weights and Biases logging using `--use_wandb True`. By default, this argument is set to `False`.
 
-# Running with Condor
+## Running with Condor
+
+```commandline
+git clone GuidedDataAugmentationForRobotics
+cd GuidedDataAugmentationForRobotics
+./prepare_bundle.bash
+cp bundle.zip /staging/<username>
+./submit.sh mycommands.txt 5 mycommands_output
+```
+
+### Using wandb on Condor
 You need to copy `credentials.json` and `wandb_credentials.json` out of the templates folder into the top level folder, and add you wisc login and password and wandb api key. This will allow the staging scripts to automatically stage your bundle, though you will still need to do a two factor confirmation. The wandb api key is necessary for logging, you can get one with a free account.
 
 Once credentials are set up, first can pick your experimental params by editing `config.json` and `offline_rl.sub`. The total number of jobs should match between the two config files. Once you have configured the experiments to your liking, to run your experiments:
