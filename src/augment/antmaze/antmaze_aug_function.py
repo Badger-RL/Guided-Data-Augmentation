@@ -45,10 +45,22 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
                 [np.sin(theta), np.cos(theta)]
             ])
             self.rotation_matrices.append(M)
-        self.target = np.array([1.00675, 8.845378])
+        # self.target = np.array([1.00675, 8.845378])
+        # self.target = np.array([21.23277744269721, 20.98104580473052])
+        l = len(self.env.maze_arr)
+        if l == 5:
+            self.target = np.array([1.00675, 8.845378])
+            self.env.maze_arr = U_MAZE
+        elif l == 8:
+            self.target = np.array([21.23277744269721, 20.98104580473052])
+            self.env.maze_arr = MEDIUM_MAZE
+
+        else:
+            self.target = np.array([33.334047004876766, 24.540936989331545])
+            self.env.maze_arr = LARGE_MAZE
+
         self.wall_locations = []
         self.valid_locations = []
-        self.env.maze_arr = LARGE_MAZE
         width, height = self.env.maze_arr.shape
         for w in range(width):
             for h in range(height):
@@ -59,20 +71,6 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
                 elif location_type in ['0', GOAL, RESET]:
                     self.valid_locations.append(box_location)
         self.valid_locations = np.array(self.valid_locations)
-
-    # def _sample_pos(self, ):
-    #     prob = (1.0 - self.env.maze_arr) / np.sum(1.0 - self.env.maze_arr)
-    #     prob_row = np.sum(prob, 1)
-    #     row_sample = np.random.choice(np.arange(self.env.maze_arr.shape[0]), p=prob_row)
-    #     col_sample = np.random.choice(np.arange(self.env.maze_arr.shape[1]),
-    #                                   p=prob[row_sample] * 1.0 / prob_row[row_sample])
-    #     reset_location = self._rowcol_to_xy((row_sample, col_sample))
-    #
-    #     # Add some random noise
-    #     random_x = np.random.uniform(low=0, high=0.5) * 0.5 * self.maze_scale
-    #     random_y = np.random.uniform(low=0, high=0.5) * 0.5 * self.maze_scale
-    #
-    #     return (max(reset_location[0] + random_x, 0), max(reset_location[1] + random_y, 0))
 
     def _get_valid_boundaries(self, w, h):
         w = int(w)
@@ -105,48 +103,33 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
         return self.env.np_random.uniform(low=[xlo, ylo], high=[xhi,yhi])
 
     def _is_in_wall(self, box_location, x, y):
-        xlo, ylo = box_location*4 - self.agent_offset - 2.5
-        xhi, yhi = box_location*4 - self.agent_offset + 2.5
+        xlo, ylo = box_location*4 - self.agent_offset - 3
+        xhi, yhi = box_location*4 - self.agent_offset + 3
 
         if (x > xlo and y > ylo) and (x < xhi and y < yhi):
             return True
         else:
             return False
 
-
-    def _xy_to_rowcol(self, xy):
-        xy = (max(xy[0], 1e-4), max(xy[1], 1e-4))
-        return (int(1 + (xy[1]) / self.maze_scale),
-                int(1 + (xy[0]) / self.maze_scale))
-
-    # def _is_valid_position(self, xy):
-    #     row, col = self._xy_to_rowcol(xy)
-    #     x, y = xy[1], xy[0]
-    #     is_valid_position = True
-    #     for r in range(row - 1, row + 2):
-    #         for c in range(col- 1, col + 2):
-    #             if self.env.maze_arr[r,c] == 1:
-    #                 if self._is_in_wall(np.array([r,c]), x, y):
-    #                     is_valid_position = False
-    #                     break
-
-    def _is_valid_position(self, xy):
+    def _check_corners(self, xy, location):
         x, y = xy[0], xy[1]
-
         is_valid_position = True
-        for box_location in self.wall_locations:
-            if self._is_in_wall(box_location, x, y):
-                is_valid_position = False
-                break
+
+        w, h = int(location[0]), int(location[1])
+        for loc in [(w + 1, h + 1), (w + 1, h - 1), (w - 1, h + 1), (w - 1, h - 1)]:
+            if self.env.maze_arr[loc[0], loc[1]] == '1':
+                loc = np.array(loc)
+                if self._is_in_wall(loc, x, y):
+                    is_valid_position = False
+                    break
 
         return is_valid_position
 
     def _sample_pos(self, n=1):
         idx = np.random.choice(len(self.valid_locations))
         location = np.array(self.valid_locations[idx]).astype(self.env.observation_space.dtype)
-
         boundaries = self._get_valid_boundaries(*location)
-        return self._sample_from_box(*boundaries)
+        return self._sample_from_box(*boundaries), location
 
     def _sample_theta(self, **kwargs):
         return np.random.choice(self.thetas)
@@ -207,8 +190,8 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
     def _xy_to_rowcol(self, xy):
         size_scaling = self.maze_scale
         xy = (max(xy[0], 1e-4), max(xy[1], 1e-4))
-        return (int(1 + (xy[1]) / size_scaling),
-                int(1 + (xy[0]) / size_scaling))
+        return (int(1 + (xy[0]) / size_scaling),
+                int(1 + (xy[1]) / size_scaling))
 
     def _rowcol_to_xy(self, rowcol, add_random_noise=False):
         row, col = rowcol
@@ -219,6 +202,26 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
             y = y + np.random.uniform(low=0, high=self.maze_scale * 0.25)
         return (x, y)
 
+    def is_valid_input(self, obs, next_obs):
+
+        r, c = self._xy_to_rowcol(obs[:2])
+        if self.env.maze_arr[r,c] == '1':
+            return False
+        x, y = obs[:2]
+        xlo, ylo, xhi, yhi = self._get_valid_boundaries(r, c)
+        if (x < xlo or x > xhi) or (y < ylo or y > yhi):
+            return False
+
+        r, c = self._xy_to_rowcol(next_obs[:2])
+        if self.env.maze_arr[r,c] == '1':
+            return False
+        x, y = next_obs[:2]
+        xlo, ylo, xhi, yhi = self._get_valid_boundaries(r, c)
+        if (x < xlo or x > xhi) or (y < ylo or y > yhi):
+            return False
+
+        return True
+
     def augment(self,
                 obs: np.ndarray,
                 action: np.ndarray,
@@ -227,16 +230,34 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
                 done: np.ndarray,
                 **kwargs,):
 
-        is_valid = False
-        while not is_valid:
-            aug_obs = obs.copy()
-            aug_next_obs = next_obs.copy()
+        # if not self._check_valid_input(obs, next_obs):
+        #     return None, None, None, None, None
 
+        aug_obs = obs.copy()
+        aug_next_obs = next_obs.copy()
+        while True:
             alpha = np.random.uniform(low=0, high=2*np.pi)
-            # alpha = np.pi/2
+
+            M = np.array([
+                [np.cos(-alpha), -np.sin(-alpha)],
+                [np.sin(-alpha), np.cos(-alpha)]
+            ])
+
+            aug_obs[:2], aug_location = self._sample_pos()
+            delta_pos = next_obs[:2] - obs[:2]
+            rotated_delta_obs = M.dot(delta_pos[:2]).T
+            aug_next_obs[:2] = aug_obs[:2] + rotated_delta_obs
+
+            # corner case (literally): check that the agent isn't inside a wall
+            pos_is_valid = self._check_corners(aug_obs[:2], aug_location)
+            next_pos_is_valid = self._check_corners(aug_next_obs[:2], aug_location)
+
+            # if new positions are not valid, immediately sample a new position
+            if not (pos_is_valid and next_pos_is_valid):
+                continue
+
             sin = np.sin(alpha / 2)
             cos = np.cos(alpha / 2)
-
             # mujoco stores quats as (qw, qx, qy, qz)
             quat_rotate_by = np.array([sin, 0, 0, cos])
 
@@ -248,20 +269,7 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
             cos = np.cos(-alpha)
             self._rotate_vel(aug_obs, sin, cos)
             self._rotate_vel(aug_next_obs, sin, cos)
-
-            M = np.array([
-                [np.cos(-alpha), -np.sin(-alpha)],
-                [np.sin(-alpha), np.cos(-alpha)]
-            ])
-
-            aug_obs[:2] = self._sample_pos()
-            delta_pos = next_obs[:2] - obs[:2]
-            rotated_delta_obs = M.dot(delta_pos[:2]).T
-            aug_next_obs[:2] = aug_obs[:2] + rotated_delta_obs
-
-            # initial pos is always valid, so we only need to check that the next pos isn't inside a wall
-            next_pos = aug_next_obs[:2]
-            is_valid = self._is_valid_position(next_pos)
+            break
 
         aug_action = action.copy()
         aug_reward = self._reward(aug_next_obs)
@@ -273,160 +281,163 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
 class AntMazeGuidedAugmentationFunction(AntMazeAugmentationFunction):
     def __init__(self, env, **kwargs):
         super().__init__(env=env, **kwargs)
-
         if self.env.maze_arr.shape[0] == 5:
             self.guide_thetas = {
-                #left
                 (1, 1): [0],
-                (1, 2): [0],
-                (1, 3): [np.pi/2],
-                # top
-                (2, 3): [np.pi/2],
-                (3, 3): [np.pi],
-                # right
-                (3, 1): [0, np.pi / 2, np.pi, np.pi * 3 / 2],
-                (3, 2): [np.pi],
+                (2, 1): [0],
+                (3, 1): [np.pi/2],
+
+                (3, 2): [np.pi/2],
+
+                (1, 3): [0, np.pi/2, np.pi, np.pi*3/2],
+                (2, 3): [np.pi],
+                (3, 3): [np.pi]
             }
         elif self.env.maze_arr.shape[0] == 8:
+            print('medium')
             self.guide_thetas = {
-                (1, 1): [np.pi/2],
-                (2, 1): [0],
-                # (1, 1): [],
-                (4, 1): [0],
-                (5, 1): [np.pi*3/2],
-                (6, 1): [0],
+                (1, 1): [0],
+                (2, 1): [np.pi/2],
+                (3, 1): [],
+                (4, 1): [],
+                (5, 1): [np.pi/2],
+                (6, 1): [np.pi],
 
-                (1, 2): [np.pi/2],
+                (1, 2): [0],
                 (2, 2): [np.pi/2],
-                (3, 2): [0],
-                (4, 2): [np.pi + np.pi/2],
-                # (5, 2): [np.pi],
-                (6, 2): [0],
+                (3, 2): [],
+                (4, 2): [np.pi/2],
+                (5, 2): [np.pi],
+                (6, 2): [np.pi],
 
-                # (1, 3): [0],
-                # (2, 3): [0],
+                (1, 3): [],
+                (2, 3): [0],
                 (3, 3): [0],
-                # (4, 3): [np.pi],
-                (5, 3): [0],
-                (6, 3): [np.pi + np.pi/2],
+                (4, 3): [np.pi/2],
+                (5, 3): [],
+                (6, 3): [],
 
-                (1, 4): [0 + np.pi/2],
-                (2, 4): [0 + np.pi/2],
-                (3, 4): [0 + np.pi/2],
+                (1, 4): [0],
+                (2, 4): [np.pi*3/2],
+                (3, 4): [],
                 (4, 4): [0],
-                (5, 4): [np.pi*3/2],
-                # (6, 4): [np.pi],
+                (5, 4): [0],
+                (6, 4): [np.pi/2],
 
-                (1, 5): [0 + np.pi/2],
-                (2, 5): [np.pi],
-                # (3, 5): [np.pi / 2],
-                (4, 5): [0],
-                # (5, 5): [np.pi],
-                (6, 5): [0],
+                (1, 5): [np.pi/2],
+                (2, 5): [],
+                (3, 5): [0],
+                (4, 5): [np.pi*3/2],
+                (5, 5): [],
+                (6, 5): [np.pi / 2],
 
-                (1, 6): [np.pi/2],
-                (2, 6): [np.pi],
-                # (3, 6): [np.pi / 2],
-                (4, 6): [0 + np.pi/2],
-                (5, 6): [0 + np.pi/2],
+                (1, 6): [0],
+                (2, 6): [0],
+                (3, 6): [np.pi*3/2],
+                (4, 6): [],
+                (5, 6): [0],
                 (6, 6): [0, np.pi / 2, np.pi, np.pi * 3 / 2],
             }
         elif self.env.maze_arr.shape[0] == 12:
             self.guide_thetas = {
                 (1, 1): [0],
-                (2, 1): [np.pi/2],
+                (2, 1): [0],
                 (3, 1): [0],
-                (4, 1): [np.pi*3/2],
-                (5, 1): [np.pi*3/2],
-                # (6, 1): [np.pi / 2],
-                (7, 1): [0],
+                (4, 1): [0],
+                (5, 1): [],
+                (6, 1): [np.pi/2],
+                (7, 1): [np.pi],
+                (8, 1): [np.pi/2],
+                (9, 1): [0],
+                (10, 1): [np.pi/2],
 
-                (1, 2): [0],
-                # (2, 2): [0],
-                (3, 2): [0],
-                # (4, 2): [np.pi],
-                (5, 2): [np.pi*3/2],
-                (6, 2): [np.pi*3/2],
-                (7, 2): [np.pi*3/2],
+                (1, 2): [np.pi/2],
+                (2, 2): [],
+                (3, 2): [],
+                (4, 2): [np.pi/2],
+                (5, 2): [],
+                (6, 2): [np.pi/2],
+                (7, 2): [],
+                (8, 2): [np.pi/2],
+                (9, 2): [0],
+                (10, 2): [np.pi/2],
 
                 (1, 3): [0],
-                # (2, 3): [0],
+                (2, 3): [0],
                 (3, 3): [0],
-                # (4, 3): [np.pi],
-                # (5, 3): [np.pi / 2],
-                # (6, 3): [np.pi],
-                # (7, 3): [np.pi],
+                (4, 3): [0],
+                (5, 3): [0],
+                (6, 3): [np.pi / 2],
+                (7, 3): [],
+                (8, 3): [0],
+                (9, 3): [0],
+                (10, 3): [np.pi / 2],
 
-                (1, 4): [np.pi/2],
-                (2, 4): [np.pi/2],
-                (3, 4): [0],
-                # (4, 4): [np.pi / 2],
-                (5, 4): [np.pi/2],
-                (6, 4): [np.pi/2],
-                (7, 4): [0],
+                (1, 4): [np.pi*3 / 2],
+                (2, 4): [],
+                (3, 4): [],
+                (4, 4): [],
+                (5, 4): [],
+                (6, 4): [np.pi / 2],
+                (7, 4): [],
+                (8, 4): [],
+                (9, 4): [],
+                (10, 4): [np.pi / 2],
 
-                # (1, 5): [0],
-                # (2, 5): [np.pi * 3 / 2],
-                (3, 5): [0],
-                # (4, 5): [np.pi / 2],
-                # (5, 5): [np.pi],
-                # (6, 5): [np.pi / 2],
+                (1, 5): [np.pi*3 / 2],
+                (2, 5): [np.pi],
+                (3, 5): [],
+                (4, 5): [np.pi / 2],
+                (5, 5): [],
+                (6, 5): [0],
                 (7, 5): [0],
+                (8, 5): [np.pi / 2],
+                (9, 5): [np.pi],
+                (10, 5): [np.pi],
 
-                (1, 6): [np.pi/2],
-                (2, 6): [np.pi/2],
-                (3, 6): [np.pi/2],
-                (4, 6): [np.pi/2],
-                (5, 6): [0],
-                (6, 6): [np.pi*3/2],
-                (7, 6): [np.pi*3/2],
+                (1, 6): [],
+                (2, 6): [np.pi*3 / 2],
+                (3, 6): [],
+                (4, 6): [np.pi / 2],
+                (5, 6): [],
+                (6, 6): [np.pi*3 / 2],
+                (7, 6): [],
+                (8, 6): [np.pi / 2],
+                (9, 6): [],
+                (10, 6): [],
 
-                (1, 7): [np.pi],
-                # (2, 7): [0],
-                # (3, 7): [0],
-                # (4, 7): [0],
+                (1, 7): [0],
+                (2, 7): [np.pi*3 / 2],
+                (3, 7): [],
+                (4, 7): [0],
                 (5, 7): [0],
-                # (6, 7): [np.pi],
-                # (7, 7): [np.pi],
-
-                (1, 8): [np.pi/2],
-                (2, 8): [np.pi/2],
-                (3, 8): [0],
-                # (4, 8): [0],
-                (5, 8): [np.pi/2],
-                (6, 8): [np.pi/2],
-                (7, 8): [0],
-
-                (1, 9): [np.pi/2],
-                # (2, 9): [0],
-                (3, 9): [0],
-                # (4, 9): [0],
-                (5, 9): [np.pi],
-                # (6, 9): [np.pi],
-                (7, 9): [0, np.pi / 2, np.pi, np.pi * 3 / 2],
-
-                (1, 10): [np.pi/2],
-                (2, 10): [np.pi/2],
-                (3, 10): [np.pi/2],
-                (4, 10): [np.pi/2],
-                (5, 10): [np.pi],
-                # (6, 10): [0],
-                (7, 10): [np.pi],
+                (6, 7): [np.pi*3 / 2],
+                (7, 7): [],
+                (8, 7): [0],
+                (9, 7): [0, np.pi/2, np.pi, np.pi*3/2],
+                (10, 7): [np.pi],
             }
 
-    def _sample_theta(self, obs, next_obs, new_pos, **kwargs):
+    def _sample_theta(self, obs, next_obs, new_pos, new_location, **kwargs):
 
         x, y = new_pos[0], new_pos[1]
+        # new_pos = [3*4-4, 6*4-4]
         delta_obs = next_obs - obs
         theta = np.arctan2(delta_obs[1], delta_obs[0])
+        x = max(x, 1e-4)
+        y = max(y, 1e-4)
 
-        location = (int(np.round((y+self.agent_offset)/4)), int(np.round((x+self.agent_offset)/4)))
+        location = (int(1+np.ceil(x)//4), int(1+np.ceil(y)//4))
+        # size_scaling = self.maze_scale
+        # location = (int(1 + np.round(xy[0] / size_scaling)),
+        #         int(1 + np.round(xy[1] / size_scaling)))
+        # print(new_pos, location)
 
         # print(obs[:2], location)
-        guide_thetas = self.guide_thetas[location]
+        guide_thetas = self.guide_thetas[(int(new_location[0]), int(new_location[1]))]
         guide_theta = np.random.choice(guide_thetas)
 
-        aug_theta = guide_theta - theta + np.random.uniform(low=-np.pi/6, high=np.pi/6)
+        aug_theta = guide_theta - theta #+ np.random.uniform(low=-np.pi/6, high=np.pi/6)
         return -aug_theta
 
     def augment(self,
@@ -437,30 +448,14 @@ class AntMazeGuidedAugmentationFunction(AntMazeAugmentationFunction):
                 done: np.ndarray,
                 **kwargs,):
 
-        is_valid = False
-        while not is_valid:
-            aug_obs = obs.copy()
-            aug_next_obs = next_obs.copy()
+        # if not self._check_valid_input(obs, next_obs):
+        #     return None, None, None, None, None
 
-            new_pos = self._sample_pos()
-
-            # alpha = np.random.uniform(low=0, high=2*np.pi)
-            alpha = self._sample_theta(obs, next_obs, new_pos)
-            # alpha = np.pi/2
-            sin = np.sin(alpha / 2)
-            cos = np.cos(alpha / 2)
-
-            # mujoco stores quats as (qw, qx, qy, qz)
-            quat_rotate_by = np.array([sin, 0, 0, cos])
-
-            self._rotate_torso(aug_obs, quat_rotate_by)
-            self._rotate_torso(aug_next_obs, quat_rotate_by)
-
-            # Not sure why we need -alpha here...
-            sin = np.sin(-alpha)
-            cos = np.cos(-alpha)
-            self._rotate_vel(aug_obs, sin, cos)
-            self._rotate_vel(aug_next_obs, sin, cos)
+        aug_obs = obs.copy()
+        aug_next_obs = next_obs.copy()
+        while True:
+            new_pos, aug_location = self._sample_pos()
+            alpha = self._sample_theta(obs, next_obs, new_pos, aug_location)
 
             M = np.array([
                 [np.cos(-alpha), -np.sin(-alpha)],
@@ -472,10 +467,28 @@ class AntMazeGuidedAugmentationFunction(AntMazeAugmentationFunction):
             rotated_delta_obs = M.dot(delta_pos[:2]).T
             aug_next_obs[:2] = aug_obs[:2] + rotated_delta_obs
 
-            # initial pos is always valid, so we only need to check that the next pos isn't inside a wall
-            next_pos = aug_next_obs[:2]
-            is_valid = True
-            is_valid = self._is_valid_position(next_pos)
+            # corner case (literally): check that the agent isn't inside a wall
+            pos_is_valid = self._check_corners(aug_obs[:2], aug_location)
+            next_pos_is_valid = self._check_corners(aug_next_obs[:2], aug_location)
+
+            # if new positions are not valid, immediately sample a new position
+            if not (pos_is_valid and next_pos_is_valid):
+                continue
+
+            sin = np.sin(alpha / 2)
+            cos = np.cos(alpha / 2)
+            # mujoco stores quats as (qw, qx, qy, qz)
+            quat_rotate_by = np.array([sin, 0, 0, cos])
+
+            self._rotate_torso(aug_obs, quat_rotate_by)
+            self._rotate_torso(aug_next_obs, quat_rotate_by)
+
+            # Not sure why we need -alpha here...
+            sin = np.sin(-alpha)
+            cos = np.cos(-alpha)
+            self._rotate_vel(aug_obs, sin, cos)
+            self._rotate_vel(aug_next_obs, sin, cos)
+            break
 
         aug_action = action.copy()
         aug_reward = self._reward(aug_next_obs)
