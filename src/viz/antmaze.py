@@ -16,7 +16,7 @@ from algorithms.utils import load_dataset
 
 
 for env_id in ['antmaze-umaze-diverse-v1', 'antmaze-medium-diverse-v1', 'antmaze-large-diverse-v1']:
-    for aug in ['guided']:
+    for aug in ['random', 'guided']:
         plt.figure(figsize=(12, 12))
 
         dataset_name = f'../datasets/{env_id}/{aug}/m_1.hdf5'
@@ -33,7 +33,7 @@ for env_id in ['antmaze-umaze-diverse-v1', 'antmaze-medium-diverse-v1', 'antmaze
 
         # plot no_aug
         start = int(0e6)
-        end = start + int(20e3)
+        end = start + int(50e3)
 
         observations = dataset['observations'][start:end]
         next_observations = dataset['next_observations'][start:end]
@@ -67,8 +67,19 @@ for env_id in ['antmaze-umaze-diverse-v1', 'antmaze-medium-diverse-v1', 'antmaze
         plt.quiver(x, y, u, v)
         plt.scatter(next_x[at_goal],next_y[at_goal], alpha=0.5, color='g')
 
-        for k in range(12):
+        if 'umaze' in env_id:
+            r = 4
+            c = 4
+        elif 'medium' in env_id:
+            r = 7
+            c = 7
+        elif 'large' in env_id:
+            r = 8
+            c = 10
+
+        for k in range(r):
             plt.axhline(y=k*4-2)
+        for k in range(c):
             plt.axvline(x=k*4-2)
 
         plt.title(f'{env_id}: {aug}', fontsize=24)
@@ -77,6 +88,7 @@ for env_id in ['antmaze-umaze-diverse-v1', 'antmaze-medium-diverse-v1', 'antmaze
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=20)
         plt.tight_layout()
+        os.makedirs(f'figures/{env_id}', exist_ok=True)
+        plt.savefig(f'figures/{env_id}/{aug}.png')
         plt.show()
-        # os.makedirs(f'figures/{env_id}', exist_ok=True)
-        # plt.savefig(f'figures/{env_id}/{aug}.png')
+
