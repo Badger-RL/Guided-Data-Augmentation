@@ -2,6 +2,67 @@ import numpy as np
 from src.augment.augmentation_function_base import AugmentationFunctionBase
 from d4rl.locomotion.maze_env import GOAL, RESET
 
+'''
+    def augment(self,
+                obs: np.ndarray,
+                action: np.ndarray,
+                next_obs: np.ndarray,
+                reward: np.ndarray,
+                done: np.ndarray,
+                **kwargs,):
+
+        # if not self._check_valid_input(obs, next_obs):
+        #     return None, None, None, None, None
+
+        aug_obs = obs.copy()
+        aug_next_obs = next_obs.copy()
+        while True:
+            # new_pos, aug_location = self._sample_pos()
+            new_pos = aug_obs[:2]
+            aug_location = self._xy_to_rowcol(aug_obs[:2])
+            # print(new_pos,aug_location)
+            guide_alpha, rotate_alpha = self._sample_theta(obs, next_obs, new_pos, aug_location)
+
+            M = np.array([
+                [np.cos(-rotate_alpha), -np.sin(-rotate_alpha)],
+                [np.sin(-rotate_alpha), np.cos(-rotate_alpha)]
+            ])
+
+            aug_obs[:2] = new_pos
+            delta_pos = next_obs[:2] - obs[:2]
+            rotated_delta_obs = M.dot(delta_pos[:2]).T
+            aug_next_obs[:2] = aug_obs[:2] + rotated_delta_obs
+
+            # mujoco stores quats as (qw, qx, qy, qz)
+            sin = np.sin(rotate_alpha / 2)
+            cos = np.cos(rotate_alpha / 2)
+            quat_rotate_by = np.array([sin, 0, 0, cos])
+            self._rotate_torso(aug_obs, quat_rotate_by)
+            self._rotate_torso(aug_next_obs, quat_rotate_by)
+
+            # sin = np.sin(guide_alpha / 2)
+            # cos = np.cos(guide_alpha / 2)
+            # delta_quat = aug_next_obs[3:6+1] - aug_obs[3:6+1]
+            # aug_obs[3] = sin
+            # aug_obs[6] = cos
+            # aug_next_obs[3] = cos + delta_quat[0]
+            # aug_next_obs[6] = sin + delta_quat[3]
+
+            # Not sure why we need -alpha here...
+            sin = np.sin(-rotate_alpha)
+            cos = np.cos(-rotate_alpha)
+            self._rotate_vel(aug_obs, sin, cos)
+            self._rotate_vel(aug_next_obs, sin, cos)
+            break
+
+        aug_action = action.copy()
+        aug_reward = self._reward(aug_next_obs)
+        aug_done = done
+
+
+        return aug_obs, aug_action, aug_reward, aug_next_obs, aug_done
+'''
+
 G = GOAL
 R = RESET
 U_MAZE = np.array([[1, 1, 1, 1, 1],
@@ -35,7 +96,7 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
     def __init__(self, env, **kwargs):
         super().__init__(env=env, **kwargs)
         self.agent_offset = 4 # the agent and target coordinate systems are different for some reason.
-        self.effective_wall_width = 1
+        self.effective_wall_width = 1.5
         self.maze_scale = 4
         self.thetas = np.array([0, np.pi/2, np.pi, np.pi*3/2])
         self.rotation_matrices = []
@@ -103,8 +164,8 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
         return self.env.np_random.uniform(low=[xlo, ylo], high=[xhi,yhi])
 
     def _is_in_wall(self, box_location, x, y):
-        xlo, ylo = box_location*4 - self.agent_offset - 3
-        xhi, yhi = box_location*4 - self.agent_offset + 3
+        xlo, ylo = box_location*4 - self.agent_offset - 2 - self.effective_wall_width
+        xhi, yhi = box_location*4 - self.agent_offset + 2 + self.effective_wall_width
 
         if (x > xlo and y > ylo) and (x < xhi and y < yhi):
             return True
@@ -176,10 +237,10 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
         return quat
 
     def _rotate_torso(self, obs, quat_rotate_by):
-        quat_curr = obs[2+1:2+4 + 1]
+        quat_curr = obs[3:6 + 1]
         quat_result = self.quat_mul(quat0=quat_curr, quat1=quat_rotate_by)
         # quat already normalized
-        obs[2+1:2+4 + 1] = quat_result
+        obs[3:6 + 1] = quat_result
 
     def _rotate_vel(self, obs, sin, cos):
         x = obs[2+13].copy()
@@ -187,11 +248,19 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
         obs[2+13] = x * cos - y * sin
         obs[2+14] = x * sin + y * cos
 
+    # def _rotate_vel(self, obs, alpha):
+    #     x = obs[2+13].copy()
+    #     y = obs[2+14].copy()
+    #     norm = np.sqrt(x**2 + y**2)
+    #
+    #     obs[2+13] = norm * np.cos(alpha)
+    #     obs[2+14] = norm * np.sin(alpha)
+
     def _xy_to_rowcol(self, xy):
         size_scaling = self.maze_scale
         xy = (max(xy[0], 1e-4), max(xy[1], 1e-4))
-        return (int(1 + (xy[0]) / size_scaling),
-                int(1 + (xy[1]) / size_scaling))
+        return (int(np.round(1 + (xy[0]) / size_scaling)),
+                int(np.round(1 + (xy[1]) / size_scaling)))
 
     def _rowcol_to_xy(self, rowcol, add_random_noise=False):
         row, col = rowcol
@@ -205,6 +274,7 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
     def is_valid_input(self, obs, next_obs):
 
         r, c = self._xy_to_rowcol(obs[:2])
+        # print(r,c)
         if self.env.maze_arr[r,c] == '1':
             return False
         x, y = obs[:2]
@@ -222,6 +292,9 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
 
         return True
 
+    # def _check_valid_input(self, obs):
+
+
     def augment(self,
                 obs: np.ndarray,
                 action: np.ndarray,
@@ -230,20 +303,24 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
                 done: np.ndarray,
                 **kwargs,):
 
-        # if not self._check_valid_input(obs, next_obs):
-        #     return None, None, None, None, None
+        if not self.is_valid_input(obs, next_obs):
+            return None, None, None, None, None
 
         aug_obs = obs.copy()
         aug_next_obs = next_obs.copy()
         while True:
-            alpha = np.random.uniform(low=0, high=2*np.pi)
+            new_pos, aug_location = self._sample_pos()
+            # new_pos = aug_obs[:2]
+            # aug_location = self._xy_to_rowcol(aug_obs[:2])
+            # print(new_pos,aug_location)
+            rotate_alpha = np.random.uniform(0, 2*np.pi)
 
             M = np.array([
-                [np.cos(-alpha), -np.sin(-alpha)],
-                [np.sin(-alpha), np.cos(-alpha)]
+                [np.cos(-rotate_alpha), -np.sin(-rotate_alpha)],
+                [np.sin(-rotate_alpha), np.cos(-rotate_alpha)]
             ])
 
-            aug_obs[:2], aug_location = self._sample_pos()
+            aug_obs[:2] = new_pos
             delta_pos = next_obs[:2] - obs[:2]
             rotated_delta_obs = M.dot(delta_pos[:2]).T
             aug_next_obs[:2] = aug_obs[:2] + rotated_delta_obs
@@ -256,31 +333,37 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
             if not (pos_is_valid and next_pos_is_valid):
                 continue
 
-            sin = np.sin(alpha / 2)
-            cos = np.cos(alpha / 2)
-            # mujoco stores quats as (qw, qx, qy, qz)
+            # mujoco stores quats as (qw, qx, qy, qz) internally but uses (qx, qy, qz, qw) in the observation
+            sin = np.sin(rotate_alpha / 2)
+            cos = np.cos(rotate_alpha / 2)
             quat_rotate_by = np.array([sin, 0, 0, cos])
-
             self._rotate_torso(aug_obs, quat_rotate_by)
             self._rotate_torso(aug_next_obs, quat_rotate_by)
 
-            # Not sure why we need -alpha here...
-            sin = np.sin(-alpha)
-            cos = np.cos(-alpha)
+            sin = np.sin(-rotate_alpha)
+            cos = np.cos(-rotate_alpha)
             self._rotate_vel(aug_obs, sin, cos)
             self._rotate_vel(aug_next_obs, sin, cos)
+
             break
 
         aug_action = action.copy()
         aug_reward = self._reward(aug_next_obs)
         aug_done = done
-        # return obs, action, reward, next_obs, done
+        aug_obs[:2] += 0.5
+        aug_next_obs[:2] += 0.5
 
         return aug_obs, aug_action, aug_reward, aug_next_obs, aug_done
 
 class AntMazeGuidedAugmentationFunction(AntMazeAugmentationFunction):
     def __init__(self, env, **kwargs):
         super().__init__(env=env, **kwargs)
+        self.theta_to_quat = np.array([
+            [1, 0, 0, 0],
+            [0.707, 0, 0, 0.707],
+            [1, 0, 0, 0],
+            [0.707, 0, 0, -0.707],
+        ])
         if self.env.maze_arr.shape[0] == 5:
             self.guide_thetas = {
                 (1, 1): [0],
@@ -420,25 +503,15 @@ class AntMazeGuidedAugmentationFunction(AntMazeAugmentationFunction):
 
     def _sample_theta(self, obs, next_obs, new_pos, new_location, **kwargs):
 
-        x, y = new_pos[0], new_pos[1]
-        # new_pos = [3*4-4, 6*4-4]
-        delta_obs = next_obs - obs
+        delta_obs = next_obs[:2] - obs[:2]
         theta = np.arctan2(delta_obs[1], delta_obs[0])
-        x = max(x, 1e-4)
-        y = max(y, 1e-4)
 
-        location = (int(1+np.ceil(x)//4), int(1+np.ceil(y)//4))
-        # size_scaling = self.maze_scale
-        # location = (int(1 + np.round(xy[0] / size_scaling)),
-        #         int(1 + np.round(xy[1] / size_scaling)))
-        # print(new_pos, location)
-
-        # print(obs[:2], location)
         guide_thetas = self.guide_thetas[(int(new_location[0]), int(new_location[1]))]
         guide_theta = np.random.choice(guide_thetas)
 
-        aug_theta = guide_theta - theta #+ np.random.uniform(low=-np.pi/6, high=np.pi/6)
-        return -aug_theta
+        aug_theta = -(guide_theta - theta) #+ np.random.uniform(low=-np.pi/6, high=np.pi/6)
+
+        return aug_theta
 
     def augment(self,
                 obs: np.ndarray,
@@ -448,18 +521,21 @@ class AntMazeGuidedAugmentationFunction(AntMazeAugmentationFunction):
                 done: np.ndarray,
                 **kwargs,):
 
-        # if not self._check_valid_input(obs, next_obs):
-        #     return None, None, None, None, None
+        if not self.is_valid_input(obs, next_obs):
+            return None, None, None, None, None
 
         aug_obs = obs.copy()
         aug_next_obs = next_obs.copy()
         while True:
             new_pos, aug_location = self._sample_pos()
-            alpha = self._sample_theta(obs, next_obs, new_pos, aug_location)
+            # new_pos = aug_obs[:2]
+            # aug_location = self._xy_to_rowcol(aug_obs[:2])
+            # print(new_pos,aug_location)
+            rotate_alpha = self._sample_theta(obs, next_obs, new_pos, aug_location)
 
             M = np.array([
-                [np.cos(-alpha), -np.sin(-alpha)],
-                [np.sin(-alpha), np.cos(-alpha)]
+                [np.cos(-rotate_alpha), -np.sin(-rotate_alpha)],
+                [np.sin(-rotate_alpha), np.cos(-rotate_alpha)]
             ])
 
             aug_obs[:2] = new_pos
@@ -475,28 +551,27 @@ class AntMazeGuidedAugmentationFunction(AntMazeAugmentationFunction):
             if not (pos_is_valid and next_pos_is_valid):
                 continue
 
-            sin = np.sin(alpha / 2)
-            cos = np.cos(alpha / 2)
-            # mujoco stores quats as (qw, qx, qy, qz)
+            # mujoco stores quats as (qw, qx, qy, qz) internally but uses (qx, qy, qz, qw) in the observation
+            sin = np.sin(rotate_alpha / 2)
+            cos = np.cos(rotate_alpha / 2)
             quat_rotate_by = np.array([sin, 0, 0, cos])
-
             self._rotate_torso(aug_obs, quat_rotate_by)
             self._rotate_torso(aug_next_obs, quat_rotate_by)
 
-            # Not sure why we need -alpha here...
-            sin = np.sin(-alpha)
-            cos = np.cos(-alpha)
+            sin = np.sin(-rotate_alpha)
+            cos = np.cos(-rotate_alpha)
             self._rotate_vel(aug_obs, sin, cos)
             self._rotate_vel(aug_next_obs, sin, cos)
+
             break
 
         aug_action = action.copy()
         aug_reward = self._reward(aug_next_obs)
         aug_done = done
-        # return obs, action, reward, next_obs, done
+        aug_obs[:2] += 0.5
+        aug_next_obs[:2] += 0.5
 
         return aug_obs, aug_action, aug_reward, aug_next_obs, aug_done
-
 
 
 
