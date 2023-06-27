@@ -1,4 +1,4 @@
-from condor.common import gen_td3_bc, gen_cql
+from src.condor.common import gen_td3_bc
 
 MEMDISK = {
     1: {
@@ -44,7 +44,7 @@ if __name__ == "__main__":
                         batch_size = 256
                     else:
                         save_dir = f'results/{aug}/m_{m}/{env_id}/td3bc/nl_{n_layers}/hd_{hd}/lr_{lr}/a_{alpha}/t_{tau}'
-                        dataset_name = f'/staging/ncorrado/datasets/{env_id}/{aug}/m_{m}.hdf5'
+                        dataset_name = f'/staging/qu45/GuDA/datasets/{env_id}/{aug}/m_{m}.hdf5'
                         # batch_size = 256*(m+1)
                         batch_size = 256
 
@@ -53,6 +53,8 @@ if __name__ == "__main__":
                         save_dir=save_dir,
                         max_timesteps=int(1e6),
                         eval_freq=int(20e3),
+                        # max_timesteps=int(1e4),
+                        # eval_freq=int(1e3),
                         dataset_name=dataset_name,
                         env_id=env_id,
                         actor_lr=actor_lr,
