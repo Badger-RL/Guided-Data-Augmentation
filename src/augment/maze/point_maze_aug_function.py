@@ -380,6 +380,8 @@ class PointMazeTrajectoryAugmentationFunction(PointMazeAugmentationFunction):
             return False
         
     def _get_location(self, obs):
+        #location = (int(np.round(obs[0]+self.agent_offset)), int(np.round(obs[1]+self.agent_offset)))
+
         for i in range(len(self.env.empty_and_goal_locations)):
             location = np.array(self.env.empty_and_goal_locations[i]).astype(self.env.observation_space.dtype)
             boundaries = self._get_valid_boundaries(*location)
@@ -400,7 +402,6 @@ class PointMazeTrajectoryAugmentationFunction(PointMazeAugmentationFunction):
         while True:
             # translate
             aug_location = self._get_location(aug_obs)
-            print(aug_location)
             if aug_location is None:
                 return None, None, None, None, None
             delta_obs = next_obs - obs
@@ -444,6 +445,7 @@ class PointMazeTrajectoryAugmentationFunction(PointMazeAugmentationFunction):
             'terminals': [],
         }
         for i in range(num_of_transitions):
+            
             observations = trajectory['observations'][i]
             actions = trajectory['actions'][i]
             next_observations = trajectory['next_observations'][i]
@@ -454,7 +456,7 @@ class PointMazeTrajectoryAugmentationFunction(PointMazeAugmentationFunction):
                     observations, actions, next_observations, rewards, dones)
             else:
                 augmented_obs, augmented_action, augmented_reward, augmented_next_obs, augmented_done = self.augment_fixed_origin(
-                    observations, actions, next_observations, rewards, dones, augmented_obs)
+                    observations, actions, next_observations, rewards, dones, augmented_next_obs)
             
             if augmented_obs is None:
                 break
@@ -479,6 +481,9 @@ class PointMazeGuidedTrajectoryAugmentationFunction(PointMazeGuidedAugmentationF
             return False
         
     def _get_location(self, obs):
+        # location = (int(np.round(obs[0]+self.agent_offset)), int(np.round(obs[1]+self.agent_offset)))
+        # return location
+
         for i in range(len(self.env.empty_and_goal_locations)):
             location = np.array(self.env.empty_and_goal_locations[i]).astype(self.env.observation_space.dtype)
             boundaries = self._get_valid_boundaries(*location)
@@ -499,7 +504,6 @@ class PointMazeGuidedTrajectoryAugmentationFunction(PointMazeGuidedAugmentationF
         while True:
             # translate
             aug_location = self._get_location(aug_obs)
-            print(aug_location)
             if aug_location is None:
                 return None, None, None, None, None
             delta_obs = next_obs - obs
@@ -517,7 +521,7 @@ class PointMazeGuidedTrajectoryAugmentationFunction(PointMazeGuidedAugmentationF
 
             # if new positions are not valid, immediately sample a new position
             if not (pos_is_valid and next_pos_is_valid):
-                continue
+                return None, None, None, None, None
 
             # rotate action
             aug_action = M.dot(action).T
@@ -543,6 +547,7 @@ class PointMazeGuidedTrajectoryAugmentationFunction(PointMazeGuidedAugmentationF
             'terminals': [],
         }
         for i in range(num_of_transitions):
+            print("i: ", i)
             observations = trajectory['observations'][i]
             actions = trajectory['actions'][i]
             next_observations = trajectory['next_observations'][i]
@@ -553,7 +558,7 @@ class PointMazeGuidedTrajectoryAugmentationFunction(PointMazeGuidedAugmentationF
                     observations, actions, next_observations, rewards, dones)
             else:
                 augmented_obs, augmented_action, augmented_reward, augmented_next_obs, augmented_done = self.augment_fixed_origin(
-                    observations, actions, next_observations, rewards, dones, augmented_obs)
+                    observations, actions, next_observations, rewards, dones, augmented_next_obs)
             
             if augmented_obs is None:
                 break
