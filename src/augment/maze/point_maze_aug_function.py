@@ -61,6 +61,7 @@ class PointMazeAugmentationFunction(AugmentationFunctionBase):
     def _sample_from_box(self, xlo, ylo, xhi, yhi):
         return self.env.np_random.uniform(low=[xlo, ylo], high=[xhi,yhi])
 
+
     def _is_in_wall(self, box_location, x, y):
         xlo, ylo = box_location - self.agent_offset - self.effective_wall_width
         xhi, yhi = box_location - self.agent_offset + self.effective_wall_width
@@ -365,3 +366,201 @@ class PointMazeGuidedAugmentationFunction(PointMazeAugmentationFunction):
         aug_done = done
 
         return aug_obs, aug_action, aug_reward, aug_next_obs, aug_done
+
+
+class PointMazeTrajectoryAugmentationFunction(PointMazeAugmentationFunction):
+    def __init__(self, env, **kwargs):
+        super().__init__(env=env, **kwargs)
+
+    
+    def _is_in_box(self, xlo, ylo, xhi, yhi, x, y):
+        if (x > xlo and y > ylo) and (x < xhi and y < yhi):
+            return True
+        else:
+            return False
+        
+    def _get_location(self, obs):
+        for i in range(len(self.env.empty_and_goal_locations)):
+            location = np.array(self.env.empty_and_goal_locations[i]).astype(self.env.observation_space.dtype)
+            boundaries = self._get_valid_boundaries(*location)
+            if self._is_in_box(*boundaries, obs[0], obs[1]):
+                return location
+        return None
+    
+    def augment_fixed_origin(self, 
+                obs: np.ndarray,
+                action: np.ndarray,
+                next_obs: np.ndarray,
+                reward: np.ndarray,
+                done: np.ndarray,
+                aug_obs: np.ndarray,
+                **kwargs,
+                ):
+        aug_next_obs = next_obs.copy()
+        while True:
+            # translate
+            aug_location = self._get_location(aug_obs)
+            print(aug_location)
+            if aug_location is None:
+                return None, None, None, None, None
+            delta_obs = next_obs - obs
+            aug_next_obs[:2] = aug_obs[:2] + delta_obs[:2]
+
+            M = self._sample_rotation_matrix(obs=aug_obs, next_obs=aug_next_obs)
+
+            # rotate next_obs about obs
+            rotated_delta_obs = M.dot(delta_obs[:2]).T
+            aug_next_obs[:2] = aug_obs[:2] + rotated_delta_obs
+
+            # corner case (literally): check that the agent isn't inside a wall
+            pos_is_valid = self._check_corners(aug_obs[:2], aug_location)
+            next_pos_is_valid = self._check_corners(aug_next_obs[:2], aug_location)
+
+            # if new positions are not valid, immediately sample a new position
+            if not (pos_is_valid and next_pos_is_valid):
+                continue
+
+            # rotate action
+            aug_action = M.dot(action).T
+
+            # rotate velocity
+            aug_obs[2:] = M.dot(aug_obs[2:]).T
+            aug_next_obs[2:] = M.dot(aug_next_obs[2:]).T
+            break
+
+        aug_reward = self._reward(aug_next_obs)
+        aug_done = done
+
+        return aug_obs, aug_action, aug_reward, aug_next_obs, aug_done
+
+
+    def augment_trajectory(self, trajectory: dict):
+        num_of_transitions = len(trajectory['observations'])
+        augmented_trajectory = {
+            'observations': [],
+            'actions': [],
+            'rewards': [],
+            'next_observations': [],
+            'terminals': [],
+        }
+        for i in range(num_of_transitions):
+            observations = trajectory['observations'][i]
+            actions = trajectory['actions'][i]
+            next_observations = trajectory['next_observations'][i]
+            rewards = trajectory['rewards'][i]
+            dones = trajectory['terminals'][i]
+            if i == 0:
+                augmented_obs, augmented_action, augmented_reward, augmented_next_obs, augmented_done = self.augment(
+                    observations, actions, next_observations, rewards, dones)
+            else:
+                augmented_obs, augmented_action, augmented_reward, augmented_next_obs, augmented_done = self.augment_fixed_origin(
+                    observations, actions, next_observations, rewards, dones, augmented_obs)
+            
+            if augmented_obs is None:
+                break
+
+            augmented_trajectory['observations'].append(augmented_obs)
+            augmented_trajectory['actions'].append(augmented_action)
+            augmented_trajectory['rewards'].append(augmented_reward)
+            augmented_trajectory['next_observations'].append(augmented_next_obs)
+            augmented_trajectory['terminals'].append(augmented_done)
+        return augmented_trajectory
+
+
+class PointMazeGuidedTrajectoryAugmentationFunction(PointMazeGuidedAugmentationFunction):
+    def __init__(self, env, **kwargs):
+        super().__init__(env=env, **kwargs)
+
+    
+    def _is_in_box(self, xlo, ylo, xhi, yhi, x, y):
+        if (x > xlo and y > ylo) and (x < xhi and y < yhi):
+            return True
+        else:
+            return False
+        
+    def _get_location(self, obs):
+        for i in range(len(self.env.empty_and_goal_locations)):
+            location = np.array(self.env.empty_and_goal_locations[i]).astype(self.env.observation_space.dtype)
+            boundaries = self._get_valid_boundaries(*location)
+            if self._is_in_box(*boundaries, obs[0], obs[1]):
+                return location
+        return None
+    
+    def augment_fixed_origin(self, 
+                obs: np.ndarray,
+                action: np.ndarray,
+                next_obs: np.ndarray,
+                reward: np.ndarray,
+                done: np.ndarray,
+                aug_obs: np.ndarray,
+                **kwargs,
+                ):
+        aug_next_obs = next_obs.copy()
+        while True:
+            # translate
+            aug_location = self._get_location(aug_obs)
+            print(aug_location)
+            if aug_location is None:
+                return None, None, None, None, None
+            delta_obs = next_obs - obs
+            aug_next_obs[:2] = aug_obs[:2] + delta_obs[:2]
+
+            M = self._sample_rotation_matrix(obs=aug_obs, next_obs=aug_next_obs)
+
+            # rotate next_obs about obs
+            rotated_delta_obs = M.dot(delta_obs[:2]).T
+            aug_next_obs[:2] = aug_obs[:2] + rotated_delta_obs
+
+            # corner case (literally): check that the agent isn't inside a wall
+            pos_is_valid = self._check_corners(aug_obs[:2], aug_location)
+            next_pos_is_valid = self._check_corners(aug_next_obs[:2], aug_location)
+
+            # if new positions are not valid, immediately sample a new position
+            if not (pos_is_valid and next_pos_is_valid):
+                continue
+
+            # rotate action
+            aug_action = M.dot(action).T
+
+            # rotate velocity
+            aug_obs[2:] = M.dot(aug_obs[2:]).T
+            aug_next_obs[2:] = M.dot(aug_next_obs[2:]).T
+            break
+
+        aug_reward = self._reward(aug_next_obs)
+        aug_done = done
+
+        return aug_obs, aug_action, aug_reward, aug_next_obs, aug_done
+
+
+    def augment_trajectory(self, trajectory: dict):
+        num_of_transitions = len(trajectory['observations'])
+        augmented_trajectory = {
+            'observations': [],
+            'actions': [],
+            'rewards': [],
+            'next_observations': [],
+            'terminals': [],
+        }
+        for i in range(num_of_transitions):
+            observations = trajectory['observations'][i]
+            actions = trajectory['actions'][i]
+            next_observations = trajectory['next_observations'][i]
+            rewards = trajectory['rewards'][i]
+            dones = trajectory['terminals'][i]
+            if i == 0:
+                augmented_obs, augmented_action, augmented_reward, augmented_next_obs, augmented_done = self.augment(
+                    observations, actions, next_observations, rewards, dones)
+            else:
+                augmented_obs, augmented_action, augmented_reward, augmented_next_obs, augmented_done = self.augment_fixed_origin(
+                    observations, actions, next_observations, rewards, dones, augmented_obs)
+            
+            if augmented_obs is None:
+                break
+
+            augmented_trajectory['observations'].append(augmented_obs)
+            augmented_trajectory['actions'].append(augmented_action)
+            augmented_trajectory['rewards'].append(augmented_reward)
+            augmented_trajectory['next_observations'].append(augmented_next_obs)
+            augmented_trajectory['terminals'].append(augmented_done)
+        return augmented_trajectory

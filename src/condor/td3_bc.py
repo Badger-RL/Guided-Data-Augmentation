@@ -1,4 +1,4 @@
-from condor.common import gen_td3_bc, gen_cql
+from src.condor.common import gen_td3_bc, gen_cql
 
 MEMDISK = {
     1: {

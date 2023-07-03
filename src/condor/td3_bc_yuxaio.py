@@ -29,8 +29,8 @@ if __name__ == "__main__":
 
     actor_lr, critic_lr = 3e-4, 3e-4
     lr = 3e-4
-    n_layers = 1
-    hd = 128
+    n_layers = 2
+    hd = 256
     tau = 1e-3
 
     for m in [1]:
@@ -45,7 +45,6 @@ if __name__ == "__main__":
                     else:
                         save_dir = f'results/{aug}/m_{m}/{env_id}/td3bc/nl_{n_layers}/hd_{hd}/lr_{lr}/a_{alpha}/t_{tau}'
                         dataset_name = f'/staging/qu45/GuDA/datasets/{env_id}/{aug}/m_{m}.hdf5'
-                        # batch_size = 256*(m+1)
                         batch_size = 256
 
 
@@ -65,6 +64,7 @@ if __name__ == "__main__":
                         hidden_dims=hd
                     )
                     mem, disk = MEMDISK[m][env_id]
+                    # disk += 7
                     memdisk = f'{mem},{disk},'
                     command = memdisk + command.replace(' ', '*')
                     print(command)
