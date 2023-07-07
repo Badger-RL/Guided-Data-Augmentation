@@ -521,8 +521,8 @@ class AntMazeGuidedAugmentationFunction(AntMazeAugmentationFunction):
                 done: np.ndarray,
                 **kwargs,):
 
-        if not self.is_valid_input(obs, next_obs):
-            return None, None, None, None, None
+        # if not self.is_valid_input(obs, next_obs):
+        #     return None, None, None, None, None
 
         aug_obs = obs.copy()
         aug_next_obs = next_obs.copy()
@@ -568,8 +568,8 @@ class AntMazeGuidedAugmentationFunction(AntMazeAugmentationFunction):
         aug_action = action.copy()
         aug_reward = self._reward(aug_next_obs)
         aug_done = done
-        aug_obs[:2] += 0.5
-        aug_next_obs[:2] += 0.5
+        # aug_obs[:2] += np.random.uniform(-0.1,0.1, size=(2,))
+        # aug_next_obs[:2] += np.random.uniform(-0.1,0.1, size=(2,))
 
         return aug_obs, aug_action, aug_reward, aug_next_obs, aug_done
 
