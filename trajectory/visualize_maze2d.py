@@ -25,19 +25,22 @@ def main():
     i = args.start_timestamp
     target = np.array([0.0,0.0])
     env.set_target(target)
-    qpos = dataset['observations'][i][:2]
-    qvel = dataset['observations'][i][2:]
-
-    env.set_state(qpos, qvel)
+    
     if args.end_timestamp == -1:
-        args.end_timestamp = len(dataset['observations'])
+        args.end_timestamp = len(dataset['observations']) - 1
     for i in range(args.start_timestamp, args.end_timestamp + 1):
+        qpos = dataset['observations'][i][:2]
+        qvel = dataset['observations'][i][2:]
         act = dataset['actions'][i]
+        env.set_state(qpos, qvel)
+        env.set_marker()
         ns, _, _, _ = env.step(act)
-        print(ns - dataset['observations'][i+1])
+        
+        print(f"{i}: {ns - dataset['next_observations'][i]}")
         if args.render:
             env.render()
         time.sleep(args.freq)
+        # env.reset()
 
 if __name__ == "__main__":
     main()
