@@ -21,7 +21,7 @@ models = {"push_ball_to_goal": {"env": PushBallToGoalEnv}}
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--path', type=str, default='push_ball_to_goal', help='file_name')
-    parser.add_argument('--save-dir', type=str, default='../datasets/expert/trajectories/', help='Directory to save the dataset')
+    parser.add_argument('--save-dir', type=str, default='../../datasets/expert/trajectories/', help='Directory to save the dataset')
     parser.add_argument('--save-name', type=str, default='1.hdf5', help='Name of dataset')
     parser.add_argument('--render', type=bool, default=False)
     parser.add_argument('--seed', type=int, default=0)
@@ -29,8 +29,8 @@ def main():
 
     set_random_seed(args.seed)
 
-    policy_path = f"../expert_policies/{args.path}/policy_100"
-    normalization_path = f"../expert_policies/{args.path}/vector_normalize_100"
+    policy_path = f"../../policies/PushBallToGoal-v0/policy_100"
+    normalization_path = f"../../policies/PushBallToGoal-v0/vector_normalize_100"
 
     env = VecNormalize.load(
         normalization_path, make_vec_env('PushBallToGoal-v0', n_envs=1)

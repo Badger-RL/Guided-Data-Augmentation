@@ -5,15 +5,15 @@ if __name__ == "__main__":
     # os.chdir('generate')
     os.system(
         f'python ./visualize_dataset.py  '
-        f' --dataset-path ../datasets/physical/aug_guided/10_episodes_200k.hdf5'
-        f' --save-dir ./figures/physical/aug_guided/'
-        f' --save-name 10_episodes_200k.png'
+        f' --dataset-path ../datasets/PushBallToGoal-v0/physical/guided.hdf5'
+        f' --save-dir ./figures/PushBallToGoal-v0/physical'
+        f' --save-name guided.png'
     )
 
     for i in range(10):
         os.system(
             f'python ./visualize_dataset.py  '
-            f' --dataset-path ../datasets/physical/aug_guided/{i}_200k.hdf5'
-            f' --save-dir ./figures/physical/aug_guided'
-            f' --save-name {i}.png'
+            f' --dataset-path ../datasets/PushBallToGoal-v0/physical/guided_traj_{i}.hdf5'
+            f' --save-dir ./figures/PushBallToGoal-v0/physical'
+            f' --save-name guided_traj_{i}.png'
         )

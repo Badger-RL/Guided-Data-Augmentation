@@ -8,8 +8,8 @@ import numpy as np
 import h5py
 import argparse
 
-from augment.rotate_reflect_translate import RotateReflectTranslate
-from augment.utils import check_valid
+from src.augment.abstractsim.rotate_reflect_translate import RotateReflectTranslate
+from src.augment.utils import check_valid
 from custom_envs.push_ball_to_goal import PushBallToGoalEnv
 
 from generate.utils import reset_data, append_data
@@ -19,7 +19,6 @@ models = {"push_ball_to_goal": {"env": PushBallToGoalEnv}}
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--observed-dataset-path', type=str, default=None)
-    parser.add_argument('--policy', type=str, default='expert', help='Type of policy used to generate the observed dataset')
     parser.add_argument('--augmentation-ratio', '-aug-ratio', type=int, default=1, help='Number of augmentations per observed transition')
     parser.add_argument('--save-dir', type=str, default=None)
     parser.add_argument('--save-name', type=str, default=None)
@@ -30,7 +29,6 @@ if __name__ == '__main__':
     np.random.seed(seed=args.seed)
 
     aug_ratio = args.augmentation_ratio
-    policy = args.policy
 
     observed_data_hdf5 = h5py.File(f"{args.observed_dataset_path}", "r")
 

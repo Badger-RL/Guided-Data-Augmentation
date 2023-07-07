@@ -11,7 +11,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecMonitor
 from stable_baselines3.common.env_util import make_vec_env
 
-from augment.rotate_reflect_translate import RotateReflectTranslate
+from src.augment.abstractsim.rotate_reflect_translate import RotateReflectTranslate
 from custom_envs.push_ball_to_goal import PushBallToGoalEnv
 
 models = {"push_ball_to_goal": {"env": PushBallToGoalEnv}}

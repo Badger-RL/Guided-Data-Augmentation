@@ -40,24 +40,24 @@ def get_coords(observation, action):
     robot_angle = robot_angle_to_ball - ball_robot_angle_offset
 
     policy_target_x = robot_x + (
-        (
-            (np.cos(robot_angle) * np.clip(action[1], -1, 1))
-            + (np.cos(robot_angle + np.pi / 2) * np.clip(action[2], -1, 1))
-        )
-        * 200
+            (
+                    (np.cos(robot_angle) * np.clip(action[1], -1, 1))
+                    + (np.cos(robot_angle + np.pi / 2) * np.clip(action[2], -1, 1))
+            )
+            * 200
     )  # the x component of the location targeted by the high level action
     policy_target_y = robot_y + (
-        (
-            (np.sin(robot_angle) * np.clip(action[1], -1, 1))
-            + (np.sin(robot_angle + np.pi / 2) * np.clip(action[2], -1, 1))
-        )
-        * 200
+            (
+                    (np.sin(robot_angle) * np.clip(action[1], -1, 1))
+                    + (np.sin(robot_angle + np.pi / 2) * np.clip(action[2], -1, 1))
+            )
+            * 200
     )  # the y component of the location targeted by the high level action
 
     return robot_x, robot_y, target_x, target_y, policy_target_x, policy_target_y
 
-def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_episode=False):
 
+def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_episode=False):
     agent_x_list = []
     agent_y_list = []
     action_x_list = []
@@ -65,9 +65,7 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
     ball_x_list = []
     ball_y_list = []
 
-
-
-    for observation, action, done in zip(dataset["observations"],dataset["actions"], dataset["terminals"]):
+    for observation, action, done in zip(dataset["observations"], dataset["actions"], dataset["terminals"]):
 
         robot_x, robot_y, target_x, target_y, action_x, action_y = get_coords(
             observation, action
@@ -113,6 +111,7 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
 
     plt.savefig(save_path)
 
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -122,7 +121,6 @@ if __name__ == "__main__":
     parser.add_argument('--single-episode', type=bool, default=False)
     parser.add_argument('--show-actions', type=bool, default=False)
     args = parser.parse_args()
-
 
     os.makedirs(args.save_dir, exist_ok=True)
     save_path = f'{args.save_dir}/{args.save_name}'
@@ -135,12 +133,11 @@ if __name__ == "__main__":
     """
     print(len(dataset["terminals"]))
 
-    
+
     for i in range(len(dataset["terminals"])-1):
         assert(dataset["terminals"][i] == 0)
     assert(dataset["terminals"][-1] == 1)
     assert(len(dataset["observations"]) == 2000)
     """
-
 
     visualize_recorded_rollout(dataset, save_path, show_actions=args.show_actions, single_episode=args.single_episode)
