@@ -6,39 +6,40 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 
 
-def get_paths(results_dir, key, **kwargs):
+def get_paths(results_dir, key, file_name='evaluations.npz', **kwargs):
     path_dict = {}
     path_dict[key] = {
         'paths': []
     }
     for dirpath, dirnames, filenames in os.walk(results_dir):
         for fname in filenames:
-            path_dict[key]['paths'].append(f'{dirpath}/{fname}')
+            if fname == file_name:
+                path_dict[key]['paths'].append(f'{dirpath}/{fname}')
 
     return path_dict
 
 
-def load_data(paths, name='r'):
+def load_data(paths, field_name='return'):
     t = None
     avgs = []
 
     for path in paths:
 
-        data = dict(np.load(path))
-        avg = data[name]
+        data = np.load(path, allow_pickle=True)
+        avg = data[field_name]
         avgs.append(avg)
 
         if t is None:
-            t = data['t']
+            t = data['timestep']
 
     return t, np.array(avgs)
 
 
-def plot(path_dict, name='r'):
+def plot(path_dict, field_name='return'):
     for agent, info in path_dict.items():
         paths = info['paths']
 
-        t, avgs = load_data(paths, name=name)
+        t, avgs = load_data(paths, field_name=field_name)
         assert len(avgs) > 0
 
         avg_of_avgs = np.average(avgs, axis=0)
@@ -53,7 +54,7 @@ def plot(path_dict, name='r'):
         style_kwargs = {}
         style_kwargs['linewidth'] = 3
 
-        if 'no aug' in agent.lower():
+        if 'no_aug' in agent.lower():
             style_kwargs['linestyle'] = ':'
         elif 'random' in agent.lower():
             style_kwargs['linestyle'] = '--'

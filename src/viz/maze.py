@@ -10,10 +10,10 @@ from algorithms.utils import load_dataset
 
 
 for env_id in ['maze2d-umaze-v1', 'maze2d-medium-v1', 'maze2d-large-v1']:
-    for aug in ['mixed']:
+    for aug in ['random', 'guided']:
         plt.figure(figsize=(12, 12))
 
-        dataset_name = f'../datasets/{env_id}/{aug}/m_1.hdf5'
+        dataset_name = f'../datasets_good/{env_id}/{aug}/m_1.hdf5'
 
         # local dataset
         dataset = {}

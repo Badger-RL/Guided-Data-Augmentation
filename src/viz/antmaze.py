@@ -15,11 +15,13 @@ from matplotlib import pyplot as plt
 from algorithms.utils import load_dataset
 
 
-for env_id in ['antmaze-umaze-diverse-v1', 'antmaze-medium-diverse-v1', 'antmaze-large-diverse-v1']:
-    for aug in ['random', 'guided']:
+for env_id in ['antmaze-medium-diverse-v1']:
+    for aug in ['guided']:
         plt.figure(figsize=(12, 12))
 
         dataset_name = f'../datasets/{env_id}/{aug}/m_1.hdf5'
+        dataset_name = f'../datasets/{env_id}/no_aug_clean.hdf5'
+
         # dataset_name = None
         # local dataset
         dataset = {}
@@ -33,7 +35,7 @@ for env_id in ['antmaze-umaze-diverse-v1', 'antmaze-medium-diverse-v1', 'antmaze
 
         # plot no_aug
         start = int(0e6)
-        end = start + int(50e3)
+        end = start + int(10e3)
 
         observations = dataset['observations'][start:end]
         next_observations = dataset['next_observations'][start:end]
@@ -48,8 +50,8 @@ for env_id in ['antmaze-umaze-diverse-v1', 'antmaze-medium-diverse-v1', 'antmaze
         # plot aug
         start = len(dataset['observations']) - int(3e3)
         end = start + int(3e3)
-        observations = dataset['observations'][start:end] + 0
-        next_observations = dataset['next_observations'][start:end] + 0
+        observations = dataset['observations'][start:end] #+ 0.5
+        next_observations = dataset['next_observations'][start:end] #+ 0.5
         rewards = dataset['rewards'][start:end]
         at_goal = rewards > 0
 
