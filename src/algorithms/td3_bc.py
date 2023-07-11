@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Tuple, Union
 import copy
 from dataclasses import dataclass
 
-import gym
+import gymnasium as gym
 import numpy as np
 import pyrallis
 import torch

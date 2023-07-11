@@ -9,8 +9,10 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Optional, Tuple, Union, Dict, List
 
+from gymnasium.wrappers import StepAPICompatibility
+
 import d4rl
-import gym
+import gymnasium as gym
 import h5py
 import numpy as np
 import torch
@@ -244,7 +246,7 @@ class ReplayBuffer:
 class TrainConfigBase:
     # Experiment
     device: str = "cpu"
-    env: str = "maze2d-umaze-v1"  # OpenAI gym environment name
+    env: str = "highway-v0"  # OpenAI gym environment name
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
     eval_freq: int = int(10e3)  # How often (time steps) we evaluate
     n_episodes: int = 50  # How many episodes run during evaluation
@@ -274,17 +276,19 @@ class TrainConfigBase:
 def eval_actor(
     env: gym.Env, actor: nn.Module, device: str, n_episodes: int, seed: int
 ) -> (np.ndarray, np.ndarray):
-    env.seed(seed)
+    # env.seed(seed)
     actor.eval()
     episode_rewards = []
     successes = []
     info = {}
     for _ in range(n_episodes):
-        state, done = env.reset(), False
+        state, _ = env.reset()
+        done = False
         episode_reward = 0.0
         while not done:
             action = actor.act(state, device)
-            state, reward, done, info = env.step(action)
+            state, reward, terminated, truncated, info = env.step(action)
+            done = terminated or truncated
             episode_reward += reward
         episode_rewards.append(episode_reward)
         if 'is_success' in info:
@@ -322,7 +326,7 @@ def train_base(config, env, trainer):
 
     # Set seeds
     seed = config.seed
-    set_seed(seed, env)
+    # set_seed(seed, env)
 
     # load policy if applicable
     if config.load_model != "":
@@ -365,7 +369,10 @@ def train_base(config, env, trainer):
                 eval_success_rate = eval_successes.mean()
             else:
                 eval_success_rate = -np.inf
-            normalized_eval_score = env.get_normalized_score(eval_score) * 100.0
+            try:
+                normalized_eval_score = env.get_normalized_score(eval_score) * 100.0
+            except:
+                normalized_eval_score = eval_score
             print("---------------------------------------", file=sys.stderr)
             print(
                 f"Iteration {t}: "
