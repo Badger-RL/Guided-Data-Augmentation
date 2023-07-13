@@ -3,12 +3,15 @@
 # https://github.com/Farama-Foundation/D4RL/blob/master/LICENSE
 import os
 
-import gym
+import gymnasium as gym
 import numpy as np
 import h5py
 import argparse
 
 import d4rl
+from augment.highway.highway import ChangeLane, ChangeLaneGuided, CreateCollision, TranslateVehicle, \
+    TranslateAllVehicles, TranslateAllVehiclesWithCollision
+from augment.highway.shuffle_vehicles import ShuffleVehicles
 from src.augment.antmaze.antmaze_aug_function import AntMazeAugmentationFunction, AntMazeGuidedAugmentationFunction
 from src.augment.maze.point_maze_aug_function import PointMazeAugmentationFunction, PointMazeGuidedAugmentationFunction
 from src.generate.utils import reset_data, append_data, load_dataset, npify
@@ -49,16 +52,25 @@ AUG_FUNCTIONS = {
         'guided': AntMazeGuidedAugmentationFunction,
         # 'mixed': AntMazeAugmentationFunction,
     },
+    'highway-v0': {
+        'shuffle': ShuffleVehicles,
+        'translate': TranslateAllVehicles,
+        'translate_guided': TranslateAllVehiclesWithCollision,
+        'collision': CreateCollision,
+        'random': ChangeLane,
+        'guided': ChangeLaneGuided,
+        # 'mixed': AntMazeAugmentationFunction,
+    },
 }
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--env-id', type=str, default='antmaze-umaze-v1')
-    parser.add_argument('--observed-dataset-path', type=str, default=None)
+    parser.add_argument('--env-id', type=str, default='highway-v0')
+    parser.add_argument('--observed-dataset-path', type=str, default='../datasets/highway-v0/no_aug_50k.hdf5')
     parser.add_argument('--observed-dataset-frac', '-frac', type=float, default=None)
     parser.add_argument('--observed-dataset-size', '-size', type=int, default=None)
 
-    parser.add_argument('--aug-func', type=str, default='random')
+    parser.add_argument('--aug-func', type=str, default='translate_guided')
     parser.add_argument('--aug-ratio', '-m', type=int, default=1, help='Number of augmentations per observed transition')
     parser.add_argument('--save-dir', '-fd', type=str, default=None)
     parser.add_argument('--save-name', '-fn', type=str, default=None)
@@ -89,7 +101,7 @@ if __name__ == '__main__':
     else:
         end = observed_dataset['observations'].shape[0]
     for key in observed_dataset:
-        observed_dataset[key] = observed_dataset[key][:end]
+        observed_dataset[key] = observed_dataset[key]
     n = observed_dataset['observations'].shape[0]
 
     observed_dataset_obs = observed_dataset['observations']

@@ -17,7 +17,7 @@ class TrainConfig(TrainConfigBase):
     eval_freq: int = 10000
 
     n_layers: int = 1
-    hidden_dim: int = 128
+    hidden_dim: int = 256
     learning_rate: float = 3e-4
     gamma: float = 0.99
     tau: float = 5e-3

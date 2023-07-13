@@ -51,7 +51,7 @@ def simulate(env, model, num_samples, num_episodes=None,  seed=0, render=False, 
 
             if render: env.render()
 
-        if skip_terminated_episodes and terminated:
+        if skip_terminated_episodes and info['crashed']:
             episode_count -= 1
             continue
 
