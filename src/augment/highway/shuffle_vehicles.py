@@ -20,8 +20,8 @@ class ShuffleVehicles(AugmentationFunctionBase):
         aug_obs = obs.copy()
         aug_next_obs = next_obs.copy()
 
-        aug_obs = aug_obs.reshape(8, 5)
-        aug_next_obs = aug_next_obs.reshape(8, 5)
+        aug_obs = aug_obs.reshape(8, -1)
+        aug_next_obs = aug_next_obs.reshape(8, -1)
 
         indices = np.arange(1,8)
         indices_shuffled = indices.copy()
