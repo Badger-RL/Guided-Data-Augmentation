@@ -1,4 +1,25 @@
 
+MEMDISK = {
+    1: {
+        'maze2d-umaze-v1': (1.6, 9),
+        'maze2d-medium-v1': (1.6, 9),
+        'maze2d-large-v1': (2.9, 9),
+
+        'antmaze-umaze-diverse-v1': (2.2, 9),
+        'antmaze-medium-diverse-v1': (2.2, 9),
+        'antmaze-large-diverse-v1': (3.3, 9),
+
+        'PushBallToGoal-v0': (1.6, 9),
+        'highway-v0': (1.5, 9),
+        'intersection-v0': (1.5, 9),
+
+    },
+    4: {
+        'maze2d-umaze-v1': (2.2, 9),
+        'maze2d-medium-v1': (2.2, 9),
+        'maze2d-large-v1': (3.5, 9),
+    }
+}
 
 def gen_cql(
         save_dir,
@@ -28,6 +49,7 @@ def gen_td3_bc(
         dataset_name,
         max_timesteps=int(100e3),
         eval_freq=5000,
+        eval_episodes=50,
         actor_lr=3e-4,
         critic_lr=3e-4,
         alpha=2.5,
@@ -35,9 +57,8 @@ def gen_td3_bc(
         n_layers=1,
         hidden_dims=2,
         batch_size=256,
-        alpha=2.5
 ):
-    command = f'python -u algorithms/td3_bc.py --max_timesteps {max_timesteps} --eval_freq {eval_freq}' \
+    command = f'python -u algorithms/td3_bc.py --max_timesteps {max_timesteps} --eval_freq {eval_freq} --n_episodes {eval_episodes}' \
               f' --save_dir {save_dir} ' \
               f' --env {env_id}' \
               f' --actor_lr {actor_lr}' \

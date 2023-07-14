@@ -3,42 +3,49 @@
 # https://github.com/Farama-Foundation/D4RL/blob/master/LICENSE
 import time
 
+import gym, custom_envs
 import numpy as np
-import h5py
-import argparse
-
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecMonitor
 from stable_baselines3.common.env_util import make_vec_env
 
-from src.augment.abstractsim.rotate_reflect_translate import RotateReflectTranslate
-from custom_envs.push_ball_to_goal import PushBallToGoalEnv
-
-models = {"push_ball_to_goal": {"env": PushBallToGoalEnv}}
+from src.augment.abstractsim.rotate_reflect_translate import RotateReflectTranslate, RotateReflectTranslateGuided
 
 def main():
 
-    path = 'push_ball_to_goal'
-    normalization_path = f"../expert_policies/{path}/vector_normalize"
+    normalization_path = f"../../policies/PushBallToGoal-v0/vector_normalize"
     env = VecNormalize.load(
-        normalization_path, make_vec_env(models[path]["env"], n_envs=1)
+        normalization_path, make_vec_env('PushBallToGoal-v0', n_envs=1,
+                                         )
     )
+    policy = PPO.load('../../policies/PushBallToGoal-v0/policy_100.zip')
     env.norm_reward=False
 
-    env.reset()
-    s_o = env.get_original_obs()
-    act = env.action_space.sample()
-
-    ns, r, done, info = env.step([act])
-    ns_o = env.get_original_obs()
-    f = RotateReflectTranslate(env=None)
+    s = env.reset()
+    # s_o = env.get_original_obs()
+    # act = env.action_space.sample()
+    #
+    # ns, r, done, info = env.step([act])
+    # ns_o = env.get_original_obs()
+    f = RotateReflectTranslateGuided(env=None)
 
     for _ in range(1000):
-
-        aug_s, aug_a, aug_ns, aug_r, aug_done = f.augment(s_o[0], ns_o[0], act, r, done)
-        env.envs[0].set_abstract_state(aug_s)
+        s_o = env.get_original_obs()
+        act, _ = policy.predict(s)
+        ns, r, done, info = env.step(act)
         env.render()
-        time.sleep(0.5)
+
+        ns_o = env.get_original_obs()
+
+        if np.linalg.norm(ns_o[0,2:3] - s_o[0,2:3]) > 0:
+            aug_s, aug_a, aug_ns, aug_r, aug_done = f.augment(s_o[0], ns_o[0], act[0], r, done)
+            env.envs[0].set_abstract_state(aug_s)
+            env.render()
+            time.sleep(0.05)
+
+        s = ns
+
+
 
 if __name__ == '__main__':
     main()

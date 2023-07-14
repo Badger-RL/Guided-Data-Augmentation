@@ -132,13 +132,24 @@ class RotateReflectTranslateGuided(AbstractSimAugmentationFunction):
         aug_action = action.copy()
         aug_done = done.copy()
 
+        if np.random.random() < 0.5:
+            aug_absolute_obs[1] *= -1
+            aug_absolute_next_obs[1] *= -1
+            aug_absolute_obs[3] *= -1
+            aug_absolute_next_obs[3] *= -1
+            aug_absolute_obs[4] *= -1
+            aug_absolute_next_obs[4] *= -1
+
+            aug_action[0] *= -1
+            aug_action[1] *= 1
+            aug_action[2] *= -1
 
         delta_ball = aug_absolute_next_obs[2:4] - aug_absolute_obs[2:4]
         dist_ball = np.linalg.norm(delta_ball)
         if dist_ball > 1e-4:
             delta_ball_theta = np.arctan2(delta_ball[1], delta_ball[0])
 
-            delta_ball_to_goal = aug_absolute_obs[2:4] - self.goal
+            delta_ball_to_goal = self.goal - aug_absolute_obs[2:4]
             ball_to_goal_theta = np.arctan2(delta_ball_to_goal[1], delta_ball_to_goal[0])
 
             theta = ball_to_goal_theta - delta_ball_theta
@@ -165,17 +176,7 @@ class RotateReflectTranslateGuided(AbstractSimAugmentationFunction):
             next_robot_angle += 2 * np.pi
         aug_absolute_next_obs[4] += theta
 
-        if np.random.random() < 0.5:
-            aug_absolute_obs[1] *= -1
-            aug_absolute_next_obs[1] *= -1
-            aug_absolute_obs[3] *= -1
-            aug_absolute_next_obs[3] *= -1
-            aug_absolute_obs[4] *= -1
-            aug_absolute_next_obs[4] *= -1
 
-            aug_action[0] *= -1
-            aug_action[1] *= 1
-            aug_action[2] *= -1
 
         xmin = np.min([aug_absolute_obs[0], aug_absolute_next_obs[0], aug_absolute_obs[2], aug_absolute_next_obs[2]])
         ymin = np.min([aug_absolute_obs[1], aug_absolute_next_obs[1], aug_absolute_obs[3], aug_absolute_next_obs[3]])
@@ -194,6 +195,8 @@ class RotateReflectTranslateGuided(AbstractSimAugmentationFunction):
 
         delta_x = new_x - xmin
         delta_y = new_y - ymin
+        # delta_x = 0
+        # delta_y = 0
 
         aug_absolute_obs[0] += delta_x
         aug_absolute_obs[1] += delta_y
