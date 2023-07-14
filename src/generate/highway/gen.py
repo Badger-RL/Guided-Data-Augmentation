@@ -1,7 +1,7 @@
 import os
 
-for env_id in ['highway-v0']:
-    for num_samples in [50e3]:
+for env_id in ['intersection-v0']:
+    for num_samples in [5e3]:
         num_samples = int(num_samples)
         for skip_terminated_episodes in [0]:
 
@@ -14,7 +14,7 @@ for env_id in ['highway-v0']:
 
             command = f'python simulate.py ' \
                       f' --env_id {env_id} ' \
-                      f' --policy_path ../../results/{env_id}/rl_model_112500_steps.zip ' \
+                      f' --policy_path ../../results/{env_id}/rl_model_14500_steps.zip ' \
                       f' --save_dir {save_dir} --save_name {save_name}' \
                       f' --num_samples {num_samples} --skip_terminated_episodes {skip_terminated_episodes}'
             os.system(command)
