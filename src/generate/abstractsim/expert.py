@@ -46,7 +46,11 @@ def npify(data):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_samples', type=int, default=int(1e4), help='Num samples to collect')
-    parser.add_argument('--path', type=str, default='push_ball_to_goal', help='file_name')
+    parser.add_argument('--policy-path', type=str, help='file_name')
+    parser.add_argument('--norm-path', type=str, help='file_name')
+    parser.add_argument('--save-dir', type=str, help='file_name')
+    parser.add_argument('--save-name', type=str, help='file_name')
+
     parser.add_argument('--seed', type=int, default=0)
     parser.set_defaults(use_policy = False)
     parser.add_argument('--random_actions', type=int, default=0)
@@ -55,11 +59,8 @@ def main():
 
     args = parser.parse_args()
 
-    policy_path = f"../expert_policies/{args.path}/policy"
-    normalization_path = f"../expert_policies/{args.path}/vector_normalize"
-
     env = VecNormalize.load(
-        normalization_path, make_vec_env('PushBallToGoal-v0', n_envs=1)
+        args.norm_path, make_vec_env('PushBallToGoal-v0', n_envs=1)
     )
     env.norm_obs = True
     env.norm_reward = False
@@ -75,7 +76,7 @@ def main():
     "lr_schedule": lambda x: .003,
     "clip_range": lambda x: .02
     }   
-    policy = PPO.load(policy_path, custom_objects = custom_objects, env= env)
+    policy = PPO.load(args.policy_path, custom_objects = custom_objects, env= env)
 
     data = reset_data()
 
@@ -116,9 +117,9 @@ def main():
             s = ns
             s_o = ns_o
 
-    save_dir = f'../datasets/{"random" if args.random_actions else "expert"}'
+    save_dir = args.save_dir
     os.makedirs(save_dir, exist_ok=True)
-    fname = f'{save_dir}/no_aug/{int(args.num_samples//1e3)}k.hdf5'
+    fname = f'{save_dir}/{args.save_name}'
     dataset = h5py.File(fname, 'w')
     npify(data)
     for k in data:

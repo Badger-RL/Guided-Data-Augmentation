@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Optional, Tuple, Union, Dict, List
 
 import d4rl
-import gym
+import gym, custom_envs
 import h5py
 import numpy as np
 import torch

@@ -1,7 +1,7 @@
 import copy
 import numpy as np
 
-from augment.utils import convert_to_absolute_obs, calculate_reward, convert_to_relative_obs, check_valid, \
+from src.augment.utils import convert_to_absolute_obs, calculate_reward, convert_to_relative_obs, check_valid, \
     check_in_bounds
 
 

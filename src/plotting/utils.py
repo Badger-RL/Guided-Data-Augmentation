@@ -44,6 +44,10 @@ def plot(path_dict, field_name='return'):
 
         avg_of_avgs = np.average(avgs, axis=0)
 
+        l = min(len(avg_of_avgs), len(t))
+        t = t[:l]
+        avg_of_avgs = avg_of_avgs[:l]
+
         # compute 95% confidence interval
         std = np.std(avgs, axis=0)
         N = len(avgs)
@@ -60,5 +64,6 @@ def plot(path_dict, field_name='return'):
             style_kwargs['linestyle'] = '--'
 
         # t = np.arange(len(avg_of_avgs)) * 5000
+
         plt.plot(t, avg_of_avgs, label=agent, **style_kwargs)
         plt.fill_between(t, q05, q95, alpha=0.2)

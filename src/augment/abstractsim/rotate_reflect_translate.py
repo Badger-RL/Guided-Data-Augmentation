@@ -3,8 +3,7 @@ from typing import Dict
 
 import numpy as np
 
-from GuidedDataAugmentationForRobotics.src.augment.augmentation_function import AbstractSimAugmentationFunction
-from augment.utils import convert_to_absolute_obs, calculate_reward, convert_to_relative_obs
+from src.augment.abstractsim.augmentation_function import AbstractSimAugmentationFunction
 
 
 class RotateReflectTranslate(AbstractSimAugmentationFunction):
@@ -96,6 +95,119 @@ class RotateReflectTranslate(AbstractSimAugmentationFunction):
         aug_absolute_next_obs[1] += delta_y
         aug_absolute_next_obs[2] += delta_x
         aug_absolute_next_obs[3] += delta_y
+
+        aug_reward, _ = self.calculate_reward(aug_absolute_next_obs)
+
+        aug_obs = self._convert_to_relative_obs(aug_absolute_obs)
+        aug_next_obs = self._convert_to_relative_obs(aug_absolute_next_obs)
+
+        return aug_obs, aug_next_obs, aug_action, aug_reward, aug_done
+
+
+class RotateReflectTranslateGuided(AbstractSimAugmentationFunction):
+    '''
+    Translate the robot and ball by the same (delta_x, delta_y).
+    '''
+    def __init__(self, env, **kwargs):
+        super().__init__(env=env, **kwargs)
+
+    def _augment(self,
+                 obs: np.ndarray,
+                 next_obs: np.ndarray,
+                 action: np.ndarray,
+                 reward: np.ndarray,
+                 done: np.ndarray,
+                 **kwargs,
+                 ):
+
+        # random robot position
+        absolute_obs = self._convert_to_absolute_obs(obs)
+        absolute_next_obs = self._convert_to_absolute_obs(next_obs)
+
+        if self.at_goal(absolute_obs[2], absolute_obs[3]):
+            return None, None, None, None, None
+
+        aug_absolute_obs = copy.deepcopy(absolute_obs)
+        aug_absolute_next_obs = copy.deepcopy(absolute_next_obs)
+        aug_action = action.copy()
+        aug_done = done.copy()
+
+        xmin = np.min([aug_absolute_obs[0], aug_absolute_next_obs[0], aug_absolute_obs[2], aug_absolute_next_obs[2]])
+        ymin = np.min([aug_absolute_obs[1], aug_absolute_next_obs[1], aug_absolute_obs[3], aug_absolute_next_obs[3]])
+        xmax = np.max([aug_absolute_obs[0], aug_absolute_next_obs[0], aug_absolute_obs[2], aug_absolute_next_obs[2]])
+        ymax = np.max([aug_absolute_obs[1], aug_absolute_next_obs[1], aug_absolute_obs[3], aug_absolute_next_obs[3]])
+
+        # Translate bottom left corner of the righter bounding box containing the robot and ball
+        new_x = np.random.uniform(-4500, 4500-(xmax-xmin))
+        new_y = np.random.uniform(-3000, 3000-(ymax-ymin))
+
+        delta_x = new_x - xmin
+        delta_y = new_y - ymin
+
+        aug_absolute_obs[0] += delta_x
+        aug_absolute_obs[1] += delta_y
+        aug_absolute_obs[2] += delta_x
+        aug_absolute_obs[3] += delta_y
+
+        aug_absolute_next_obs[0] += delta_x
+        aug_absolute_next_obs[1] += delta_y
+        aug_absolute_next_obs[2] += delta_x
+        aug_absolute_next_obs[3] += delta_y
+
+        if np.random.random() < 0.5:
+            aug_absolute_obs[1] *= -1
+            aug_absolute_next_obs[1] *= -1
+            aug_absolute_obs[3] *= -1
+            aug_absolute_next_obs[3] *= -1
+            aug_absolute_obs[4] *= -1
+            aug_absolute_next_obs[4] *= -1
+
+            aug_action[0] *= -1
+            aug_action[1] *= 1
+            aug_action[2] *= -1
+
+        delta_ball = aug_absolute_next_obs[2:4] - aug_absolute_obs[2:4]
+        dist_ball = np.linalg.norm(delta_ball)
+        if dist_ball > 1e-4:
+            delta_ball_theta = np.arctan2(delta_ball[1], delta_ball[0])
+
+            delta_ball_to_goal = self.goal - aug_absolute_obs[2:4]
+            ball_to_goal_theta = np.arctan2(delta_ball_to_goal[1], delta_ball_to_goal[0])
+
+            theta = ball_to_goal_theta - delta_ball_theta
+        else:
+            theta = np.random.uniform(-np.pi/4, np.pi/4)
+
+        ball_pos = aug_absolute_obs[2:4].copy()
+        aug_absolute_obs[:2] -= ball_pos
+        aug_absolute_obs[2:4] -= ball_pos
+        aug_absolute_next_obs[:2] -= ball_pos
+        aug_absolute_next_obs[2:4] -= ball_pos
+
+        M = np.array([
+            [np.cos(theta), -np.sin(theta)],
+            [np.sin(theta), np.cos(theta)]
+        ])
+        aug_absolute_obs[:2] = M.dot(aug_absolute_obs[:2].T).T
+        aug_absolute_obs[2:4] = M.dot(aug_absolute_obs[2:4].T).T
+
+        robot_angle = aug_absolute_obs[4] + theta
+        if robot_angle < 0:
+            robot_angle += 2 * np.pi
+        aug_absolute_obs[4] += theta
+
+        aug_absolute_next_obs[:2] = M.dot(aug_absolute_next_obs[:2].T).T
+        aug_absolute_next_obs[2:4] = M.dot(aug_absolute_next_obs[2:4].T).T
+
+        next_robot_angle = aug_absolute_next_obs[4] + theta
+        if next_robot_angle < 0:
+            next_robot_angle += 2 * np.pi
+        aug_absolute_next_obs[4] += theta
+
+        aug_absolute_obs[:2] += ball_pos
+        aug_absolute_obs[2:4] += ball_pos
+        aug_absolute_next_obs[:2] += ball_pos
+        aug_absolute_next_obs[2:4] += ball_pos
 
         aug_reward, _ = self.calculate_reward(aug_absolute_next_obs)
 

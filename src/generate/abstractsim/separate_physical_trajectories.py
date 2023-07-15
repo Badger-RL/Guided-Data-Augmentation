@@ -23,8 +23,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--aug-ratio', type=int, default=10, help='Number of augmented trajectories to generate')
-    parser.add_argument('--observed-dataset-path', type=str, default=f'../export/trajectories.hdf5', help='path to observed trajectory dataset')
-    parser.add_argument('--save-dir', type=str, default='../datasets/physical/trajectories/', help='Directory to save augmented dataset')
+    parser.add_argument('--observed-dataset-path', type=str, default=f'export_physical_trajectories/trajectories.hdf5', help='path to observed trajectory dataset')
+    parser.add_argument('--save-dir', type=str, default='../../datasets/PushBallToGoal-v0/physical/trajectories/', help='Directory to save augmented dataset')
     parser.add_argument('--seed', type=int, default=0)
     args = parser.parse_args()
 
@@ -63,7 +63,7 @@ if __name__ == '__main__':
         npify(new_dataset)
 
         os.makedirs(args.save_dir, exist_ok=True)
-        fname = f'{args.save_dir}/{i}.hdf5'
+        fname = f'{args.save_dir}/traj_{i}.hdf5'
         new_dataset_hdf5 = h5py.File(fname, 'w')
         for k in new_dataset:
             data = np.array(new_dataset[k])

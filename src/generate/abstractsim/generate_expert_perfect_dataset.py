@@ -15,32 +15,7 @@ from stable_baselines3.common.env_util import make_vec_env
 
 from custom_envs.push_ball_to_goal import PushBallToGoalEnv
 import custom_envs
-
-
-def reset_data():
-    return {'observations': [],
-            'actions': [],
-            'terminals': [],
-            'rewards': [],
-            'next_observations': [],
-            }
-
-def append_data(data, s, a, r, ns, done):
-    data['observations'].append(s)
-    data['next_observations'].append(ns)
-    data['actions'].append(a)
-    data['rewards'].append(r)
-    data['terminals'].append(done)
- 
-def npify(data):
-    for k in data:
-        if k in ['terminals', 'timeouts']:
-            dtype = np.bool_
-        else:
-            dtype = np.float32
-
-        data[k] = np.array(data[k], dtype=dtype)
-
+from generate.utils import reset_data, npify, append_data
 
 
 def main():
@@ -59,7 +34,7 @@ def main():
     normalization_path = f"../expert_policies/{args.path}/vector_normalize_100"
 
     env = VecNormalize.load(
-        normalization_path, make_vec_env('PushBallToGoalRestricted-v0', n_envs=1)
+        normalization_path, make_vec_env('PushBallToGoal-v0', n_envs=1)
     )
     env.norm_obs = True
     env.norm_reward = False
@@ -82,7 +57,11 @@ def main():
     ts = 0
     num_episodes = 0
     ret = 0
-    for _ in range(args.num_samples):
+
+    ep_transitions = []
+
+    sample_count = 0
+    while sample_count < args.num_samples:
         if args.random_actions:
             act = [env.action_space.sample()]
         else:
@@ -98,10 +77,7 @@ def main():
             ns = np.array([info[0]['terminal_observation']])
             ns_o = env.unnormalize_obs(ns)
 
-        append_data(data, s_o[0], act[0], r[0], ns_o[0], done[0])
-
-        if len(data['observations']) % 10000 == 0:
-            print(len(data['observations']))
+        ep_transitions.append((s_o[0], act[0], r[0], ns_o[0], done[0]))
 
         ts += 1
 
@@ -112,17 +88,28 @@ def main():
             num_episodes += 1
             print(ret)
             ret = 0
+
+            if info[0]['is_success']:
+                for transition in ep_transitions:
+                    append_data(data, *transition)
+                sample_count += len(ep_transitions)
+                if len(data['observations']) % 10000 == 0:
+                    print(len(data['observations']))
+
+            ep_transitions = []
+
         else:
             s = ns
             s_o = ns_o
 
-    save_dir = f'../datasets/expert/no_aug_restricted/'
+    save_dir = f'../datasets/expert_perfect/no_aug'
     os.makedirs(save_dir, exist_ok=True)
     fname = f'{save_dir}/{int(args.num_samples//1e3)}k.hdf5'
     dataset = h5py.File(fname, 'w')
     npify(data)
     for k in data:
         dataset.create_dataset(k, data=data[k], compression='gzip')
+        print(len(data[k]))
 
 if __name__ == '__main__':
     main()

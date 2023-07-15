@@ -7,9 +7,9 @@ import argparse
 
 from stable_baselines3.common.utils import set_random_seed
 
-from augment.rotate_reflect_trajectory import rotate_reflect_traj
-from augment.translate_reflect_trajectory import translate_reflect_traj_y
-from augment.utils import check_valid
+from src.augment.abstractsim.rotate_reflect_trajectory import rotate_reflect_traj
+from src.augment.abstractsim.translate_reflect_trajectory import translate_reflect_traj_y
+from src.augment.utils import check_valid
 import custom_envs
 
 def npify(data):

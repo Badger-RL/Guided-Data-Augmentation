@@ -8,9 +8,9 @@ if __name__ == "__main__":
 
     os.system(
         f'python ./aug_random.py '
-        f' --observed-dataset-path ../datasets/physical/10_episodes.hdf5 '
+        f' --observed-dataset-path ../../datasets/PushBallToGoal-v0/physical/no_aug.hdf5 '
         f' --augmentation-ratio {aug_ratio} --seed 0'
-        f' --save-dir ../datasets/physical/aug_uniform/'
-        f' --save-name 10_episodes_200k.hdf5'
+        f' --save-dir ../../datasets/PushBallToGoal-v0/physical/'
+        f' --save-name random.hdf5'
         f' --check-valid 0'
     )
