@@ -132,6 +132,28 @@ class RotateReflectTranslateGuided(AbstractSimAugmentationFunction):
         aug_action = action.copy()
         aug_done = done.copy()
 
+        xmin = np.min([aug_absolute_obs[0], aug_absolute_next_obs[0], aug_absolute_obs[2], aug_absolute_next_obs[2]])
+        ymin = np.min([aug_absolute_obs[1], aug_absolute_next_obs[1], aug_absolute_obs[3], aug_absolute_next_obs[3]])
+        xmax = np.max([aug_absolute_obs[0], aug_absolute_next_obs[0], aug_absolute_obs[2], aug_absolute_next_obs[2]])
+        ymax = np.max([aug_absolute_obs[1], aug_absolute_next_obs[1], aug_absolute_obs[3], aug_absolute_next_obs[3]])
+
+        # Translate bottom left corner of the righter bounding box containing the robot and ball
+        new_x = np.random.uniform(-4500, 4500-(xmax-xmin))
+        new_y = np.random.uniform(-3000, 3000-(ymax-ymin))
+
+        delta_x = new_x - xmin
+        delta_y = new_y - ymin
+
+        aug_absolute_obs[0] += delta_x
+        aug_absolute_obs[1] += delta_y
+        aug_absolute_obs[2] += delta_x
+        aug_absolute_obs[3] += delta_y
+
+        aug_absolute_next_obs[0] += delta_x
+        aug_absolute_next_obs[1] += delta_y
+        aug_absolute_next_obs[2] += delta_x
+        aug_absolute_next_obs[3] += delta_y
+
         if np.random.random() < 0.5:
             aug_absolute_obs[1] *= -1
             aug_absolute_next_obs[1] *= -1
@@ -156,6 +178,12 @@ class RotateReflectTranslateGuided(AbstractSimAugmentationFunction):
         else:
             theta = np.random.uniform(-np.pi/4, np.pi/4)
 
+        ball_pos = aug_absolute_obs[2:4].copy()
+        aug_absolute_obs[:2] -= ball_pos
+        aug_absolute_obs[2:4] -= ball_pos
+        aug_absolute_next_obs[:2] -= ball_pos
+        aug_absolute_next_obs[2:4] -= ball_pos
+
         M = np.array([
             [np.cos(theta), -np.sin(theta)],
             [np.sin(theta), np.cos(theta)]
@@ -176,37 +204,10 @@ class RotateReflectTranslateGuided(AbstractSimAugmentationFunction):
             next_robot_angle += 2 * np.pi
         aug_absolute_next_obs[4] += theta
 
-
-
-        xmin = np.min([aug_absolute_obs[0], aug_absolute_next_obs[0], aug_absolute_obs[2], aug_absolute_next_obs[2]])
-        ymin = np.min([aug_absolute_obs[1], aug_absolute_next_obs[1], aug_absolute_obs[3], aug_absolute_next_obs[3]])
-        xmax = np.max([aug_absolute_obs[0], aug_absolute_next_obs[0], aug_absolute_obs[2], aug_absolute_next_obs[2]])
-        ymax = np.max([aug_absolute_obs[1], aug_absolute_next_obs[1], aug_absolute_obs[3], aug_absolute_next_obs[3]])
-
-        # Translate bottom left corner of the righter bounding box containing the robot and ball
-        new_x = np.random.uniform(-4500, 4500-(xmax-xmin))
-        new_y = np.random.uniform(-3000, 3000-(ymax-ymin))
-
-        # if new_x > 4500 and 750-(ymax-ymin) > -750:
-        #     new_y = np.random.uniform(-750, 750-(ymax-ymin))
-        # else:
-        #     new_y = np.random.uniform(-3000, 3000-(ymax-ymin))
-
-
-        delta_x = new_x - xmin
-        delta_y = new_y - ymin
-        # delta_x = 0
-        # delta_y = 0
-
-        aug_absolute_obs[0] += delta_x
-        aug_absolute_obs[1] += delta_y
-        aug_absolute_obs[2] += delta_x
-        aug_absolute_obs[3] += delta_y
-
-        aug_absolute_next_obs[0] += delta_x
-        aug_absolute_next_obs[1] += delta_y
-        aug_absolute_next_obs[2] += delta_x
-        aug_absolute_next_obs[3] += delta_y
+        aug_absolute_obs[:2] += ball_pos
+        aug_absolute_obs[2:4] += ball_pos
+        aug_absolute_next_obs[:2] += ball_pos
+        aug_absolute_next_obs[2:4] += ball_pos
 
         aug_reward, _ = self.calculate_reward(aug_absolute_next_obs)
 
