@@ -38,17 +38,17 @@ PARAMS64 = {
 
 PARAMS128 = {
     'maze2d-umaze-v1': {
-        'no_aug': (10, 2.5e-3),
-        'random': (5, 2.5e-3),
-        'guided': (10, 2.5e-3),
+        'no_aug': (10, 1e-3),
+        'random': (7.5, 1e-3),
+        'guided': (10, 1e-3),
     },
     'maze2d-medium-v1': {
-        'no_aug': (5, 2.5e-3),
+        'no_aug': (5, 1e-3),
         'random': (2.5, 1e-3),
         'guided': (10, 1e-3),
     },
     'maze2d-large-v1': {
-        # 'no_aug': (5, 2.5e-3),
+        'no_aug': (10, 1e-3),
         'random': (10, 1e-3),
         'guided': (10, 1e-3),
     },
@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
     for env_id in ['maze2d-medium-v1', 'maze2d-umaze-v1', 'maze2d-large-v1']:
         for aug in ['random', 'guided', 'no_aug', ]:
-            for hidden_dims in [64, 128]:
+            for hidden_dims in [128]:
 
                 actor_lr = 3e-4
                 critic_lr = 3e-4
