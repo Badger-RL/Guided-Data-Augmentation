@@ -306,6 +306,9 @@ def train_base(config, env, trainer):
 
     # wrap env
     env = wrap_env(env, state_mean=state_mean, state_std=state_std)
+    if 'antmaze-umaze' in config.env:
+        target_location = np.array([0.75, 8.5])
+        env.set_target_goal(target_location)
 
     # create replay buffer
     state_dim = env.observation_space.shape[0]
