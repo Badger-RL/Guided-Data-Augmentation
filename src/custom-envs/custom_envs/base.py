@@ -694,3 +694,6 @@ class BaseEnv(gym.Env):
             ],
             goal_post_size / 2,
         )
+
+    def get_normalized_score(self, eval_score):
+        return eval_score/100
