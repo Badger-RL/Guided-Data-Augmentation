@@ -39,6 +39,11 @@ AUG_FUNCTIONS = {
         'guided': AntMazeGuidedAugmentationFunction,
         'mixed': AntMazeAugmentationFunction,
     },
+    'antmaze-eval-umaze-diverse-v0': {
+        'random': AntMazeAugmentationFunction,
+        'guided': AntMazeGuidedAugmentationFunction,
+        'mixed': AntMazeAugmentationFunction,
+    },
     'antmaze-medium-diverse-v1': {
         'random': AntMazeAugmentationFunction,
         'guided': AntMazeGuidedAugmentationFunction,
@@ -53,12 +58,13 @@ AUG_FUNCTIONS = {
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--env-id', type=str, default='antmaze-umaze-v1')
+    parser.add_argument('--env-id', type=str, default='antmaze-medium-diverse-v1')
     parser.add_argument('--observed-dataset-path', type=str, default=None)
+    # parser.add_argument('--observed-dataset-path', type=str, default='../datasets/antmaze-medium-diverse-v1/no_aug_no_collisions.hdf5')
     parser.add_argument('--observed-dataset-frac', '-frac', type=float, default=None)
     parser.add_argument('--observed-dataset-size', '-size', type=int, default=None)
 
-    parser.add_argument('--aug-func', type=str, default='random')
+    parser.add_argument('--aug-func', type=str, default='guided')
     parser.add_argument('--aug-ratio', '-m', type=int, default=1, help='Number of augmentations per observed transition')
     parser.add_argument('--save-dir', '-fd', type=str, default=None)
     parser.add_argument('--save-name', '-fn', type=str, default=None)
@@ -78,7 +84,10 @@ if __name__ == '__main__':
 
     if args.observed_dataset_path:
         observed_dataset = load_dataset(args.observed_dataset_path)
+        original_observed_dataset = d4rl.qlearning_dataset(env)
+        # original_observed_dataset = None
     else:
+        original_observed_dataset = None
         observed_dataset = d4rl.qlearning_dataset(env)
 
     if args.observed_dataset_frac:
@@ -130,7 +139,11 @@ if __name__ == '__main__':
     new_dataset = h5py.File(save_path, 'w')
     npify(aug_dataset)
     for k in aug_dataset:
-        data = np.concatenate([observed_dataset[k], aug_dataset[k]])
+        if original_observed_dataset:
+            data = np.concatenate([original_observed_dataset[k], aug_dataset[k]])
+        else:
+            data = np.concatenate([observed_dataset[k], aug_dataset[k]])
+        # data = np.concatenate([aug_dataset[k]])
         new_dataset.create_dataset(k, data=data, compression='gzip')
     new_dataset.create_dataset('original_size', data=n)
     new_dataset.create_dataset('aug_size', data=aug_count)
