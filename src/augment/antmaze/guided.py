@@ -287,8 +287,8 @@ class AntMazeGuidedAugmentationFunction(AntMazeAugmentationFunction):
         guide_theta = 0
 
         delta_obs = next_obs - obs
-        theta = np.arctan2(delta_obs[1], delta_obs[0])
-        theta = 2 * np.arctan2(delta_obs[3], delta_obs[6])
+        theta = 2 * np.arctan2(delta_obs[1], delta_obs[0])
+        # theta = 2 * np.arctan2(delta_obs[3], delta_obs[6])
 
         aug_theta = -(guide_theta - theta)  # + np.random.uniform(low=-np.pi/6, high=np.pi/6)
 

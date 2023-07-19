@@ -54,6 +54,8 @@ AUG_FUNCTIONS = {
         'random': AntMazeAugmentationFunction,
         'guided': AntMazeGuidedAugmentationFunction,
         'mixed': AntMazeAugmentationFunction,
+        'guided_traj': AntMazeGuidedTrajAugmentationFunction,
+        'random_traj': AntMazeRandomTrajAugmentationFunction,
     },
     'antmaze-large-diverse-v1': {
         'random': AntMazeAugmentationFunction,
@@ -64,15 +66,15 @@ AUG_FUNCTIONS = {
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--env-id', type=str, default='antmaze-umaze-diverse-v1')
+    parser.add_argument('--env-id', type=str, default='antmaze-medium-diverse-v1')
     # parser.add_argument('--observed-dataset-path', type=str, default=None)
     # parser.add_argument('--observed-dataset-path', type=str, default='../datasets/antmaze-umaze-diverse-v1/no_aug_no_collisions_relabeled.hdf5')
-    parser.add_argument('--observed-dataset-path', type=str, default='../datasets/antmaze-umaze-diverse-v1/no_aug_no_collisions_relabeled.hdf5')
+    parser.add_argument('--observed-dataset-path', type=str, default='../datasets/antmaze-medium-diverse-v1/no_aug_no_collisions_relabeled.hdf5')
 
     parser.add_argument('--observed-dataset-frac', '-frac', type=float, default=None)
     parser.add_argument('--observed-dataset-size', '-size', type=int, default=1000000)
 
-    parser.add_argument('--aug-func', type=str, default='random_traj')
+    parser.add_argument('--aug-func', type=str, default='guided_traj')
     parser.add_argument('--aug-ratio', '-m', type=int, default=1, help='Number of augmentations per observed transition')
     parser.add_argument('--save-dir', '-fd', type=str, default=None)
     parser.add_argument('--save-name', '-fn', type=str, default=None)
@@ -93,7 +95,7 @@ if __name__ == '__main__':
     if args.observed_dataset_path:
         observed_dataset = load_dataset(args.observed_dataset_path)
         # original_observed_dataset = d4rl.qlearning_dataset(env)
-        original_observed_dataset = load_dataset('../datasets/antmaze-umaze-diverse-v1/no_aug_relabeled.hdf5')
+        original_observed_dataset = load_dataset('../datasets/antmaze-medium-diverse-v1/no_aug_relabeled.hdf5')
         # original_observed_dataset = None
     else:
         original_observed_dataset = None
@@ -130,6 +132,7 @@ if __name__ == '__main__':
         truncated = False
         while not truncated:
             end += 1
+            # if end == 100: break
             if end >= n:
                 break
             truncated = observed_dataset_truncated[end]

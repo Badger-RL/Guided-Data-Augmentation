@@ -117,7 +117,7 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
             self.target = np.array([0.75, 8.5])
             self.env.maze_arr = U_MAZE
         elif l == 8:
-            self.target = np.array([21.23277744269721, 20.98104580473052])
+            self.target = np.array([20.5, 20.5])
             self.env.maze_arr = MEDIUM_MAZE
 
         else:
@@ -170,9 +170,6 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
         ylo = (h-1)*4+2
 
         maze_width, maze_height = self.env.maze_arr.shape
-
-        if w==2 and h==3:
-            stop = 0
 
         # Empty/goal locations are surrounded by walls, so we don't need to check if w+1/w-1/h+1/h-1 are valid locations.
         if w+1 < maze_width and self.env.maze_arr[w+1, h] in ['1']:

@@ -7,6 +7,7 @@ def reset_data():
             'terminals': [],
             'rewards': [],
             'next_observations': [],
+            'truncateds': [],
             }
 
 def append_data(data, s, a, r, ns, done):
@@ -15,6 +16,21 @@ def append_data(data, s, a, r, ns, done):
     data['actions'].append(a)
     data['rewards'].append(r)
     data['terminals'].append(done)
+
+def append_data2(data, s, a, r, ns, done, truncated):
+    data['observations'].append(s)
+    data['next_observations'].append(ns)
+    data['actions'].append(a)
+    data['rewards'].append(r)
+    data['terminals'].append(done)
+    data['truncateds'].append(truncated)
+
+def extend_data(data, s, a, r, ns, done):
+    data['observations'].extend(s)
+    data['next_observations'].extend(ns)
+    data['actions'].extend(a)
+    data['rewards'].extend(r)
+    data['terminals'].extend(done)
 
 def npify(data):
     for k in data:
