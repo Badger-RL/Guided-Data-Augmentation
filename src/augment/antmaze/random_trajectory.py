@@ -5,7 +5,7 @@ import numpy as np
 from augment.antmaze.antmaze_aug_function import AntMazeAugmentationFunction
 
 
-class AntMazeGuidedTrajAugmentationFunction(AntMazeAugmentationFunction):
+class AntMazeRandomTrajAugmentationFunction(AntMazeAugmentationFunction):
     def __init__(self, env, **kwargs):
         super().__init__(env=env, **kwargs)
         self.num_aug = 0
@@ -38,22 +38,24 @@ class AntMazeGuidedTrajAugmentationFunction(AntMazeAugmentationFunction):
 
     def _sample_umaze(self, obs, last_obs):
         x, y = obs[0], obs[1]
+        probs = np.array([4.25, 4, 4.5])/12.75
 
+        region = np.random.choice(np.arange(3), p=probs)
         # bottom
-        if x > 0 and x < 8.5 and y > 0 and y < 0.5:
+        if region == 0:
             new_pos = np.random.uniform(
                 low=np.array([0, 0]),
                 high=np.array([8.5, 0.5])
             )
 
         # right side
-        elif x > 8.5 and x < 9 and y > 0 and y < 8:
+        if region == 1:
             new_pos = np.random.uniform(
                 low=np.array([8.5, 0]),
                 high=np.array([9, 8])
             )
-        elif x > 2 and x < 9 and y > 8 and y < 8.5:
-            new_pos = np.random.uniform(
+        if region == 2:
+                new_pos = np.random.uniform(
                 low=np.array([0, 8]),
                 high=np.array([9, 8.5])
             )
@@ -170,8 +172,8 @@ class AntMazeGuidedTrajAugmentationFunction(AntMazeAugmentationFunction):
         aug_obs = obs.copy()
         aug_next_obs = next_obs.copy()
         #
-        new_pos = self._sample_umaze(obs[0], aug_next_obs[-1, :2])
-        # new_pos, new_location = self._sample_pos()
+        # new_pos = self._sample_umaze(obs[0], aug_next_obs[-1, :2])
+        new_pos, new_location = self._sample_pos()
 
         if new_pos is None:
             return None, None, None, None, None
