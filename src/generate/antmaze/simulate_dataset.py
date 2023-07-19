@@ -24,8 +24,8 @@ def main():
 
 
     # env = gym.make('maze2d-umaze-v0')
-    env = gym.make('antmaze-medium-diverse-v1')
-    # dataset = load_dataset('../../datasets/antmaze-umaze-diverse-v1/guided/m_1.hdf5')
+    env = gym.make('antmaze-umaze-diverse-v1')
+    dataset = load_dataset('../../datasets/antmaze-umaze-diverse-v1/guided_traj/m_1.hdf5')
     # dataset = load_dataset('tmp/tmp.hdf5')
 
     dataset = d4rl.qlearning_dataset(env)
@@ -47,23 +47,30 @@ def main():
     print(mask.sum())
 
     count = 0
-    for t in range(len(dataset['observations'])):
+    # for t in range(12100, len(dataset['observations'])):
+    for t in range(0, len(dataset['observations'])):
+
+        print(t)
+        # env.reset()
         # if obs[3] < 0.25:
         #     continue
         obs = dataset['observations'][t]
         action = dataset['actions'][t]
 
 
-        qpos = obs[:15]
-        qvel = obs[15:]
-        env.set_state(qpos, qvel)
+        # qpos = obs[:15]
+        # qvel = obs[15:]
+        # env.set_state(qpos, qvel)
         next_obs, reward, done, info = env.step(action)
         env.render()
+
+        true_next_obs = dataset['next_observations'][t]
+        print(next_obs-true_next_obs)
 
         # print(rowcol)
         if reward > 0:
             count += 1
-            print(count)
+            # print(count)
             stop = 0
 
 if __name__ == '__main__':
