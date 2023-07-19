@@ -16,15 +16,17 @@ from algorithms.utils import load_dataset
 
 
 for env_id in ['antmaze-medium-diverse-v1']:
-    for aug in ['guided']:
+    for aug in ['guided_traj']:
         plt.figure(figsize=(12, 12))
 
         dataset_name = f'../datasets/{env_id}/{aug}/m_1.hdf5'
         # dataset_name = f'../datasets/{env_id}/no_aug_clean.hdf5'
         # dataset_name = f'../augment/antmaze/tmp/tmp.hdf5'
         # dataset_name = f'../datasets/{env_id}/no_aug_no_collisions.hdf5'
+        # dataset_name = f'../datasets/{env_id}/no_aug_no_collisions_relabeled.hdf5'
+        # dataset_name = f'../datasets/{env_id}/no_aug_relabeled.hdf5'
 
-        # dataset_name = None
+        # dataset_name = None 327271
         # local dataset
         dataset = {}
         if dataset_name:
@@ -35,7 +37,7 @@ for env_id in ['antmaze-medium-diverse-v1']:
             env = gym.make(env_id)
             dataset = d4rl.qlearning_dataset(env)
 
-        n = int(10e3)
+        n = int(50e3)
 
         # plot no_aug
         start = int(0e6)
