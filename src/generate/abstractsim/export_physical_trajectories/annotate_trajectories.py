@@ -58,14 +58,17 @@ if __name__ == "__main__":
 
     
 
-    if not len(sys.argv) >= 3:
-        print("usage: python3 ./annotate_trajectories.py <input_path> <output_path>")
-        exit()
+    # if not len(sys.argv) >= 3:
+    #     print("usage: python3 ./annotate_trajectories.py <input_path> <output_path>")
+    #     exit()
 
+    argv = [None, None, None]
+    argv[1] = 'physical_data/scoring2'
+    argv[2] = 'trajectories_07_20.hdf5'
 
     trajectory_files = []
 
-    for path, subdirs, files in os.walk(sys.argv[1]):
+    for path, subdirs, files in os.walk(argv[1]):
         print(files)
         files = sorted(files)
         for name in files:
@@ -73,16 +76,14 @@ if __name__ == "__main__":
             if "trajectories_" in name: 
                 print(name)
                 trajectory_files.append(os.path.join(path, name))
-    
-
 
     dataset = annotate_trajectories(trajectory_files)
 
     # print(dataset)
     print(len(dataset["observations"]))
     for i in range(len(dataset["observations"])):
-            if dataset["terminals"][i]:
-                print(i)
+        if dataset["terminals"][i]:
+            print(i)
 
 
     if "--json" in sys.argv:
