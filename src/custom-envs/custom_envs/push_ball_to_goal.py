@@ -1,121 +1,261 @@
+import copy
 import gym
 import numpy as np
+import sys
 
-
-import warnings
+sys.path.append(sys.path[0] + "/..")
 
 from custom_envs.base import BaseEnv
 
-warnings.filterwarnings("ignore")
-
-LENGTH = 500
-TRAINING_STEPS = 1000000
-
-
 class PushBallToGoalEnv(BaseEnv):
-    #def __init__(self, robot_x_range = [-4500,4500], robot_y_range = [-3000,3000], ball_x_range = [-4500,4500], ball_y_range = [-3000,3000]):
-    def __init__(self, **kwargs):
-   
-        
-        super().__init__(**kwargs)
+    metadata = {'render_modes': ['human', 'rgb_array'],
+                "render_fps": 30,
+                }
+
+    def __init__(self, continuous_actions=True, render_mode='rgb_array'):
+        # Init base class
+        super().__init__(continuous_actions=continuous_actions)
+
+        '''
+        Required:
+        - possible_agents
+        - action_spaces
+        - observation_spaces
+        '''
+        self.rendering_init = False
+        self.render_mode = render_mode
+
+        # agents
+        self.possible_agents = ["agent_0"]
+        self.agents = self.possible_agents[:]
+        self.continous_actions = continuous_actions
+        self.teams = [0, 0]
+        self.agent_idx = {agent: i for i, agent in enumerate(self.agents)}
 
 
-        """
-        OBSERVATION SPACE:
-            - x-cordinate of robot with respect to target
-            - y-cordinate of robot with respect to target
-            - sin(Angle between robot and target)
-            - cos(Angle between robot and target)
-        """
-    
-       
+        self.episode_length = 1500
 
+        self.ball_acceleration = -3
+        self.ball_velocity_coef = 4
+        self.displacement_coef = 0.06
+        self.angle_displacement = 0.25
+        self.robot_radius = 20
 
-        observation_space_size = 8
+        self.reward_dict = {
+            "goal": 100000,  # Team
+            "goal_scored": False,
+            "ball_to_goal": 10,  # Team
+            "is_out_of_bounds": False,
+            "agent_to_ball": 1,  # Individual
+            "looking_at_ball": 0.01,  # Individual
+        }
 
+    def get_distance(self, pos1, pos2):
+        return np.linalg.norm(np.array(pos1) - np.array(pos2))
 
-        observation_space_low = -1 * np.ones(observation_space_size)
-        observation_space_high = np.ones(observation_space_size)
-        self.observation_space = gym.spaces.Box(
-            observation_space_low, observation_space_high
-        )
+    '''
+    ego-centric observation:
+        origin,
+        goal,
+        other robots,
+        ball
+    '''
 
-        self.reset()
+    def get_obs(self, agent):
+        i = self.agent_idx[agent]
+        agent_loc = self.robots[i] + [self.angles[i]]
 
-    def reset(self):
+        obs = []
+
+        # Get origin position
+        origin_obs = self.get_relative_observation(agent_loc, [0, 0])
+        obs.extend(origin_obs)
+
+        # Get goal position
+        goal_obs = self.get_relative_observation(agent_loc, [4800, 0])
+        obs.extend(goal_obs)
+
+        # Get other positions
+        for j in range(len(self.agents)):
+            if i == j:
+                continue
+            robot_obx = self.get_relative_observation(agent_loc, self.robots[j])
+            obs.extend(robot_obx)
+
+        # Get ball position
+        ball_obs = self.get_relative_observation(agent_loc, self.ball)
+        obs.extend(ball_obs)
+
+        return np.array(obs, dtype=np.float32)
+
+    def reset(self, seed=None, return_info=False, options=None, **kwargs):
         self.time = 0
 
-        self.displacement_coef = 0.2
+        self.ball_velocity = 0
+        self.ball_angle = 0
 
-        self.contacted_ball = False
+        self.robots = [[np.random.uniform(-4500, 4500), np.random.uniform(-3000, 3000)] for _ in
+                       range(len(self.agents))]
+        self.angles = [np.random.uniform(-np.pi, np.pi) for _ in range(len(self.agents))]
 
+        self.reward_dict["goal_scored"] = False
+        self.reward_dict["is_out_of_bounds"] = False
 
-        self.robot_x = np.random.uniform(self.robot_x_range[0], self.robot_x_range[1])
-        self.robot_y = np.random.uniform(self.robot_y_range[0], self.robot_y_range[1])
-        self.robot_angle = np.random.uniform(0, 2 * np.pi)
+        self.previous_distances = [None for _ in range(len(self.agents))]
 
-        self.target_x = np.random.uniform(self.ball_x_range[0], self.ball_x_range[1])
-        self.target_y = np.random.uniform(self.ball_y_range[0], self.ball_y_range[1])
+        self.ball = []
+        self.ball = [np.random.uniform(-4500, 4500), np.random.uniform(-3000, 3000)]
+        # Spawn ball around edges of field for more interesting play
+        field_length = 4000
+        field_height = 2500
+        spawn_range = 50
 
-        self.goal_x = 4800
-        self.goal_y = 0
+        # Choose a random number 0-3 to determine which edge to spawn the ball on
+        # edge = np.random.randint(4)
+        # if edge == 0:
+        #     # Spawn on left edge
+        #     ball_x = np.random.uniform(-field_length, -field_length + spawn_range)
+        #     ball_y = np.random.uniform(-field_height, field_height)
+        # elif edge == 1:
+        #     # Spawn on top edge
+        #     ball_x = np.random.uniform(-field_length, field_length)
+        #     ball_y = np.random.uniform(field_height - spawn_range, field_height)
+        # elif edge == 2:
+        #     # Spawn on right edge
+        #     ball_x = np.random.uniform(field_length - spawn_range, field_length)
+        #     ball_y = np.random.uniform(-field_height, field_height)
+        # else:
+        #     # Spawn on bottom edge
+        #     ball_x = np.random.uniform(-field_length, field_length)
+        #     ball_y = np.random.uniform(-field_height, -field_height + spawn_range)
+        #
+        # self.ball = [ball_x, ball_y]
 
-        self.update_goal_value()
+        # Goal is 4400, [-1000 to 1000]
+        # self.ball = [100, 2900]
 
-        robot_location = np.array([self.robot_x, self.robot_y])
-        target_location = np.array([self.target_x, self.target_y])
-        self.initial_distance = np.linalg.norm(target_location - robot_location)
+        observations = {}
+        for agent in self.agents:
+            observations[agent] = self.get_obs(agent)
+        return observations[self.agents[0]]
 
-        return self._observe_state()
+    def step(self, actions):
+        """
+        step(action) takes in an action for each agent and should return the
+        - observations
+        - rewards
+        - terminations
+        - truncations
+        - infos
+        dicts where each dict looks like {agent_1: item_1, agent_2: item_2}
+        """
+        actions = {'agent_0': actions}
+        obs, rew, terminated, truncated, info = {}, {}, {}, {}, {}
+        self.time += 1
 
-    def _observe_state(self):
-        self.update_target_value()
-        self.update_goal_value()
+        absolute_obs = np.concatenate([
+            self.robots[0].copy(), self.ball.copy(), [self.angles[0]]
+        ])
 
-        return np.array(
-            [
-                (self.target_x - self.robot_x) / 9000,
-                (self.target_y - self.robot_y) / 6000,
-                (self.goal_x - self.target_x) / 9000,
-                (self.goal_y - self.target_y) / 6000,
-                np.sin(self.relative_angle - self.robot_angle),
-                np.cos(self.relative_angle - self.robot_angle),
-                np.sin(self.goal_relative_angle - self.robot_angle),
-                np.cos(self.goal_relative_angle - self.robot_angle),
-            ]
-        )
+        previous_locations = {}
+        # Save previous locations
+        for agent in self.agents:
+            i = self.agent_idx[agent]
+            previous_locations[agent] = self.robots[i].copy()
 
-    def _observe_global_state(self):
-        return [
-            self.robot_x / 9000,
-            self.robot_y / 6000,
-            self.target_x / 9000,
-            self.target_y / 6000,
-            np.sin(self.robot_angle),
-            np.cos(self.robot_angle),
-        ]
+        ball_previous_location = self.ball.copy()
 
-    def set_abstract_state(self, obs):
+        # Update agent locations and ball
+        # print(actions, self.agents)
+        for agent in self.agents:
+            actions[agent][3] = 0
+            action = actions[agent]
+            self.move_agent(agent, action)
+            self.update_ball()
 
-        # obs[0] = tx - rx --> rx = tx - obs[0]
-        # obs[2] = gx - tx --> tx = gx - obs[2]
+        # Calculate rewards
+        for agent in self.agents:
+            obs[agent] = self.get_obs(agent)
+            rew[agent] = self.calculate_reward(agent, actions[agent], previous_locations[agent], ball_previous_location)
+            terminated[agent] = self.reward_dict['is_out_of_bounds'] or self.reward_dict['goal_scored']
+            truncated[agent] = False
 
-        self.target_x = self.goal_x - obs[2]*9000
-        self.target_y = self.goal_y - obs[3]*6000
-        self.robot_x = self.target_x - obs[0]*9000
-        self.robot_y = self.target_y - obs[1]*6000
+            absolute_next_obs = np.concatenate([
+                self.robots[0], self.ball, [self.angles[0]]
+            ])
+            info[agent] = {
+                'is_success': self.reward_dict['goal_scored'],
+                'absolute_obs': absolute_obs,
+                'absolute_next_obs': absolute_next_obs
+            }
 
-        relative_x = self.target_x - self.robot_x
-        relative_y = self.target_y - self.robot_y
-        relative_angle = np.arctan2(relative_y, relative_x)
-        if relative_angle < 0:
-            relative_angle += 2*np.pi
+        # if self.reward_dict["goal_scored"]:
+        #     # Reset ball
+        #     self.ball = [np.random.uniform(-2500, 2500), np.random.uniform(-1500, 1500)]
+        #     self.reward_dict["goal_scored"] = False
+        agent = self.agents[0]
+        return obs[agent], rew[agent], terminated[agent], info[agent]
 
-        relative_angle_minus_robot_angle = np.arctan2(obs[4], obs[5])
-        if relative_angle_minus_robot_angle < 0:
-            relative_angle_minus_robot_angle += 2*np.pi
+    '''
+    Checks if ball is in goal area
+    '''
 
-        self.robot_angle = relative_angle - relative_angle_minus_robot_angle
-        if self.robot_angle < 0:
-            self.robot_angle += 2*np.pi
+    def goal(self):
+        if self.ball[0] > 4400 and self.ball[1] < 500 and self.ball[1] > -500:
+            return True
+        return False
 
+    def ball_is_in_bounds(self):
+        if self.goal():
+            return True
+        elif np.abs(self.ball[0]) < 4500 and np.abs(self.ball[1]) < 3500:
+            return True
+        else:
+            return False
+
+    def looking_at_ball(self, agent):
+        return self.check_facing_ball(agent)
+
+    def in_opp_goal(self):
+        if self.ball[0] < -4400 and self.ball[1] < 1000 and self.ball[1] > -1000:
+            return True
+        return False
+
+    def calculate_reward(self, agent, action, prev_location, prev_ball_location):
+        i = self.agent_idx[agent]
+        reward = 0
+
+        if self.in_opp_goal():
+            return 0
+
+        info_dict = {}
+        # testing
+        # Goal - Team
+        if self.goal():
+            reward += self.reward_dict["goal"]
+            self.reward_dict["goal_scored"] = True
+            info_dict["goal"] = True
+
+        # # Ball to goal - Team
+        cur_ball_distance = self.get_distance(self.ball, [4800, 0])
+        prev_ball_distance = self.get_distance(prev_ball_location, [4800, 0])
+        reward += self.reward_dict["ball_to_goal"] * (prev_ball_distance - cur_ball_distance)
+        info_dict["ball_to_goal"] = True
+
+        # reward for stepping towards ball
+        cur_distance = self.get_distance(self.robots[i], self.ball)
+        prev_distance = self.get_distance(prev_location, self.ball)
+        reward += self.reward_dict["agent_to_ball"] * (prev_distance - cur_distance)
+        info_dict["agent_to_ball"] = True
+
+        if self.looking_at_ball(agent):
+            reward += self.reward_dict["looking_at_ball"]
+            info_dict["looking_at_ball"] = True
+
+        if not self.ball_is_in_bounds():
+            # reward += self.reward_dict["out_of_bounds"]
+            self.reward_dict['is_out_of_bounds'] = True
+
+        reward += -10
+
+        return reward
