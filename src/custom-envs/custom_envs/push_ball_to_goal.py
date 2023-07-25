@@ -42,13 +42,24 @@ class PushBallToGoalEnv(BaseEnv):
         self.robot_radius = 20
 
         self.reward_dict = {
-            "goal": 100000,  # Team
+            "goal": 1,  # Team
             "goal_scored": False,
-            "ball_to_goal": 10,  # Team
+            "ball_to_goal": 1/40,  # Team
+            "out_of_bounds": 0,
             "is_out_of_bounds": False,
-            "agent_to_ball": 1,  # Individual
-            "looking_at_ball": 0.01,  # Individual
+            "agent_to_ball": 1/20,  # Individual
+            "looking_at_ball": 1/100,  # Individual
         }
+
+        # self.reward_dict = {
+        #     "goal": 100000,  # Team
+        #     "goal_scored": False,
+        #     "ball_to_goal": 10,  # Team
+        #     "out_of_bounds": 0,
+        #     "is_out_of_bounds": False,
+        #     "agent_to_ball": 1,  # Individual
+        #     "looking_at_ball": 0.01,  # Individual
+        # }
 
     def get_distance(self, pos1, pos2):
         return np.linalg.norm(np.array(pos1) - np.array(pos2))
@@ -177,7 +188,10 @@ class PushBallToGoalEnv(BaseEnv):
         for agent in self.agents:
             obs[agent] = self.get_obs(agent)
             rew[agent] = self.calculate_reward(agent, actions[agent], previous_locations[agent], ball_previous_location)
-            terminated[agent] = self.reward_dict['is_out_of_bounds'] or self.reward_dict['goal_scored']
+            # terminated[agent] = self.reward_dict['is_out_of_bounds'] or self.reward_dict['goal_scored']
+            terminated[agent] = self.reward_dict['is_out_of_bounds']
+            # terminated[agent] = self.reward_dict['goal_scored']
+
             truncated[agent] = False
 
             absolute_next_obs = np.concatenate([
@@ -185,6 +199,7 @@ class PushBallToGoalEnv(BaseEnv):
             ])
             info[agent] = {
                 'is_success': self.reward_dict['goal_scored'],
+                'terminated': terminated[agent],
                 'absolute_obs': absolute_obs,
                 'absolute_next_obs': absolute_next_obs
             }
@@ -253,9 +268,10 @@ class PushBallToGoalEnv(BaseEnv):
             info_dict["looking_at_ball"] = True
 
         if not self.ball_is_in_bounds():
-            # reward += self.reward_dict["out_of_bounds"]
+            reward += self.reward_dict["out_of_bounds"]
             self.reward_dict['is_out_of_bounds'] = True
 
-        reward += -10
-
         return reward
+
+    def get_normalized_score(self, eval_score):
+        return eval_score/100
