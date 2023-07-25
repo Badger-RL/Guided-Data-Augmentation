@@ -34,21 +34,6 @@ class BaseAugmentationFunction:
                  # truncated: np.ndarray,
                  **kwargs,):
 
-        # copy input transition
-        aug_obs, aug_next_obs, aug_action, aug_reward, aug_done = \
-            self._deepcopy_transition(obs, next_obs, action, reward, done)
-
-        # augment input copy of input transition in-place
-        return self._augment(aug_obs, aug_next_obs, aug_action, aug_reward, aug_done, **kwargs)
-
-    def _augment(self,
-                 obs: np.ndarray,
-                 next_obs: np.ndarray,
-                 action: np.ndarray,
-                 reward: np.ndarray,
-                 terminated: np.ndarray,
-                 truncated: np.ndarray,
-                 **kwargs,):
         raise NotImplementedError("Augmentation function not implemented.")
 
 
@@ -138,39 +123,6 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
         yprime = x * np.sin(-agent_loc[2]) + y * np.cos(-agent_loc[2])
 
         return [xprime / 10000, yprime / 10000, np.sin(angle), np.cos(angle)]
-
-    def calculate_reward(self, absolute_next_obs):
-        robot_x = absolute_next_obs[0]
-        robot_y = absolute_next_obs[1]
-        target_x = absolute_next_obs[2]
-        target_y = absolute_next_obs[3]
-        robot_angle = absolute_next_obs[4]
-        robot_angle = np.degrees(robot_angle) % 360
-
-        at_goal = self.at_goal(target_x, target_y)
-
-        angle_robot_ball = np.arctan2(target_y - robot_y, target_x - robot_x)
-        angle_robot_ball = np.degrees(angle_robot_ball) % 360
-        is_facing_ball = abs(angle_robot_ball - robot_angle) < 30
-
-        reward = 0
-
-        if is_facing_ball:
-            robot_location = np.array([robot_x, robot_y])
-            target_location = np.array([target_x, target_y])
-            goal_location = np.array([self.goal_x, self.goal_y])
-
-            distance_robot_target = np.linalg.norm(target_location - robot_location)
-            distance_target_goal = np.linalg.norm(goal_location - target_location)
-
-            reward_dist_to_ball = 1/distance_robot_target
-            reward_dist_to_goal = 1/distance_target_goal
-            reward = 0.9*reward_dist_to_goal + 0.1*reward_dist_to_ball
-
-        if at_goal:
-            reward += 1
-
-        return reward, at_goal
 
     def at_goal(self, target_x, target_y):
         at_goal = False

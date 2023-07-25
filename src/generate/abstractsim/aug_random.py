@@ -17,7 +17,7 @@ models = {"push_ball_to_goal": {"env": PushBallToGoalEnv}}
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--observed-dataset-path', type=str, default='../../datasets/PushBallToGoal-v0/no_aug_72.hdf5')
+    parser.add_argument('--observed-dataset-path', type=str, default='../../datasets/PushBallToGoal-v0/no_aug_72_10k.hdf5')
     parser.add_argument('--augmentation-ratio', '-aug-ratio', type=int, default=1, help='Number of augmentations per observed transition')
     parser.add_argument('--save-dir', type=str, default='.')
     parser.add_argument('--save-name', type=str, default='tmp.hdf5')
@@ -47,8 +47,8 @@ if __name__ == '__main__':
         for _ in range(aug_ratio):
             idx = i % n
             obs, next_obs, action, reward, done, abs_obs, abs_next_obs = f.augment(
-                obs=observed_dataset['absolute_observations'][idx],
-                next_obs=observed_dataset['absolute_next_observations'][idx],
+                abs_obs=observed_dataset['absolute_observations'][idx],
+                abs_next_obs=observed_dataset['absolute_next_observations'][idx],
                 action=observed_dataset['actions'][idx],
                 reward=observed_dataset['rewards'][idx],
                 done=observed_dataset['terminals'][idx]
