@@ -304,7 +304,6 @@ def eval_actor(
 
 def train_base(config, env, trainer):
 
-    env_id = copy.deepcopy(env)
     # create save directories
     make_save_dir(config=config)
 
@@ -329,8 +328,6 @@ def train_base(config, env, trainer):
         config.buffer_size,
         config.device,
     )
-    if env_id == 'PushBallToGoal-v0':
-        dataset['actions'][:,-1] = 0
     replay_buffer.load_d4rl_dataset(dataset)
 
     # Set seeds
