@@ -7,14 +7,12 @@ import numpy as np
 import h5py
 import argparse
 
-import torch
 from stable_baselines3 import PPO
 from stable_baselines3.common.utils import set_random_seed
-from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecMonitor
 from stable_baselines3.common.env_util import make_vec_env
 
-from custom_envs.push_ball_to_goal import PushBallToGoalEnv
-import custom_envs
+import gym, custom_envs
+
 
 
 def reset_data():
@@ -23,15 +21,22 @@ def reset_data():
             'terminals': [],
             'rewards': [],
             'next_observations': [],
+
+            'absolute_observations': [],
+            'absolute_next_observations': []
             }
 
-def append_data(data, s, a, r, ns, done):
+
+def append_data(data, s, a, r, ns, done, abs_s, abs_ns):
     data['observations'].append(s)
     data['next_observations'].append(ns)
     data['actions'].append(a)
     data['rewards'].append(r)
     data['terminals'].append(done)
- 
+
+    data['absolute_observations'].append(abs_s)
+    data['absolute_next_observations'].append(abs_ns)
+
 def npify(data):
     for k in data:
         if k in ['terminals', 'timeouts']:
@@ -45,78 +50,67 @@ def npify(data):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--num_samples', type=int, default=int(1e4), help='Num samples to collect')
-    parser.add_argument('--policy-path', type=str, help='file_name')
-    parser.add_argument('--norm-path', type=str, help='file_name')
+    parser.add_argument('--num_samples', type=int, default=int(100e3), help='Num samples to collect')
+    parser.add_argument('--policy-path', type=str, default='../../../src/results/PushBallToGoal-v0/rl_model_3200000_steps.zip')
+    parser.add_argument('--norm-path', type=str, default='')
     parser.add_argument('--save-dir', type=str, help='file_name')
     parser.add_argument('--save-name', type=str, help='file_name')
 
     parser.add_argument('--seed', type=int, default=0)
-    parser.set_defaults(use_policy = False)
     parser.add_argument('--random_actions', type=int, default=0)
     parser.add_argument('--render', type=bool, default=False)
 
-
     args = parser.parse_args()
 
-    env = VecNormalize.load(
-        args.norm_path, make_vec_env('PushBallToGoal-v0', n_envs=1)
-    )
-    env.norm_obs = True
-    env.norm_reward = False
-    env.clip_obs = np.inf
-    env.training = False
-    env.epsilon = 1e-16
+    env = gym.make('PushBallToGoal-v0')
 
     set_random_seed(args.seed)
     s = env.reset()
-    s_o = env.get_original_obs()
-
-    custom_objects = {
-    "lr_schedule": lambda x: .003,
-    "clip_range": lambda x: .02
-    }   
-    policy = PPO.load(args.policy_path, custom_objects = custom_objects, env= env)
+    policy = PPO.load(args.policy_path)
 
     data = reset_data()
 
     ts = 0
     num_episodes = 0
     ret = 0
+    successes = []
+    rets =[]
     for _ in range(args.num_samples):
         if args.random_actions:
-            act = [env.action_space.sample()]
+            act = env.action_space.sample()
         else:
             act = policy.predict(s)[0]
           
         ns, r, done, info = env.step(act)
         ret += r
-        ns_o = env.get_original_obs()
         if args.render:
             env.render()
-       
-        if 'terminal_observation' in info[0]:
-            ns = np.array([info[0]['terminal_observation']])
-            ns_o = env.unnormalize_obs(ns)
 
-        append_data(data, s_o[0], act[0], r[0], ns_o[0], done[0])
+        append_data(data, s, act, r, ns, info['terminated'], info['absolute_obs'], info['absolute_next_obs'])
 
         if len(data['observations']) % 10000 == 0:
             print(len(data['observations']))
 
         ts += 1
-
         if done:
-            ts = 0
             s = env.reset()
-            s_o = env.get_original_obs()
             num_episodes += 1
-            print(ret)
+
+
+            if info['is_success']:
+                successes.append(1)
+
+            else:
+                successes.append(0)
+
+            rets.append(ret)
+            print(ts, ret)
             ret = 0
+            ts = 0
         else:
             s = ns
-            s_o = ns_o
 
+    print(np.average(successes), np.std(successes)/np.sqrt(len(rets)), np.average(rets), np.std(rets)/np.sqrt(len(rets)))
     save_dir = args.save_dir
     os.makedirs(save_dir, exist_ok=True)
     fname = f'{save_dir}/{args.save_name}'
