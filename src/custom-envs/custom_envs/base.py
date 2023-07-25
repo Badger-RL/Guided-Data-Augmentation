@@ -354,6 +354,23 @@ class BaseEnv(gym.Env):
         else:
             return False
 
+    def check_facing_ball_2(self, robot_pos, ball_pos, agent_angle):
+        # Convert from radians to degrees
+        robot_angle = math.degrees(agent_angle) % 360
+
+        # Find the angle between the robot and the ball
+        angle_to_ball = math.degrees(
+            np.arctan2(ball_pos[1] - robot_pos[1], ball_pos[0] - robot_pos[0])
+        )
+        # Check if the robot is facing the ball
+        req_angle = 10
+        angle = (robot_angle - angle_to_ball) % 360
+
+        if angle < req_angle or angle > 360 - req_angle:
+            return True
+        else:
+            return False
+
     '''
     Gets relative position of object to agent
     '''

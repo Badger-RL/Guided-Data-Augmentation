@@ -8,21 +8,20 @@ import numpy as np
 import h5py
 import argparse
 
+from generate.abstractsim.expert import reset_data, append_data
 from src.augment.abstractsim.rotate_reflect_translate import RotateReflectTranslate
 from src.augment.utils import check_valid
 from custom_envs.push_ball_to_goal import PushBallToGoalEnv
-
-from generate.utils import reset_data, append_data
 
 models = {"push_ball_to_goal": {"env": PushBallToGoalEnv}}
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--observed-dataset-path', type=str, default=None)
+    parser.add_argument('--observed-dataset-path', type=str, default='../../datasets/PushBallToGoal-v0/no_aug_72.hdf5')
     parser.add_argument('--augmentation-ratio', '-aug-ratio', type=int, default=1, help='Number of augmentations per observed transition')
-    parser.add_argument('--save-dir', type=str, default=None)
-    parser.add_argument('--save-name', type=str, default=None)
-    parser.add_argument('--check-valid', type=int, default=True)
+    parser.add_argument('--save-dir', type=str, default='.')
+    parser.add_argument('--save-name', type=str, default='tmp.hdf5')
+    parser.add_argument('--check-valid', type=int, default=False)
     parser.add_argument('--seed', type=int, default=0)
 
     args = parser.parse_args()
@@ -38,7 +37,7 @@ if __name__ == '__main__':
     n = observed_dataset['observations'].shape[0]
 
     env = gym.make('PushBallToGoal-v0')
-    f = RotateReflectTranslate(env=None)
+    f = RotateReflectTranslate(env=env)
 
     aug_dataset = reset_data()
     aug_count = 0 # number of valid augmentations produced
@@ -47,9 +46,9 @@ if __name__ == '__main__':
     while aug_count < n*aug_ratio:
         for _ in range(aug_ratio):
             idx = i % n
-            obs, next_obs, action, reward, done = f.augment(
-                obs=observed_dataset['observations'][idx],
-                next_obs=observed_dataset['next_observations'][idx],
+            obs, next_obs, action, reward, done, abs_obs, abs_next_obs = f.augment(
+                obs=observed_dataset['absolute_observations'][idx],
+                next_obs=observed_dataset['absolute_next_observations'][idx],
                 action=observed_dataset['actions'][idx],
                 reward=observed_dataset['rewards'][idx],
                 done=observed_dataset['terminals'][idx]
@@ -61,15 +60,15 @@ if __name__ == '__main__':
                 if args.check_valid:
                     is_valid = check_valid(
                         env=env,
-                        aug_obs=[obs],
+                        aug_obs=[abs_obs],
                         aug_action=[action],
                         aug_reward=[reward],
-                        aug_next_obs=[next_obs]
+                        aug_next_obs=[abs_next_obs]
                     )
                 if is_valid:
                     aug_count += 1
                     print(aug_count)
-                    append_data(aug_dataset, obs, action, reward, next_obs, done)
+                    append_data(aug_dataset, obs, action, reward, next_obs, done, abs_obs, abs_next_obs)
                 else:
                     invalid_count += 1
 

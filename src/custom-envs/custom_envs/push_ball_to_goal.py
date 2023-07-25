@@ -160,12 +160,12 @@ class PushBallToGoalEnv(BaseEnv):
         - infos
         dicts where each dict looks like {agent_1: item_1, agent_2: item_2}
         """
-        actions = {'agent_0': actions}
+        actions = {'agent_0': actions.copy()}
         obs, rew, terminated, truncated, info = {}, {}, {}, {}, {}
         self.time += 1
 
         absolute_obs = np.concatenate([
-            self.robots[0].copy(), self.ball.copy(), [self.angles[0]]
+            self.robots[0].copy(), self.ball.copy(), [self.angles[0], self.ball_angle, self.ball_velocity, ]
         ])
 
         previous_locations = {}
@@ -195,7 +195,7 @@ class PushBallToGoalEnv(BaseEnv):
             truncated[agent] = False
 
             absolute_next_obs = np.concatenate([
-                self.robots[0], self.ball, [self.angles[0]]
+                self.robots[0], self.ball, [self.angles[0], self.ball_angle, self.ball_velocity,]
             ])
             info[agent] = {
                 'is_success': self.reward_dict['goal_scored'],
@@ -224,6 +224,19 @@ class PushBallToGoalEnv(BaseEnv):
         if self.goal():
             return True
         elif np.abs(self.ball[0]) < 4500 and np.abs(self.ball[1]) < 3500:
+            return True
+        else:
+            return False
+
+    def is_at_goal(self, ball_pos):
+        if ball_pos[0] > 4400 and ball_pos[1] < 500 and ball_pos[1] > -500:
+            return True
+        return False
+
+    def ball_is_in_bounds_2(self, ball_pos):
+        if self.is_at_goal(ball_pos):
+            return True
+        elif np.abs(ball_pos[0]) < 4500 and np.abs(ball_pos[1]) < 3500:
             return True
         else:
             return False
@@ -273,5 +286,53 @@ class PushBallToGoalEnv(BaseEnv):
 
         return reward
 
+    def calculate_reward_2(self, abs_obs, abs_prev_obs):
+        i = 0
+        reward = 0
+
+        robot_pos = abs_obs[:2]
+        prev_robot_pos = abs_prev_obs[:2]
+        robot_angle = abs_obs[-1]
+
+        ball_pos = abs_obs[2:4]
+        prev_ball_pos = abs_prev_obs[2:4]
+
+        info_dict = {}
+        # testing
+        # Goal - Team
+        if self.is_at_goal(ball_pos):
+            reward += self.reward_dict["goal"]
+            self.reward_dict["goal_scored"] = True
+            info_dict["goal"] = True
+
+        # # Ball to goal - Team
+        cur_ball_distance = self.get_distance(ball_pos, [4800, 0])
+        prev_ball_distance = self.get_distance(prev_ball_pos, [4800, 0])
+        reward += self.reward_dict["ball_to_goal"] * (prev_ball_distance - cur_ball_distance)
+        info_dict["ball_to_goal"] = True
+
+        # reward for stepping towards ball
+        cur_distance = self.get_distance(robot_pos, ball_pos)
+        prev_distance = self.get_distance(prev_robot_pos, ball_pos)
+        reward += self.reward_dict["agent_to_ball"] * (prev_distance - cur_distance)
+        info_dict["agent_to_ball"] = True
+
+        if self.check_facing_ball_2(robot_pos, ball_pos, robot_angle):
+            reward += self.reward_dict["looking_at_ball"]
+            info_dict["looking_at_ball"] = True
+
+        if not self.ball_is_in_bounds_2(ball_pos):
+            reward += self.reward_dict["out_of_bounds"]
+            self.reward_dict['is_out_of_bounds'] = True
+
+        return reward
+
     def get_normalized_score(self, eval_score):
         return eval_score/100
+
+    def set_state(self, robot_pos, robot_angle, ball_pos, ball_angle, ball_velocity):
+        self.robots[0] = robot_pos.tolist()
+        self.angles[0] = robot_angle
+        self.ball = ball_pos.copy()
+        self.ball_angle = ball_angle
+        self.ball_velocity = ball_velocity
