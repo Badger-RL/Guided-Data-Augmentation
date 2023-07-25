@@ -80,6 +80,7 @@ def main():
             act = env.action_space.sample()
         else:
             act = policy.predict(s)[0]
+        act[-1] = 0
           
         ns, r, done, info = env.step(act)
         ret += r

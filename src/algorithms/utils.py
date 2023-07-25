@@ -1,3 +1,4 @@
+import copy
 import dataclasses
 import glob
 import json
@@ -109,6 +110,15 @@ def modify_reward(dataset, env_name, max_episode_steps=1000):
         dataset["rewards"] *= max_episode_steps
     elif "antmaze" in env_name:
         dataset["rewards"] -= 1.0
+    # else:
+        # mean = dataset["rewards"].mean()
+        # std = dataset["rewards"].std()
+        # dataset["rewards"] = (dataset["rewards"] - mean)/std
+        # print(mean, std)
+
+        # mean = dataset["rewards"].mean()
+        # dataset["rewards"] =  (dataset["rewards"] - mean)/1000
+
 
 def compute_mean_std(states: np.ndarray, eps: float) -> Tuple[np.ndarray, np.ndarray]:
     mean = states.mean(0)
@@ -294,6 +304,7 @@ def eval_actor(
 
 def train_base(config, env, trainer):
 
+    env_id = copy.deepcopy(env)
     # create save directories
     make_save_dir(config=config)
 
@@ -318,6 +329,8 @@ def train_base(config, env, trainer):
         config.buffer_size,
         config.device,
     )
+    if env_id == 'PushBallToGoal-v0':
+        dataset['actions'][:,-1] = 0
     replay_buffer.load_d4rl_dataset(dataset)
 
     # Set seeds
