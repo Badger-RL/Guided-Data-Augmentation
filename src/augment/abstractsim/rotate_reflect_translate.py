@@ -23,11 +23,11 @@ class RotateReflectTranslate(AbstractSimAugmentationFunction):
                  ):
 
         # random robot position
-        absolute_obs = self._convert_to_absolute_obs(obs)
-        absolute_next_obs = self._convert_to_absolute_obs(next_obs)
+        absolute_obs = obs.copy()
+        absolute_next_obs = next_obs.copy()
 
         if self.at_goal(absolute_obs[2], absolute_obs[3]):
-            return None, None, None, None, None
+            return None, None, None, None, None, None, None
 
         aug_absolute_obs = copy.deepcopy(absolute_obs)
         aug_absolute_next_obs = copy.deepcopy(absolute_next_obs)
@@ -42,6 +42,8 @@ class RotateReflectTranslate(AbstractSimAugmentationFunction):
         ])
         aug_absolute_obs[:2] = M.dot(aug_absolute_obs[:2].T).T
         aug_absolute_obs[2:4] = M.dot(aug_absolute_obs[2:4].T).T
+        aug_absolute_obs[5] += theta
+
 
         robot_angle = aug_absolute_obs[4] + theta
         if robot_angle < 0:
@@ -50,6 +52,7 @@ class RotateReflectTranslate(AbstractSimAugmentationFunction):
 
         aug_absolute_next_obs[:2] = M.dot(aug_absolute_next_obs[:2].T).T
         aug_absolute_next_obs[2:4] = M.dot(aug_absolute_next_obs[2:4].T).T
+        aug_absolute_next_obs[5] += theta
 
         next_robot_angle = aug_absolute_next_obs[4] + theta
         if next_robot_angle < 0:
@@ -63,6 +66,8 @@ class RotateReflectTranslate(AbstractSimAugmentationFunction):
             aug_absolute_next_obs[3] *= -1
             aug_absolute_obs[4] *= -1
             aug_absolute_next_obs[4] *= -1
+            aug_absolute_obs[6] += np.pi
+            aug_absolute_next_obs[6] += np.pi
 
             aug_action[0] *= -1
             aug_action[1] *= 1
@@ -96,12 +101,12 @@ class RotateReflectTranslate(AbstractSimAugmentationFunction):
         aug_absolute_next_obs[2] += delta_x
         aug_absolute_next_obs[3] += delta_y
 
-        aug_reward, _ = self.calculate_reward(aug_absolute_next_obs)
+        aug_reward = self.env.calculate_reward_2(aug_absolute_obs, aug_absolute_next_obs)
 
         aug_obs = self._convert_to_relative_obs(aug_absolute_obs)
         aug_next_obs = self._convert_to_relative_obs(aug_absolute_next_obs)
 
-        return aug_obs, aug_next_obs, aug_action, aug_reward, aug_done
+        return aug_obs, aug_next_obs, aug_action, aug_reward, aug_done, aug_absolute_obs, aug_absolute_next_obs
 
 
 class RotateReflectTranslateGuided(AbstractSimAugmentationFunction):

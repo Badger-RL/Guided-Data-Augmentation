@@ -106,37 +106,38 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
         ])
 
     def _convert_to_relative_obs(self, obs):
+        # Get origin position
+        relative_obs = []
+        agent_loc = np.concatenate([obs[:2], [obs[-1]]])
+        ball_loc = obs[2:4]
+        origin_obs = self.get_relative_observation(agent_loc, [0, 0])
+        relative_obs.extend(origin_obs)
 
-        robot_pos = obs[:2]
-        target_pos = obs[2:4]
+        # Get goal position
+        goal_obs = self.get_relative_observation(agent_loc, [4800, 0])
+        relative_obs.extend(goal_obs)
 
-        robot_x = obs[0]
-        robot_y = obs[1]
-        target_x = obs[2]
-        target_y = obs[3]
-        relative_x = target_x - robot_x
-        relative_y = target_y - robot_y
-        relative_angle = np.arctan2(relative_y, relative_x)
-        if relative_angle < 0:
-            relative_angle += 2*np.pi
+        # Get ball position
+        ball_obs = self.get_relative_observation(agent_loc, ball_loc)
+        relative_obs.extend(ball_obs)
 
-        robot_angle = obs[4]
-        if robot_angle < 0:
-            robot_angle += 2*np.pi
+        return np.array(relative_obs, dtype=np.float32)
 
-        goal_delta = self.goal - robot_pos
-        goal_relative_angle = np.arctan2(goal_delta[1], goal_delta[0])
-        if goal_relative_angle < 0:
-            goal_relative_angle += 2*np.pi
+    def get_relative_observation(self, agent_loc, object_loc):
+        # Get relative position of object to agent, returns x, y, angle
+        # Agent loc is x, y, angle
+        # Object loc is x, y
 
-        return np.concatenate([
-            (target_pos - robot_pos) / self.scale,
-            (self.goal - target_pos) / self.scale,
-            [np.sin(relative_angle - robot_angle),
-            np.cos(relative_angle - robot_angle),
-            np.sin(goal_relative_angle - robot_angle),
-            np.cos(goal_relative_angle - robot_angle),]
-        ])
+        # Get relative position of object to agent
+        x = object_loc[0] - agent_loc[0]
+        y = object_loc[1] - agent_loc[1]
+        angle = np.arctan2(y, x) - agent_loc[2]
+
+        # Rotate x, y by -agent angle
+        xprime = x * np.cos(-agent_loc[2]) - y * np.sin(-agent_loc[2])
+        yprime = x * np.sin(-agent_loc[2]) + y * np.cos(-agent_loc[2])
+
+        return [xprime / 10000, yprime / 10000, np.sin(angle), np.cos(angle)]
 
     def calculate_reward(self, absolute_next_obs):
         robot_x = absolute_next_obs[0]
@@ -173,8 +174,8 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
 
     def at_goal(self, target_x, target_y):
         at_goal = False
-        if target_x > 4500:
-            if target_y < 750 and target_y > -750:
+        if target_x > 4400:
+            if target_y < 500 and target_y > -500:
                 at_goal = True
 
         return at_goal
