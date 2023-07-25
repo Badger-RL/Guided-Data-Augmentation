@@ -65,33 +65,35 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
     ball_x_list = []
     ball_y_list = []
 
-    for observation, action, done in zip(dataset["observations"], dataset["actions"], dataset["terminals"]):
-
-        robot_x, robot_y, target_x, target_y, action_x, action_y = get_coords(
-            observation, action
-        )
-        agent_x_list.append(robot_x)
-        agent_y_list.append(robot_y)
-        action_x_list.append(action_x)
-        action_y_list.append(action_y)
-        ball_x_list.append(target_x)
-        ball_y_list.append(target_y)
-
-        if done and single_episode:
-            break
+    observations = dataset["absolute_observations"]
+    next_observations = dataset["absolute_next_observations"]
 
     fig, ax = plt.subplots()
 
-    plt.scatter(
-        agent_x_list,
-        agent_y_list,
-        c=[i for i in range(len(agent_x_list))],
-        cmap="Blues",
-    )
-    plt.scatter(
-        ball_x_list, ball_y_list, c=[i for i in range(len(ball_x_list))], cmap="Greens"
-    )
+    robot_pos = observations[:, :2]
+    next_robot_pos = next_observations[:, :2]
+    ball_pos = observations[:, 2:4]
+    next_ball_pos = next_observations[:, 2:4]
 
+    plt.scatter(robot_pos[:, 0], robot_pos[:, 1], c=[i for i in range(len(robot_pos))], cmap="Blues")
+    plt.scatter(ball_pos[:, 0], ball_pos[:, 1], c=[i for i in range(len(robot_pos))], cmap="Greens")
+
+    delta = next_ball_pos - ball_pos
+    u = delta[:, 0]
+    v = delta[:, 1]
+
+    mask = (u>5) | (v>5)
+    x = ball_pos[:, 0]
+    x = x[mask]
+    y = ball_pos[:, 1]
+    y = y[mask]
+    u = u[mask]
+    v = v[mask]
+
+    plt.quiver(x,y, u,v)
+    plt.scatter(
+        x,y, c=[i for i in range(len(x))], cmap="Greens"
+    )
     if show_actions:
         agent_points = [(x, y) for x, y in zip(agent_x_list, agent_y_list)]
         action_points = [(x, y) for x, y in zip(action_x_list, action_y_list)]
@@ -115,9 +117,9 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset-path', type=str, default=None)
-    parser.add_argument('--save-dir', type=str, default=None)
-    parser.add_argument('--save-name', type=str, default=None)
+    parser.add_argument('--dataset-path', type=str, default='/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/generate/abstractsim/tmp.hdf5')
+    parser.add_argument('--save-dir', type=str, default='./figures/PushBallToGoal-v0/')
+    parser.add_argument('--save-name', type=str, default='tmp.png')
     parser.add_argument('--single-episode', type=bool, default=False)
     parser.add_argument('--show-actions', type=bool, default=False)
     args = parser.parse_args()
@@ -128,7 +130,7 @@ if __name__ == "__main__":
     dataset = {}
     data_hdf5 = h5py.File(args.dataset_path, "r")
     for key in data_hdf5.keys():
-        dataset[key] = np.array(data_hdf5[key])
+        dataset[key] = np.array(data_hdf5[key][19700:])
 
     """
     print(len(dataset["terminals"]))

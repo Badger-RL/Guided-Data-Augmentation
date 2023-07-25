@@ -8,8 +8,9 @@ import numpy as np
 import h5py
 import argparse
 
+from augment.abstractsim.guided import RotateReflectTranslateGuided
 from generate.abstractsim.expert import reset_data, append_data
-from src.augment.abstractsim.rotate_reflect_translate import RotateReflectTranslate
+from src.augment.abstractsim.random import RotateReflectTranslate
 from src.augment.utils import check_valid
 from custom_envs.push_ball_to_goal import PushBallToGoalEnv
 
@@ -37,7 +38,7 @@ if __name__ == '__main__':
     n = observed_dataset['observations'].shape[0]
 
     env = gym.make('PushBallToGoal-v0')
-    f = RotateReflectTranslate(env=env)
+    f = RotateReflectTranslateGuided(env=env)
 
     aug_dataset = reset_data()
     aug_count = 0 # number of valid augmentations produced

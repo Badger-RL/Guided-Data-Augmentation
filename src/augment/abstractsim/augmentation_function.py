@@ -25,8 +25,8 @@ class BaseAugmentationFunction:
         return copy_obs, copy_next_obs, copy_action, copy_reward, copy_done
 
     def augment(self,
-                 obs: np.ndarray,
-                 next_obs: np.ndarray,
+                 abs_obs: np.ndarray,
+                 abs_next_obs: np.ndarray,
                  action: np.ndarray,
                  reward: np.ndarray,
                  done: np.ndarray,

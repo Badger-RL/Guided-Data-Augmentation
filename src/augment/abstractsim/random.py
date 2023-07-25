@@ -18,8 +18,15 @@ class RotateReflectTranslate(AbstractSimAugmentationFunction):
             return False
         return True
 
-    def _rotate(self, aug_abs_obs, aug_abs_next_obs):
-        theta = np.random.uniform(-np.pi / 4, np.pi / 4)
+    def _sample_theta(self, aug_abs_obs, aug_abs_next_obs, **kwargs):
+        return np.random.uniform(-np.pi / 4, np.pi / 4)
+
+    def _rotate(self, aug_abs_obs, aug_abs_next_obs, theta):
+        ball_pos = aug_abs_obs[2:4].copy()
+        aug_abs_obs[:2] -= ball_pos
+        aug_abs_obs[2:4] -= ball_pos
+        aug_abs_next_obs[:2] -= ball_pos
+        aug_abs_next_obs[2:4] -= ball_pos
 
         M = np.array([
             [np.cos(theta), -np.sin(theta)],
@@ -42,6 +49,11 @@ class RotateReflectTranslate(AbstractSimAugmentationFunction):
         if next_robot_angle < 0:
             next_robot_angle += 2 * np.pi
         aug_abs_next_obs[4] += theta
+
+        aug_abs_obs[:2] += ball_pos
+        aug_abs_obs[2:4] += ball_pos
+        aug_abs_next_obs[:2] += ball_pos
+        aug_abs_next_obs[2:4] += ball_pos
 
     def _reflect(self, aug_abs_obs, aug_abs_next_obs, aug_action):
         aug_abs_obs[1] *= -1
@@ -96,7 +108,9 @@ class RotateReflectTranslate(AbstractSimAugmentationFunction):
         aug_abs_obs, aug_abs_next_obs, aug_action, aug_reward, aug_done = \
             self._deepcopy_transition(abs_obs, abs_next_obs, action, reward, done)
 
-        self._rotate(aug_abs_obs, aug_abs_next_obs)
+
+        theta = self._sample_theta(aug_abs_obs, aug_abs_next_obs)
+        self._rotate(aug_abs_obs, aug_abs_next_obs, theta)
         if np.random.random() < 0.5:
             self._reflect(aug_abs_obs, aug_abs_next_obs, aug_action)
         self._translate(aug_abs_obs, aug_abs_next_obs)
