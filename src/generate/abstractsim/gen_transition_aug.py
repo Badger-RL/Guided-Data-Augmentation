@@ -3,8 +3,8 @@ import os
 if __name__ == "__main__":
 
     # os.chdir('generate')
-    for expert_success_rate in [72, 60, 40]:
-        for aug in ['random', 'guided']:
+    for expert_success_rate in [40]:
+        for aug in ['guided']:
             os.system(
                 f'python ./transition_aug.py --seed 0'
                 f' --observed-dataset-path ../../datasets/PushBallToGoal-v0/no_aug_{expert_success_rate}.hdf5'

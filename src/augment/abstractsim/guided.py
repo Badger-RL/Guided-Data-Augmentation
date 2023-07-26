@@ -3,6 +3,7 @@ import copy
 import numpy as np
 
 from augment.abstractsim.random import RotateReflectTranslate
+from augment.utils import is_in_bounds, is_at_goal
 from src.augment.abstractsim.augmentation_function import AbstractSimAugmentationFunction
 
 
@@ -45,12 +46,80 @@ class RotateReflectTranslateGuided(RotateReflectTranslate):
 
         return theta.squeeze()
 
+
+    def _translate_to_position(self, aug_abs_obs, aug_abs_next_obs, new_pos):
+
+        xmin = np.min([aug_abs_obs[0], aug_abs_next_obs[0], aug_abs_obs[2], aug_abs_next_obs[2]])
+        ymin = np.min([aug_abs_obs[1], aug_abs_next_obs[1], aug_abs_obs[3], aug_abs_next_obs[3]])
+        xmax = np.max([aug_abs_obs[0], aug_abs_next_obs[0], aug_abs_obs[2], aug_abs_next_obs[2]])
+        ymax = np.max([aug_abs_obs[1], aug_abs_next_obs[1], aug_abs_obs[3], aug_abs_next_obs[3]])
+
+        # Translate bottom left corner of the righter bounding box containing the robot and ball
+        min_x = -4500
+        max_x = 4500 - (xmax - xmin)
+        min_y = -3000
+        max_y = 3000 - (ymax - ymin)
+
+        if new_pos[0] > max_x or new_pos[1] > max_y:
+            return None
+
+        delta_pos = new_pos - aug_abs_obs[:2]
+        delta_x = delta_pos[0]
+        delta_y = delta_pos[1]
+
+        aug_abs_obs[0] += delta_x
+        aug_abs_obs[1] += delta_y
+        aug_abs_obs[2] += delta_x
+        aug_abs_obs[3] += delta_y
+
+        aug_abs_next_obs[0] += delta_x
+        aug_abs_next_obs[1] += delta_y
+        aug_abs_next_obs[2] += delta_x
+        aug_abs_next_obs[3] += delta_y
+
+
+    def _rotate(self, aug_abs_obs, aug_abs_next_obs, theta):
+        ball_pos = aug_abs_obs[0:2].copy()
+        aug_abs_obs[:2] -= ball_pos
+        aug_abs_obs[2:4] -= ball_pos
+        aug_abs_next_obs[:2] -= ball_pos
+        aug_abs_next_obs[2:4] -= ball_pos
+
+        M = np.array([
+            [np.cos(theta), -np.sin(theta)],
+            [np.sin(theta), np.cos(theta)]
+        ])
+        aug_abs_obs[:2] = M.dot(aug_abs_obs[:2].T).T
+        aug_abs_obs[2:4] = M.dot(aug_abs_obs[2:4].T).T
+        aug_abs_obs[5] += theta
+
+        robot_angle = aug_abs_obs[4] + theta
+        if robot_angle < 0:
+            robot_angle += 2 * np.pi
+        aug_abs_obs[4] += theta
+
+        aug_abs_next_obs[:2] = M.dot(aug_abs_next_obs[:2].T).T
+        aug_abs_next_obs[2:4] = M.dot(aug_abs_next_obs[2:4].T).T
+        aug_abs_next_obs[5] += theta
+
+        next_robot_angle = aug_abs_next_obs[4] + theta
+        if next_robot_angle < 0:
+            next_robot_angle += 2 * np.pi
+        aug_abs_next_obs[4] += theta
+
+        aug_abs_obs[:2] += ball_pos
+        aug_abs_obs[2:4] += ball_pos
+        aug_abs_next_obs[:2] += ball_pos
+        aug_abs_next_obs[2:4] += ball_pos
+
+
     def augment(self,
                 abs_obs: np.ndarray,
                 abs_next_obs: np.ndarray,
                 action: np.ndarray,
                 reward: np.ndarray,
                 done: np.ndarray,
+                new_pos=None,
                 **kwargs,
                 ):
 
@@ -58,11 +127,18 @@ class RotateReflectTranslateGuided(RotateReflectTranslate):
             return None, None, None, None, None, None, None
 
 
-
         aug_abs_obs, aug_abs_next_obs, aug_action, aug_reward, aug_done = \
             self._deepcopy_transition(abs_obs, abs_next_obs, action, reward, done)
 
-        self._translate(aug_abs_obs, aug_abs_next_obs)
+        delta_ball = aug_abs_next_obs[2:4] - aug_abs_obs[2:4]
+        dist_ball = np.linalg.norm(delta_ball)
+        if dist_ball < 1e-4:
+            return None, None, None, None, None, None, None
+        # print(new_pos)
+        if new_pos is not None and is_in_bounds(new_pos[0], new_pos[1]):
+            self._translate_to_position(aug_abs_obs, aug_abs_next_obs, new_pos)
+        else:
+            super()._translate(aug_abs_obs, aug_abs_next_obs)
 
         # aug_abs_obs[2] = 0
         # aug_abs_next_obs[2] = -500
