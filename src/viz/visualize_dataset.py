@@ -74,15 +74,16 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
     next_robot_pos = next_observations[:, :2]
     ball_pos = observations[:, 2:4]
     next_ball_pos = next_observations[:, 2:4]
-
-    plt.scatter(robot_pos[:, 0], robot_pos[:, 1], c=[i for i in range(len(robot_pos))], cmap="Blues")
-    plt.scatter(ball_pos[:, 0], ball_pos[:, 1], c=[i for i in range(len(robot_pos))], cmap="Greens")
+    mask = (ball_pos[:, 0] > 3000) & (ball_pos[:,1] > 1000)
+    s = mask.sum()
+    # plt.scatter(robot_pos[:, 0], robot_pos[:, 1], c=[i for i in range(len(robot_pos))], cmap="Blues")
+    # plt.scatter(ball_pos[:, 0], ball_pos[:, 1], c=[i for i in range(len(robot_pos))], cmap="Greens")
 
     delta = next_ball_pos - ball_pos
     u = delta[:, 0]
     v = delta[:, 1]
 
-    mask = (u>5) | (v>5)
+    mask = (np.abs(u)>1) | (np.abs(v)>1)
     x = ball_pos[:, 0]
     x = x[mask]
     y = ball_pos[:, 1]
@@ -91,9 +92,9 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
     v = v[mask]
 
     plt.quiver(x,y, u,v)
-    plt.scatter(
-        x,y, c=[i for i in range(len(x))], cmap="Greens"
-    )
+    # plt.scatter(
+    #     x,y, c=[i for i in range(len(x))], cmap="Greens"
+    # )
     if show_actions:
         agent_points = [(x, y) for x, y in zip(agent_x_list, agent_y_list)]
         action_points = [(x, y) for x, y in zip(action_x_list, action_y_list)]
@@ -130,7 +131,7 @@ if __name__ == "__main__":
     dataset = {}
     data_hdf5 = h5py.File(args.dataset_path, "r")
     for key in data_hdf5.keys():
-        dataset[key] = np.array(data_hdf5[key][19700:])
+        dataset[key] = np.array(data_hdf5[key][0:])
 
     """
     print(len(dataset["terminals"]))

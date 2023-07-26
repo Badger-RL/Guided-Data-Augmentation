@@ -13,15 +13,30 @@ class RotateReflectTranslateGuided(RotateReflectTranslate):
 
     def __init__(self, env, **kwargs):
         super().__init__(env=env, **kwargs)
-
+    '''
+    
+                if ball_pos[0] > 1000 and ball_pos[1] > 1000:
+                    goal = np.array([2000, 1000])
+                elif ball_pos[0] > 1000 and ball_pos[1] < -1000:
+                    goal = np.array([2000, -1000])
+                else:
+                    goal = self.goal
+    '''
     def _sample_theta(self, aug_abs_obs, aug_abs_next_obs, **kwargs):
 
         delta_ball = aug_abs_next_obs[2:4] - aug_abs_obs[2:4]
         dist_ball = np.linalg.norm(delta_ball)
         if dist_ball > 1e-4:
+            ball_pos = aug_abs_next_obs[2:4]
+            # ball near corner -- change guide
+            if ball_pos[0] > 2000 and np.abs(ball_pos[1]) < 1000:
+                goal = self.goal
+            else:
+                goal = np.array([2000, 0])
+
             delta_ball_theta = np.arctan2(delta_ball[1], delta_ball[0])
 
-            delta_ball_to_goal = self.goal - aug_abs_obs[2:4]
+            delta_ball_to_goal = goal - aug_abs_obs[2:4] # guide theta
             ball_to_goal_theta = np.arctan2(delta_ball_to_goal[1], delta_ball_to_goal[0])
 
             theta = ball_to_goal_theta - delta_ball_theta
