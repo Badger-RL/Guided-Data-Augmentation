@@ -16,12 +16,18 @@ from custom_envs.push_ball_to_goal import PushBallToGoalEnv
 
 models = {"push_ball_to_goal": {"env": PushBallToGoalEnv}}
 
+AUG_FUNCTIONS = {
+    'random': RotateReflectTranslate,
+    'guided': RotateReflectTranslateGuided
+}
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--observed-dataset-path', type=str, default='../../datasets/PushBallToGoal-v0/no_aug_72_10k.hdf5')
     parser.add_argument('--augmentation-ratio', '-aug-ratio', type=int, default=1, help='Number of augmentations per observed transition')
     parser.add_argument('--save-dir', type=str, default='.')
     parser.add_argument('--save-name', type=str, default='tmp.hdf5')
+    parser.add_argument('--aug', type=str, default='guided')
     parser.add_argument('--check-valid', type=int, default=False)
     parser.add_argument('--seed', type=int, default=0)
 
@@ -38,7 +44,8 @@ if __name__ == '__main__':
     n = observed_dataset['observations'].shape[0]
 
     env = gym.make('PushBallToGoal-v0')
-    f = RotateReflectTranslateGuided(env=env)
+    aug_func = AUG_FUNCTIONS[args.aug]
+    f = aug_func(env=env)
 
     aug_dataset = reset_data()
     aug_count = 0 # number of valid augmentations produced
@@ -68,7 +75,8 @@ if __name__ == '__main__':
                     )
                 if is_valid:
                     aug_count += 1
-                    print(aug_count)
+                    if aug_count % 10000 == 0:
+                        print(aug_count)
                     append_data(aug_dataset, obs, action, reward, next_obs, done, abs_obs, abs_next_obs)
                 else:
                     invalid_count += 1
