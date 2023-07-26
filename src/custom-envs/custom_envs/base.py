@@ -29,7 +29,7 @@ Optional:
 class BaseEnv(gym.Env):
     metadata = {'render_modes': ['human', 'rgb_array']}
 
-    def __init__(self, continuous_actions=True, render_mode='rgb_array'):
+    def __init__(self, continuous_actions=True, render_mode='rgb_array', stochastic=True):
         '''
         Required:
         - possible_agents
@@ -53,6 +53,7 @@ class BaseEnv(gym.Env):
         self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(12,), dtype=np.float32)
 
         # Other variables
+        self.stochastic = stochastic
         self.ball_radius = 10
         self.ball_acceleration = -0.2
         self.ball_velocity_coef = 1
@@ -273,12 +274,12 @@ class BaseEnv(gym.Env):
 
     def update_ball(self):
         # Update ball velocity
-        self.ball_velocity += self.ball_acceleration
-        self.ball_velocity = np.clip(self.ball_velocity, 0, 100)
+        # self.ball_velocity += self.ball_acceleration
+        # self.ball_velocity = np.clip(self.ball_velocity, 0, 100)
+        self.ball_velocity = 0
 
         # Update ball position
-        self.ball[0] += self.ball_velocity * math.cos(self.ball_angle)
-        self.ball[1] += self.ball_velocity * math.sin(self.ball_angle)
+
 
         # If ball touches robot, push ball away
         for i in range(len(self.robots)):
@@ -295,7 +296,7 @@ class BaseEnv(gym.Env):
 
             # If collision, move ball away
             if distance_robot_ball < (self.robot_radius + self.ball_radius) * 6:
-                self.ball_velocity = self.ball_velocity_coef * 10
+                self.ball_velocity = 247
                 self.ball_angle = math.atan2(self.ball[1] - robot[1], self.ball[0] - robot[0])
 
                 # Angle needs to be adapted to be like real robots (do for both sides of 0 degrees)
@@ -335,6 +336,8 @@ class BaseEnv(gym.Env):
         #     self.ball_velocity = 0
         #     self.ball[0] = -4800
         #     self.ball[1] = 1
+        self.ball[0] += self.ball_velocity * math.cos(self.ball_angle)
+        self.ball[1] += self.ball_velocity * math.sin(self.ball_angle)
 
     def check_facing_ball(self, agent):
         i = self.agent_idx[agent]

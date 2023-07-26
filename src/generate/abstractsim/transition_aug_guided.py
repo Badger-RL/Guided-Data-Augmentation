@@ -23,7 +23,7 @@ AUG_FUNCTIONS = {
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--observed-dataset-path', type=str, default='../../datasets/PushBallToGoal-v0/no_aug_72_10k.hdf5')
+    parser.add_argument('--observed-dataset-path', type=str, default='../../datasets/PushBallToGoal-v0/no_aug_72_2k.hdf5')
     parser.add_argument('--augmentation-ratio', '-aug-ratio', type=int, default=1, help='Number of augmentations per observed transition')
     parser.add_argument('--save-dir', type=str, default='.')
     parser.add_argument('--save-name', type=str, default='tmp.hdf5')
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     aug_count = 0 # number of valid augmentations produced
     invalid_count = 0 # keep track of the number of invalid augmentations we skip
     i = 0
-    new_pos = None
+    new_pos = np.array([-4000, 0])
     while aug_count < n*aug_ratio:
         for _ in range(aug_ratio):
             idx = i % n
@@ -64,10 +64,9 @@ if __name__ == '__main__':
                 new_pos=new_pos,
             )
 
-
             i += 1
             if obs is not None:
-                new_pos = abs_next_obs[2:4]
+                new_pos = abs_next_obs[2:4] + np.random.uniform(-10, +10, size=(2,))
                 if is_at_goal(abs_next_obs[2], abs_next_obs[3]):
                     print(reward)
                 # print(new_pos)

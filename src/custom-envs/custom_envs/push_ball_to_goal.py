@@ -42,7 +42,7 @@ class PushBallToGoalEnv(BaseEnv):
         self.robot_radius = 20
 
         self.reward_dict = {
-            "goal": 1,  # Team
+            "goal": 3,  # Team
             "goal_scored": False,
             "ball_to_goal": 1/40,  # Team
             "out_of_bounds": 0,
@@ -313,7 +313,7 @@ class PushBallToGoalEnv(BaseEnv):
 
         # reward for stepping towards ball
         cur_distance = self.get_distance(robot_pos, ball_pos)
-        prev_distance = self.get_distance(prev_robot_pos, ball_pos)
+        prev_distance = self.get_distance(prev_robot_pos, prev_ball_pos)
         reward += self.reward_dict["agent_to_ball"] * (prev_distance - cur_distance)
         info_dict["agent_to_ball"] = True
 
@@ -325,7 +325,7 @@ class PushBallToGoalEnv(BaseEnv):
             reward += self.reward_dict["out_of_bounds"]
             self.reward_dict['is_out_of_bounds'] = True
 
-        return reward
+        return reward, self.reward_dict["is_out_of_bounds"]
 
     def get_normalized_score(self, eval_score):
         return eval_score/100
