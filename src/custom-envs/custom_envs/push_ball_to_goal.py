@@ -286,7 +286,7 @@ class PushBallToGoalEnv(BaseEnv):
 
         return reward
 
-    def calculate_reward_2(self, abs_obs, abs_prev_obs):
+    def calculate_reward_2(self, abs_prev_obs, abs_obs):
         i = 0
         reward = 0
 
