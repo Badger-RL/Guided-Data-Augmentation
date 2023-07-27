@@ -29,7 +29,7 @@ Optional:
 class BaseEnv(gym.Env):
     metadata = {'render_modes': ['human', 'rgb_array']}
 
-    def __init__(self, continuous_actions=True, render_mode='rgb_array', stochastic=True):
+    def __init__(self, continuous_actions=True, render_mode='rgb_array', stochastic=False):
         '''
         Required:
         - possible_agents
@@ -322,7 +322,8 @@ class BaseEnv(gym.Env):
                 # elif self.ball_angle < np.radians(-30) and self.ball_angle > np.radians(-45):
                 #     self.ball_angle -= np.radians(50)
 
-                self.ball_angle += np.clip(np.random.normal(0, 1), -2, 2) * np.pi / 6
+                if self.stochastic:
+                    self.ball_angle += np.clip(np.random.normal(0, 1), -2, 2) * np.pi / 6
 
         # If ball is in goal, stop ball
         if self.ball[0] > 4400 and (self.ball[1] < 700 and self.ball[1] > -700):
