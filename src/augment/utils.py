@@ -4,11 +4,8 @@ import numpy as np
 
 
 def is_at_goal(target_x, target_y):
-    at_goal = np.zeros_like(target_x, dtype=bool)
     mask = (target_x > 4400 ) & (target_y < 500) & (target_y > -500)
-    at_goal[mask] = True
-
-    return at_goal
+    return mask
 
 def is_in_bounds(target_x, target_y):
     mask = (np.abs(target_x) < 4500 ) & (np.abs(target_y) < 3500)
@@ -154,15 +151,13 @@ def check_in_bounds(absolute_obs, check_goal_post=True):
     #         is_in_bounds = True
     return is_in_bounds
 
-def check_valid(env, aug_abs_obs, aug_action, aug_reward, aug_abs_next_obs, render=False, verbose=False):
+def check_valid(env, aug_abs_obs, aug_action, aug_reward, aug_abs_next_obs, aug_done, render=False, verbose=False):
 
     env.reset()
 
     valid = True
     for i in range(len(aug_abs_obs)):
         aug_abs_obs_i = aug_abs_obs[i]
-        if i == 11:
-            stop = 0
         env.set_state(robot_pos=aug_abs_obs_i[:2],
                       robot_angle=aug_abs_obs_i[4],
                       ball_pos=aug_abs_obs_i[2:4],
@@ -187,6 +182,11 @@ def check_valid(env, aug_abs_obs, aug_action, aug_reward, aug_abs_next_obs, rend
                     # print(aug_next_obs[i, 2:4], next_obs[2:4])
 
             if not np.isclose(reward, aug_reward[i], atol=1e-5):
+                valid = False
+                if verbose:
+                    print(f'{i}, aug reward: {aug_reward[i]}\ttrue reward: {reward}')
+
+            if done != aug_done[i]:
                 valid = False
                 if verbose:
                     print(f'{i}, aug reward: {aug_reward[i]}\ttrue reward: {reward}')

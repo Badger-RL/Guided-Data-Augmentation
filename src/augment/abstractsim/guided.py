@@ -192,8 +192,8 @@ class RotateReflectTranslateGuided(RotateReflectTranslate):
         else:
             delta_ball = aug_abs_next_obs[2:4] - aug_abs_obs[2:4]
             dist_ball = np.linalg.norm(delta_ball)
-            # if dist_ball < 1e-4:
-            #     return None, None, None, None, None, None, None
+            if dist_ball < 1e-4:
+                return None, None, None, None, None, None, None
             # print(new_pos)
             if new_pos is not None and is_in_bounds(new_pos[0], new_pos[1]):
                 self._translate_to_position(aug_abs_obs, aug_abs_next_obs, new_pos)
@@ -212,7 +212,12 @@ class RotateReflectTranslateGuided(RotateReflectTranslate):
             # if np.random.random() < 0.5:
             #     self._reflect(aug_abs_obs, aug_abs_next_obs, aug_action)
 
-        aug_reward = self.env.calculate_reward_2(aug_abs_obs, aug_abs_next_obs)
+        # ball_x, ball_y = aug_abs_next_obs[2], aug_abs_next_obs[3]
+        # if not is_in_bounds(ball_x, ball_y) and not is_at_goal(ball_x, ball_y):
+        #     aug_done = True
+        # else:
+        #     aug_done = False
+        aug_reward, aug_done = self.env.calculate_reward_2(aug_abs_obs, aug_abs_next_obs)
         aug_obs = self._convert_to_relative_obs(aug_abs_obs)
         aug_next_obs = self._convert_to_relative_obs(aug_abs_next_obs)
 
