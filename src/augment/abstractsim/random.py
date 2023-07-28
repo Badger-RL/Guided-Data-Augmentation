@@ -106,9 +106,8 @@ class RotateReflectTranslate(AbstractSimAugmentationFunction):
             self._reflect(aug_abs_obs, aug_abs_next_obs, aug_action)
         self._translate(aug_abs_obs, aug_abs_next_obs)
 
-        aug_reward, ball_is_at_goal, ball_is_out_of_bounds = self.env.calculate_reward_2(aug_abs_next_obs)
-        aug_done = ball_is_out_of_bounds
-        aug_done = False
+        aug_reward, ball_is_at_goal, ball_is_out_of_bounds = self.env.calculate_reward(aug_abs_next_obs)
+        aug_done = ball_is_at_goal or ball_is_out_of_bounds
         if ball_is_at_goal:
             aug_abs_next_obs[2:4] = self.goal
         aug_obs = self._convert_to_relative_obs(aug_abs_obs)
