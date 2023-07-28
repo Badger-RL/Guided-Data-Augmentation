@@ -21,11 +21,11 @@ AUG_FUNCTIONS = {
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--observed-dataset-path', type=str, default='../../datasets/PushBallToGoal-v0/no_aug_72_10k.hdf5')
-    parser.add_argument('--augmentation-ratio', '-aug-ratio', type=int, default=10, help='Number of augmentations per observed transition')
+    parser.add_argument('--observed-dataset-path', type=str, default='../../datasets/PushBallToGoal-v0/no_aug_40_5k.hdf5')
+    parser.add_argument('--augmentation-ratio', '-aug-ratio', type=int, default=20, help='Number of augmentations per observed transition')
     parser.add_argument('--save-dir', type=str, default='.')
     parser.add_argument('--save-name', type=str, default='tmp.hdf5')
-    parser.add_argument('--aug', type=str, default='random')
+    parser.add_argument('--aug', type=str, default='guided')
     parser.add_argument('--check-valid', type=int, default=False)
     parser.add_argument('--seed', type=int, default=0)
 

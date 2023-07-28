@@ -15,40 +15,37 @@ class RotateReflectTranslateGuided(RotateReflectTranslate):
     def __init__(self, env, **kwargs):
         super().__init__(env=env, **kwargs)
 
-    '''
 
-                if ball_pos[0] > 1000 and ball_pos[1] > 1000:
-                    goal = np.array([2000, 1000])
-                elif ball_pos[0] > 1000 and ball_pos[1] < -1000:
-                    goal = np.array([2000, -1000])
-                else:
-                    goal = self.goal
-    '''
-
-    def _sample_theta(self, aug_abs_obs, aug_abs_next_obs, **kwargs):
+    def _sample_theta_for_kicking(self, aug_abs_obs, aug_abs_next_obs, **kwargs):
 
         delta_ball = aug_abs_next_obs[2:4] - aug_abs_obs[2:4]
-        dist_ball = np.linalg.norm(delta_ball)
-
-        if dist_ball > 1e-4:
-            ball_pos = aug_abs_obs[2:4]
-            # ball near corner -- change guide
-            if ball_pos[0] > 2000 and np.abs(ball_pos[1]) < 1000:
-                goal = np.array([4500, 0])
-            else:
-                goal = np.array([3400, 0])
-            # goal = np.array([4400, 3000])
-
-            delta_ball_theta = np.arctan2(delta_ball[1], delta_ball[0])
-
-            delta_ball_to_goal = goal - aug_abs_obs[2:4]  # guide theta
-            ball_to_goal_theta = np.arctan2(delta_ball_to_goal[1], delta_ball_to_goal[0])
-
-            theta = ball_to_goal_theta - delta_ball_theta
-            # theta += np.random.uniform(-np.pi/12, +np.pi/12)
-        # elif
+        ball_pos = aug_abs_obs[2:4]
+        # ball near corner -- change guide
+        if ball_pos[0] > 2000 and np.abs(ball_pos[1]) < 1000:
+            goal = np.array([4500, 0])
         else:
-            theta = super()._sample_robot_angle()
+            goal = np.array([3400, 0])
+        # goal = np.array([4400, 3000])
+
+        delta_ball_theta = np.arctan2(delta_ball[1], delta_ball[0])
+
+        delta_ball_to_goal = goal - aug_abs_obs[2:4]  # guide theta
+        ball_to_goal_theta = np.arctan2(delta_ball_to_goal[1], delta_ball_to_goal[0])
+        theta = ball_to_goal_theta - delta_ball_theta
+
+        return theta.squeeze()
+
+    def _sample_theta_for_walking(self, aug_abs_obs, aug_abs_next_obs, **kwargs):
+
+        delta_robot = aug_abs_next_obs[:2] - aug_abs_obs[:2]
+        robot_pos = aug_abs_obs[:2]
+        ball_pos = aug_abs_obs[2:4]
+
+        delta_robot_theta = np.arctan2(delta_robot[1], delta_robot[0])
+
+        delta_robot_to_ball = ball_pos - robot_pos  # guide theta
+        robot_to_ball_theta = np.arctan2(delta_robot_to_ball[1], delta_robot_to_ball[0])
+        theta = robot_to_ball_theta - delta_robot_theta
 
         return theta.squeeze()
 
@@ -87,7 +84,7 @@ class RotateReflectTranslateGuided(RotateReflectTranslate):
 
         return True
 
-    def _rotate(self, aug_abs_obs, aug_abs_next_obs, theta):
+    def _rotate_agent_and_ball(self, aug_abs_obs, aug_abs_next_obs, theta):
         robot_pos = aug_abs_obs[2:4].copy()
         aug_abs_obs[:2] -= robot_pos
         aug_abs_obs[2:4] -= robot_pos
@@ -121,69 +118,42 @@ class RotateReflectTranslateGuided(RotateReflectTranslate):
                 **kwargs,
                 ):
 
-        if not self._is_valid_input(abs_obs, abs_next_obs):
-            return None, None, None, None, None, None, None
-
-        # if self.at_goal(abs_obs[2], abs_obs[3]) or self.at_goal(abs_next_obs[2], abs_next_obs[3]):
-        #     jitter = np.random.uniform(-10, 10, size=(2,))
-        #     aug_abs_obs[:2] += jitter
-        #     aug_abs_next_obs[:2] += jitter
-        #
-        delta_ball = abs_next_obs[2:4] - abs_obs[2:4]
-        dist_ball = np.linalg.norm(delta_ball)
-        if dist_ball < 1e-4:
-            return None, None, None, None, None, None, None
+        # if not self._is_valid_input(abs_obs, abs_next_obs):
+        #     return None, None, None, None, None, None, None
 
         aug_abs_obs, aug_abs_next_obs, aug_action, aug_reward, aug_done = \
             self._deepcopy_transition(abs_obs, abs_next_obs, action, reward, done)
-
-        super()._translate(aug_abs_obs, aug_abs_next_obs)
-        theta = self._sample_theta(aug_abs_obs, aug_abs_next_obs)
-        # theta = 0
-        self._rotate(aug_abs_obs, aug_abs_next_obs, theta)
-
-        aug_reward, ball_is_at_goal, ball_is_out_of_bounds = self.env.calculate_reward(aug_abs_next_obs)
-        aug_done = ball_is_at_goal or ball_is_out_of_bounds
-        if ball_is_at_goal:
-            aug_abs_next_obs[2:4] = self.goal
-
-        aug_obs = self._convert_to_relative_obs(aug_abs_obs)
-        aug_next_obs = self._convert_to_relative_obs(aug_abs_next_obs)
-
-        return aug_obs, aug_next_obs, aug_action, aug_reward, aug_done, aug_abs_obs, aug_abs_next_obs
-
-
-'''
 
         if self.at_goal(abs_obs[2], abs_obs[3]) or self.at_goal(abs_next_obs[2], abs_next_obs[3]):
             jitter = np.random.uniform(-10, 10, size=(2,))
             aug_abs_obs[:2] += jitter
             aug_abs_next_obs[:2] += jitter
         else:
-            # aug_abs_obs[1] *= -1
-            # aug_abs_obs[3] *= -1
-            # aug_abs_next_obs[1] *= -1
-            # aug_abs_next_obs[3] *= -1
-
-            delta_ball = aug_abs_next_obs[2:4] - aug_abs_obs[2:4]
+            # if agent kicked the ball, rotate both agent and ball. Otherwise, only rotate the agent.
+            delta_ball = abs_next_obs[2:4] - abs_obs[2:4]
             dist_ball = np.linalg.norm(delta_ball)
-            if dist_ball < 1e-4:
-                return None, None, None, None, None, None, None
-            # print(new_pos)
-            # if abs_obs[0] < -3500 and abs_obs[1] > 1800:
-            #     stop = 0
-            # if new_pos is not None and is_in_bounds(new_pos[0], new_pos[1]):
-            #     is_valid = self._translate_to_position(aug_abs_obs, aug_abs_next_obs, new_pos)
-            #     if not is_valid:
-            #         return None, None, None, None, None, None, None
-            #     theta = self._sample_theta(aug_abs_obs, aug_abs_next_obs)
-            #     # theta = 0
-            #     self._rotate(aug_abs_obs, aug_abs_next_obs, theta)
-            # else:
-            #     super()._translate(aug_abs_obs, aug_abs_next_obs)
+            if dist_ball > 1e-4:
+                super()._translate(aug_abs_obs, aug_abs_next_obs)
+                theta = self._sample_theta_for_kicking(aug_abs_obs, aug_abs_next_obs)
+                self._rotate_agent_and_ball(aug_abs_obs, aug_abs_next_obs, theta)
+            else:
+                while True:
+                    super()._translate_agent(aug_abs_obs, aug_abs_next_obs)
+                    super()._translate_ball(aug_abs_obs, aug_abs_next_obs)
+                    dist_robot_to_ball = np.linalg.norm(aug_abs_obs[:2] - aug_abs_obs[2:4])
+                    if dist_robot_to_ball > (self.env.robot_radius + self.env.ball_radius) * 6:
+                        break
+                theta = self._sample_theta_for_walking(aug_abs_obs, aug_abs_next_obs)
+                self._rotate_agent(aug_abs_obs, aug_abs_next_obs, theta)
 
-            # is_valid = self._translate_to_position(aug_abs_obs, aug_abs_next_obs, new_pos)
-            # if not is_valid:
-            #     return None, None, None, None, None, None, None
+        # assign reward and done signal
+        aug_reward, ball_is_at_goal, ball_is_out_of_bounds = self.env.calculate_reward(aug_abs_next_obs)
+        aug_done = ball_is_at_goal or ball_is_out_of_bounds
+        if ball_is_at_goal:
+            aug_abs_next_obs[2:4] = self.goal
 
-'''
+        # convert absolute observation back to relative
+        aug_obs = self._convert_to_relative_obs(aug_abs_obs)
+        aug_next_obs = self._convert_to_relative_obs(aug_abs_next_obs)
+
+        return aug_obs, aug_next_obs, aug_action, aug_reward, aug_done, aug_abs_obs, aug_abs_next_obs

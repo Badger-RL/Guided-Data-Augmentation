@@ -74,16 +74,19 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
     next_robot_pos = next_observations[:, :2]
     ball_pos = observations[:, 2:4]
     next_ball_pos = next_observations[:, 2:4]
-    mask = (ball_pos[:, 0] > 3000) & (ball_pos[:,1] > 1000)
-    s = mask.sum()
-    # plt.scatter(robot_pos[:, 0], robot_pos[:, 1], c=[i for i in range(len(robot_pos))], cmap="Blues")
+    plt.scatter(robot_pos[:, 0], robot_pos[:, 1], c=[i for i in range(len(robot_pos))], cmap="Greens")
+    plt.scatter(next_robot_pos[:, 0], next_robot_pos[:, 1], c=[i for i in range(len(robot_pos))], cmap="Greens")
+
+    plt.scatter(ball_pos[:, 0], ball_pos[:, 1], c=[i for i in range(len(ball_pos))], cmap="Reds")
+    plt.scatter(next_ball_pos[:, 0], next_ball_pos[:, 1], c=[i for i in range(len(ball_pos))], cmap="Reds")
+
     # plt.scatter(ball_pos[:, 0], ball_pos[:, 1], c=[i for i in range(len(robot_pos))], cmap="Greens")
 
     delta = next_ball_pos - ball_pos
     u = delta[:, 0]
     v = delta[:, 1]
 
-    mask = (np.abs(u)>1) | (np.abs(v)>1)
+    mask = (np.abs(u)>0) | (np.abs(v)>0)
     x = ball_pos[:, 0]
     x = x[mask]
     y = ball_pos[:, 1]
@@ -91,7 +94,20 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
     u = u[mask]
     v = v[mask]
 
-    plt.quiver(x,y, u,v)
+    plt.quiver(x,y, u,v, color='r')
+
+    delta = next_robot_pos - robot_pos
+    u = delta[:, 0]
+    v = delta[:, 1]
+    mask = (np.abs(u)>0) | (np.abs(v)>0)
+    x = robot_pos[:, 0]
+    x = x[mask]
+    y = robot_pos[:, 1]
+    y = y[mask]
+    u = u[mask]
+    v = v[mask]
+    plt.quiver(x,y, u,v, color='g')
+
     # plt.scatter(
     #     x,y, c=[i for i in range(len(x))], cmap="Greens"
     # )
@@ -119,6 +135,9 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset-path', type=str, default='/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/generate/abstractsim/tmp.hdf5')
+    # parser.add_argument('--dataset-path', type=str,
+    #                     default='/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/datasets/PushBallToGoal-v0/no_aug_40_5k.hdf5')
+
     parser.add_argument('--save-dir', type=str, default='./figures/PushBallToGoal-v0/')
     parser.add_argument('--save-name', type=str, default='tmp.png')
     parser.add_argument('--single-episode', type=bool, default=False)
@@ -131,7 +150,9 @@ if __name__ == "__main__":
     dataset = {}
     data_hdf5 = h5py.File(args.dataset_path, "r")
     for key in data_hdf5.keys():
-        dataset[key] = np.array(data_hdf5[key][0:])
+        start = 5000
+        end = 6000
+        dataset[key] = np.array(data_hdf5[key][start:end])
 
     """
     print(len(dataset["terminals"]))
