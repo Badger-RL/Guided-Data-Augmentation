@@ -51,10 +51,13 @@ if __name__ == '__main__':
     aug_count = 0 # number of valid augmentations produced
     invalid_count = 0 # keep track of the number of invalid augmentations we skip
     i = 0
+    goal_count = 0
     new_pos = None
-    while aug_count < n*aug_ratio:
+    new_pos = np.array([4400,0])
+    while aug_count < 100000: #n*aug_ratio:
         for _ in range(aug_ratio):
             idx = i % n
+
             obs, next_obs, action, reward, done, abs_obs, abs_next_obs = f.augment(
                 abs_obs=observed_dataset['absolute_observations'][idx],
                 abs_next_obs=observed_dataset['absolute_next_observations'][idx],
@@ -66,9 +69,10 @@ if __name__ == '__main__':
 
             i += 1
             if obs is not None:
-                new_pos = abs_next_obs[2:4] + np.random.uniform(-10, +10, size=(2,))
-                # if is_at_goal(abs_next_obs[2], abs_next_obs[3]):
-                #     print(reward)
+                new_pos = abs_next_obs[2:4].copy() #+ np.random.uniform(-10, +10, size=(2,))
+                if is_at_goal(abs_next_obs[2], abs_next_obs[3]):
+                    goal_count += 1
+                    new_pos = None
                 # print(new_pos)
                 is_valid = True
                 if args.check_valid:
@@ -81,15 +85,20 @@ if __name__ == '__main__':
                     )
                 if is_valid:
                     aug_count += 1
+                    print(aug_count, goal_count)
+
                     if aug_count % 10000 == 0:
                         print(aug_count)
-                    append_data(aug_dataset, obs, action, reward, next_obs, done, abs_obs, abs_next_obs)
+                    append_data(aug_dataset, obs, action, reward, next_obs, done, done, abs_obs, abs_next_obs)
                 else:
                     invalid_count += 1
-                    new_pos = None
+            # else:
+            #     new_pos = None
 
-            if aug_count >= 10:
-                break
+            # if aug_count >= 10:
+            #     break
+            if aug_count == 11:
+                stop = 0
 
     print(f'Invalid count: {invalid_count}')
     os.makedirs(args.save_dir, exist_ok=True)

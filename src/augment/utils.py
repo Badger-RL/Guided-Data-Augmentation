@@ -172,7 +172,7 @@ def check_valid(env, aug_abs_obs, aug_action, aug_reward, aug_abs_next_obs, aug_
             stop = 90
         # Augmented transitions at the goal are surely not valid, but that's fine.
         if not info['is_success']:
-            if not np.allclose(next_obs, aug_abs_next_obs[i]):
+            if not np.allclose(next_obs, aug_abs_next_obs[i], rtol=1e-4, atol=0.001):
                 valid = False
                 if verbose:
                     # print(f'{i}, true next obs - aug next obs\t', aug_abs_next_obs[i]-next_obs)

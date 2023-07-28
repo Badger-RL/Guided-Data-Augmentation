@@ -27,7 +27,7 @@ if __name__ == '__main__':
         aug_dataset['absolute_next_observations'][n:],
         aug_dataset['terminals'][n:],
         verbose=True,
-        render=1,
+        render=0,
     )
     if not is_valid:
         print(f'Dataset {args.dataset_path} is NOT valid.')

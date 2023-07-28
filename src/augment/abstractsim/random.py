@@ -67,6 +67,9 @@ class RotateReflectTranslate(AbstractSimAugmentationFunction):
         # Translate bottom left corner of the righter bounding box containing the robot and ball
         new_x = np.random.uniform(-4500, 4500 - (xmax - xmin))
         new_y = np.random.uniform(-3000, 3000 - (ymax - ymin))
+        if np.random.random() < 0.2:
+            new_x = np.random.uniform(4400, 4500)
+            new_y = np.random.uniform(-500, 500)
 
         delta_x = new_x - xmin
         delta_y = new_y - ymin
@@ -105,6 +108,7 @@ class RotateReflectTranslate(AbstractSimAugmentationFunction):
 
         aug_reward, ball_is_at_goal, ball_is_out_of_bounds = self.env.calculate_reward_2(aug_abs_next_obs)
         aug_done = ball_is_out_of_bounds
+        aug_done = False
         if ball_is_at_goal:
             aug_abs_next_obs[2:4] = self.goal
         aug_obs = self._convert_to_relative_obs(aug_abs_obs)
