@@ -1,7 +1,3 @@
-import copy
-import math
-
-import gym
 import numpy as np
 import sys
 
@@ -18,12 +14,6 @@ class PushBallToGoalEnv(BaseEnv):
         # Init base class
         super().__init__(continuous_actions=continuous_actions)
 
-        '''
-        Required:
-        - possible_agents
-        - action_spaces
-        - observation_spaces
-        '''
         self.rendering_init = False
         self.render_mode = render_mode
 
@@ -149,7 +139,7 @@ class PushBallToGoalEnv(BaseEnv):
         # Calculate rewards
         for agent in self.agents:
             obs[agent] = self.get_obs(agent)
-            rew[agent], is_goal, is_out_of_bounds = self.calculate_reward_2(absolute_next_obs)
+            rew[agent], is_goal, is_out_of_bounds = self.calculate_reward(absolute_next_obs)
             terminated[agent] = is_goal or is_out_of_bounds
 
             truncated[agent] = False
@@ -165,28 +155,7 @@ class PushBallToGoalEnv(BaseEnv):
         agent = self.agents[0]
         return obs[agent], rew[agent], terminated[agent], info[agent]
 
-    '''
-    Checks if ball is in goal area
-    '''
-    def is_at_goal(self, ball_pos):
-        if ball_pos[0] > 4400 and ball_pos[1] < 500 and ball_pos[1] > -500:
-            return True
-        return False
-
-    def ball_is_in_bounds(self, ball_pos):
-        if self.is_at_goal(ball_pos):
-            return True
-        elif np.abs(ball_pos[0]) < 4500 and np.abs(ball_pos[1]) < 3500:
-            return True
-        else:
-            return False
-
-    def in_opp_goal(self):
-        if self.ball[0] < -4400 and self.ball[1] < 1000 and self.ball[1] > -1000:
-            return True
-        return False
-
-    def calculate_reward_2(self, abs_next_obs):
+    def calculate_reward(self, abs_next_obs):
         i = 0
         reward = 0
 
@@ -198,7 +167,7 @@ class PushBallToGoalEnv(BaseEnv):
         is_goal = False
         is_out_of_bounds = False
 
-        if self.is_at_goal(ball_pos):
+        if self.ball_is_at_goal(ball_pos):
             reward += self.reward_dict["goal"]
             is_goal = True
 

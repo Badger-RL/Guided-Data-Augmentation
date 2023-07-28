@@ -372,14 +372,32 @@ class BaseEnv(gym.Env):
 
         return (angle < req_angle) | (angle > (360 - req_angle))
 
+    def ball_is_at_goal(self, ball_pos):
+        mask = (ball_pos[0] > 4400) & (np.abs(ball_pos[1]) < 500)
+        return mask
+
+    def ball_is_in_bounds(self, ball_pos):
+        if self.ball_is_at_goal(ball_pos):
+            return True
+        elif np.abs(ball_pos[0]) < 4500 and np.abs(ball_pos[1]) < 3500:
+            return True
+        else:
+            return False
+
     def ball_is_in_bounds_vec(self, ball_pos):
         mask = (np.abs(ball_pos[:, 0]) < 4500) & (np.abs(ball_pos[:, 1]) < 3500)
         mask |= self.ball_is_at_goal(ball_pos)
         return mask
 
-    def ball_is_at_goal(self, ball_pos):
+    def ball_is_at_goal_vec(self, ball_pos):
         mask = (ball_pos[:, 0] > 4400) & (np.abs(ball_pos[:, 1]) < 500)
         return mask
+
+    def ball_in_opp_goal(self):
+        if self.ball[0] < -4400 and self.ball[1] < 1000 and self.ball[1] > -1000:
+            return True
+        return False
+
 
     '''
     Gets relative position of object to agent
