@@ -14,8 +14,6 @@ from src.augment.abstractsim.random import RotateReflectTranslate
 from src.augment.utils import check_valid
 from custom_envs.push_ball_to_goal import PushBallToGoalEnv
 
-models = {"push_ball_to_goal": {"env": PushBallToGoalEnv}}
-
 AUG_FUNCTIONS = {
     'random': RotateReflectTranslate,
     'guided': RotateReflectTranslateGuided
@@ -27,7 +25,7 @@ if __name__ == '__main__':
     parser.add_argument('--augmentation-ratio', '-aug-ratio', type=int, default=1, help='Number of augmentations per observed transition')
     parser.add_argument('--save-dir', type=str, default='.')
     parser.add_argument('--save-name', type=str, default='tmp.hdf5')
-    parser.add_argument('--aug', type=str, default='guided')
+    parser.add_argument('--aug', type=str, default='random')
     parser.add_argument('--check-valid', type=int, default=False)
     parser.add_argument('--seed', type=int, default=0)
 
@@ -77,7 +75,7 @@ if __name__ == '__main__':
                     aug_count += 1
                     if aug_count % 10000 == 0:
                         print(aug_count)
-                    append_data(aug_dataset, obs, action, reward, next_obs, done, abs_obs, abs_next_obs)
+                    append_data(aug_dataset, obs, action, reward, next_obs, done, done, abs_obs, abs_next_obs)
                 else:
                     invalid_count += 1
 

@@ -29,7 +29,7 @@ Optional:
 class BaseEnv(gym.Env):
     metadata = {'render_modes': ['human', 'rgb_array']}
 
-    def __init__(self, continuous_actions=True, render_mode='rgb_array', stochastic=False):
+    def __init__(self, continuous_actions=True, render_mode='rgb_array', stochastic=False, clip_out_of_bounds=False):
         '''
         Required:
         - possible_agents
@@ -54,6 +54,7 @@ class BaseEnv(gym.Env):
 
         # Other variables
         self.stochastic = stochastic
+        self.clip_out_of_bounds = clip_out_of_bounds
         self.ball_radius = 10
         self.ball_acceleration = -0.2
         self.ball_velocity_coef = 1
@@ -220,6 +221,13 @@ class BaseEnv(gym.Env):
         self.ball[0] = np.clip(self.ball[0], -5200, 5200)
         self.ball[1] = np.clip(self.ball[1], -3700, 3700)
 
+        if self.clip_out_of_bounds:
+            if np.abs(self.ball[1]) > 500:
+                self.ball[0] = np.clip(self.ball[0], -4500, 4500)
+            # self.ball[0] = np.clip(self.ball[0], -4500, 4500)
+            self.ball[1] = np.clip(self.ball[1], -3500, 3500)
+
+
     def dynamics_action_scale(self, action):
         # Action is a 4 dimensional vector, (angle, x, y, kick)
         # Unable to move if turning faster than 0.5
@@ -273,20 +281,8 @@ class BaseEnv(gym.Env):
                     break
 
     def update_ball(self):
-        # Update ball velocity
-        # self.ball_velocity += self.ball_acceleration
-        # self.ball_velocity = np.clip(self.ball_velocity, 0, 100)
-        self.ball_velocity = 0
-
-        # Update ball position
-
-
         # If ball touches robot, push ball away
         for i in range(len(self.robots)):
-            # Check if robot is facing ball
-            # if not self.check_facing_ball(self.agents[i]):
-            #     # Make it so that ball is not pushed away if robot is not facing ball
-            #     continue
 
             robot = self.robots[i]
             # Find distance between robot and ball
@@ -296,7 +292,6 @@ class BaseEnv(gym.Env):
 
             # If collision, move ball away
             if distance_robot_ball < (self.robot_radius + self.ball_radius) * 6:
-                self.ball_velocity = 247
                 self.ball_angle = math.atan2(self.ball[1] - robot[1], self.ball[0] - robot[0])
 
                 # Angle needs to be adapted to be like real robots (do for both sides of 0 degrees)
@@ -321,13 +316,16 @@ class BaseEnv(gym.Env):
                 # # Negative 3:
                 # elif self.ball_angle < np.radians(-30) and self.ball_angle > np.radians(-45):
                 #     self.ball_angle -= np.radians(50)
+                self.ball_angle = self.angles[i]
 
                 if self.stochastic:
                     self.ball_angle += np.clip(np.random.normal(0, 1), -2, 2) * np.pi / 6
 
+                self.ball[0] += 247 * math.cos(self.ball_angle)
+                self.ball[1] += 247 * math.sin(self.ball_angle)
+
         # If ball is in goal, stop ball
-        if self.ball[0] > 4400 and (self.ball[1] < 700 and self.ball[1] > -700):
-            self.ball_velocity = 0
+        if self.ball[0] > 4400 and (self.ball[1] < 500 and self.ball[1] > -500):
             # Set ball to center of goal
             self.ball[0] = 4800
             self.ball[1] = 1
@@ -337,28 +335,13 @@ class BaseEnv(gym.Env):
         #     self.ball_velocity = 0
         #     self.ball[0] = -4800
         #     self.ball[1] = 1
-        self.ball[0] += self.ball_velocity * math.cos(self.ball_angle)
-        self.ball[1] += self.ball_velocity * math.sin(self.ball_angle)
 
-    def check_facing_ball(self, agent):
-        i = self.agent_idx[agent]
-        # Convert from radians to degrees
-        robot_angle = math.degrees(self.angles[i]) % 360
+        if self.clip_out_of_bounds:
+            if np.abs(self.ball[1]) > 500:
+                self.ball[0] = np.clip(self.ball[0], -4500, 4500)
+            self.ball[1] = np.clip(self.ball[1], -3500, 3500)
 
-        # Find the angle between the robot and the ball
-        angle_to_ball = math.degrees(
-            math.atan2(self.ball[1] - self.robots[i][1], self.ball[0] - self.robots[i][0])
-        )
-        # Check if the robot is facing the ball
-        req_angle = 10
-        angle = (robot_angle - angle_to_ball) % 360
-
-        if angle < req_angle or angle > 360 - req_angle:
-            return True
-        else:
-            return False
-
-    def check_facing_ball_2(self, robot_pos, ball_pos, agent_angle):
+    def check_facing_ball(self, robot_pos, ball_pos, agent_angle):
         # Convert from radians to degrees
         robot_angle = math.degrees(agent_angle) % 360
 
@@ -374,6 +357,29 @@ class BaseEnv(gym.Env):
             return True
         else:
             return False
+
+    def check_facing_ball_vec(self, robot_pos, ball_pos, agent_angle):
+        # Convert from radians to degrees
+        robot_angle = np.degrees(agent_angle) % 360
+
+        # Find the angle between the robot and the ball
+        angle_to_ball = np.degrees(
+            np.arctan2(ball_pos[:, 1] - robot_pos[:, 1], ball_pos[:, 0] - robot_pos[:, 0])
+        )
+        # Check if the robot is facing the ball
+        req_angle = 10
+        angle = (robot_angle - angle_to_ball) % 360
+
+        return (angle < req_angle) | (angle > (360 - req_angle))
+
+    def ball_is_in_bounds_vec(self, ball_pos):
+        mask = (np.abs(ball_pos[:, 0]) < 4500) & (np.abs(ball_pos[:, 1]) < 3500)
+        mask |= self.ball_is_at_goal(ball_pos)
+        return mask
+
+    def ball_is_at_goal(self, ball_pos):
+        mask = (ball_pos[:, 0] > 4400) & (np.abs(ball_pos[:, 1]) < 500)
+        return mask
 
     '''
     Gets relative position of object to agent
@@ -713,7 +719,7 @@ class BaseEnv(gym.Env):
 
     def render(self, mode="human"):
         Field_length = 1200
-        time.sleep(0.001)
+        # time.sleep(0.1)
 
         if self.rendering_init == False:
             pygame.init()

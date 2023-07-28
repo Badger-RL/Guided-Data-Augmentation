@@ -48,7 +48,7 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
         self.scale = np.array([self.x_scale, self.y_scale])
 
         self.goal_x = 4800
-        self.goal_y = 0
+        self.goal_y = 1
         self.goal = np.array([self.goal_x, self.goal_y])
         self.displacement_coef = 0.2
         self.max_dist = np.sqrt(self.x_scale**2 + self.y_scale**2)

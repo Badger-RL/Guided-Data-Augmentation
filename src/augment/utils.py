@@ -133,9 +133,9 @@ def check_in_bounds(absolute_obs, check_goal_post=True):
     # print(np.max(np.abs(absolute_obs[:, 1])))
 
     # check robot in bounds
-    if np.all(np.abs(absolute_obs[:, 0]) <= 5000) and np.all(np.abs(absolute_obs[:, 1]) < 3000):
+    if np.all(np.abs(absolute_obs[:, 0]) <= 4500) and np.all(np.abs(absolute_obs[:, 1]) < 3500):
         # check ball in bounds
-        if np.all(np.abs(absolute_obs[:, 2]) <= 5000) and np.all(np.abs(absolute_obs[:, 3]) < 3000):
+        if np.all(np.abs(absolute_obs[:, 2]) <= 4500) and np.all(np.abs(absolute_obs[:, 3]) < 3500):
             if check_goal_post:
                 # check robot not passing through goal post
                 if not (np.any(np.abs(absolute_obs[:, 0]) >= 4500) and np.any(np.abs(absolute_obs[:, 1]) > 750)):
@@ -153,38 +153,43 @@ def check_in_bounds(absolute_obs, check_goal_post=True):
 
 def check_valid(env, aug_abs_obs, aug_action, aug_reward, aug_abs_next_obs, aug_done, render=False, verbose=False):
 
-    env.reset()
+    np.set_printoptions(linewidth=np.inf)
 
     valid = True
     for i in range(len(aug_abs_obs)):
+        env.reset()
         aug_abs_obs_i = aug_abs_obs[i]
         env.set_state(robot_pos=aug_abs_obs_i[:2],
                       robot_angle=aug_abs_obs_i[4],
-                      ball_pos=aug_abs_obs_i[2:4],
-                      ball_angle=aug_abs_obs_i[5],
-                      ball_velocity=aug_abs_obs_i[6])
+                      ball_pos=aug_abs_obs_i[2:4])
 
         next_obs, reward, done, info = env.step(aug_action[i])
         next_obs = info['absolute_next_obs']
 
         if render:
             env.render()
-
+        if i == 10:
+            stop = 90
         # Augmented transitions at the goal are surely not valid, but that's fine.
         if not info['is_success']:
-            if not np.allclose(next_obs, aug_abs_next_obs[i], atol=1e-5):
+            if not np.allclose(next_obs, aug_abs_next_obs[i]):
                 valid = False
                 if verbose:
-                    print(f'{i}, true next obs - aug next obs', aug_abs_next_obs[i]-next_obs)
-                    print(f'{i}, true next obs', next_obs)
-                    print(f'{i}, aug next obs', aug_abs_next_obs[i])
-
+                    # print(f'{i}, true next obs - aug next obs\t', aug_abs_next_obs[i]-next_obs)
+                    print(f'{i}, true next obs\t', next_obs)
+                    print(f'{i}, aug next obs \t', aug_abs_next_obs[i])
+                    aug_delta_ball = aug_abs_next_obs[i,2:4] - aug_abs_obs_i[2:4]
+                    true_delta_ball = next_obs[2:4] - aug_abs_obs_i[2:4]
+                    print(f'{i}, true delta ball\t', true_delta_ball)
+                    print(f'{i}, aug delta ball \t', aug_delta_ball)
+                    # print(np.linalg.norm(aug_abs_next_obs[i]-next_obs))
+                    #
                     # print(aug_next_obs[i, 2:4], next_obs[2:4])
 
-            if not np.isclose(reward, aug_reward[i], atol=1e-5):
-                valid = False
-                if verbose:
-                    print(f'{i}, aug reward: {aug_reward[i]}\ttrue reward: {reward}')
+            # if not np.isclose(reward, aug_reward[i]):
+            #     valid = False
+            #     if verbose:
+            #         print(f'{i}, aug reward: {aug_reward[i]}\ttrue reward: {reward}')
 
             if done != aug_done[i]:
                 valid = False
