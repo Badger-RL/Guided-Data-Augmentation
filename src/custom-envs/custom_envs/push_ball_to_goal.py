@@ -159,7 +159,7 @@ class PushBallToGoalEnv(BaseEnv):
         is_out_of_bounds = False
 
         if self.ball_is_at_goal(ball_pos):
-            reward += self.reward_dict["goal"]
+            reward += 1
             is_goal = True
 
         # ball to goal
@@ -174,7 +174,7 @@ class PushBallToGoalEnv(BaseEnv):
             reward += self.reward_dict["looking_at_ball"]
 
         if not self.ball_is_in_bounds(ball_pos):
-            reward += self.reward_dict["out_of_bounds"]
+            reward += -1
             is_out_of_bounds = True
 
         return reward, is_goal, is_out_of_bounds

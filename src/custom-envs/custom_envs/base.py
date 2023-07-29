@@ -325,10 +325,10 @@ class BaseEnv(gym.Env):
                 self.ball[1] += 247 * math.sin(self.ball_angle)
 
         # If ball is in goal, stop ball
-        if self.ball[0] > 4400 and (self.ball[1] < 500 and self.ball[1] > -500):
-            # Set ball to center of goal
-            self.ball[0] = 4800
-            self.ball[1] = 1
+        # if self.ball[0] > 4400 and (self.ball[1] < 500 and self.ball[1] > -500):
+        #     # Set ball to center of goal
+        #     self.ball[0] = 4800
+        #     self.ball[1] = 1
 
         # If ball goes out, send to opponent goal
         # if self.ball[0] < -4400 or self.ball[1] > 3000 or self.ball[1] < -3000 or (self.ball[0] > 4400 and (self.ball[1] >= 700 or self.ball[1] <= -700)):
