@@ -37,10 +37,10 @@ class PushBallToGoalEnv(BaseEnv):
             "goal": 0,  # Team
             "goal_scored": False,
             "ball_to_goal": 0.0001,  # Team
-            "out_of_bounds": -2000,
+            "out_of_bounds": -1,
             "is_out_of_bounds": False,
             "agent_to_ball": 0.00001,  # Individual
-            "looking_at_ball": 0.01,  # Individual
+            "looking_at_ball": 0.0001,  # Individual
         }
 
     def get_distance(self, pos1, pos2):
@@ -54,9 +54,8 @@ class PushBallToGoalEnv(BaseEnv):
         ball
     '''
 
-    def get_obs(self, agent):
-        i = self.agent_idx[agent]
-        agent_loc = self.robots[i] + [self.angles[i]]
+    def get_obs(self, robot_pos, ball_pos, robot_angle):
+        agent_loc = np.concatenate([robot_pos, [robot_angle]])
 
         obs = []
 
@@ -68,15 +67,8 @@ class PushBallToGoalEnv(BaseEnv):
         goal_obs = self.get_relative_observation(agent_loc, [4800, 0])
         obs.extend(goal_obs)
 
-        # Get other positions
-        for j in range(len(self.agents)):
-            if i == j:
-                continue
-            robot_obx = self.get_relative_observation(agent_loc, self.robots[j])
-            obs.extend(robot_obx)
-
         # Get ball position
-        ball_obs = self.get_relative_observation(agent_loc, self.ball)
+        ball_obs = self.get_relative_observation(agent_loc, ball_pos)
         obs.extend(ball_obs)
 
         return np.array(obs, dtype=np.float32)
@@ -99,7 +91,7 @@ class PushBallToGoalEnv(BaseEnv):
 
         observations = {}
         for agent in self.agents:
-            observations[agent] = self.get_obs(agent)
+            observations[agent] = self.get_obs(self.robots[0], self.ball, self.angles[0])
         return observations[self.agents[0]]
 
     def step(self, actions):
@@ -138,7 +130,7 @@ class PushBallToGoalEnv(BaseEnv):
         ])
         # Calculate rewards
         for agent in self.agents:
-            obs[agent] = self.get_obs(agent)
+            obs[agent] = self.get_obs(self.robots[0], self.ball, self.angles[0])
             rew[agent], is_goal, is_out_of_bounds = self.calculate_reward(absolute_next_obs)
             terminated[agent] = is_goal or is_out_of_bounds
 
@@ -156,7 +148,6 @@ class PushBallToGoalEnv(BaseEnv):
         return obs[agent], rew[agent], terminated[agent], info[agent]
 
     def calculate_reward(self, abs_next_obs):
-        i = 0
         reward = 0
 
         robot_pos = abs_next_obs[:2].copy()
@@ -172,12 +163,12 @@ class PushBallToGoalEnv(BaseEnv):
             is_goal = True
 
         # ball to goal
-        cur_ball_distance = -self.get_distance(ball_pos, [4800, 0])
-        reward += self.reward_dict["ball_to_goal"] * cur_ball_distance
+        dist_ball_to_goal = self.get_distance(ball_pos, [4800, 0])
+        reward += 1*1/dist_ball_to_goal
 
         # robot to ball
-        cur_distance = -self.get_distance(robot_pos, ball_pos)
-        reward += self.reward_dict["agent_to_ball"] * cur_distance
+        dist_robot_to_ball = self.get_distance(robot_pos, ball_pos)
+        reward += 0.1*1/dist_robot_to_ball
 
         if self.check_facing_ball(robot_pos, ball_pos, robot_angle):
             reward += self.reward_dict["looking_at_ball"]

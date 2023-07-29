@@ -131,19 +131,16 @@ def check_in_bounds(absolute_obs, check_goal_post=True):
     is_in_bounds = False
     # print(np.max(np.abs(absolute_obs[:, 0])))
     # print(np.max(np.abs(absolute_obs[:, 1])))
-
+    abs_robot_x = np.abs(absolute_obs[:, 0])
+    abs_robot_y = np.abs(absolute_obs[:, 1])
+    abs_ball_x = np.abs(absolute_obs[:, 2])
+    abs_ball_y = np.abs(absolute_obs[:, 3])
     # check robot in bounds
-    if np.all(np.abs(absolute_obs[:, 0]) <= 4500) and np.all(np.abs(absolute_obs[:, 1]) < 3500):
-        # check ball in bounds
-        if np.all(np.abs(absolute_obs[:, 2]) <= 4500) and np.all(np.abs(absolute_obs[:, 3]) < 3500):
-            if check_goal_post:
-                # check robot not passing through goal post
-                if not (np.any(np.abs(absolute_obs[:, 0]) >= 4500) and np.any(np.abs(absolute_obs[:, 1]) > 750)):
-                    # check ball not passing through goal post
-                    if not (np.any(np.abs(absolute_obs[:, 2]) >= 4500) and np.any(np.abs(absolute_obs[:, 3]) > 750)):
-                        is_in_bounds = True
-            else:
-                is_in_bounds = True
+    if np.all(abs_robot_x < 4801):
+        if np.all(abs_robot_y < 3500):
+            if np.all(abs_ball_x < 4801):
+                if np.all(abs_ball_y < 3500):
+                    is_in_bounds = True
 
 
     # only check y positions, since there's sizeable uncertainty in x localization
