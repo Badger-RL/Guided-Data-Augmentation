@@ -4,8 +4,8 @@ import os
 # 40 893.5071630557165
 # 60 1195.693313336531
 # 72 1353.9820733017361
-for success_rate in [40,72]:
-    for n in [10]:
+for success_rate in [60,72]:
+    for n in [5, 10]:
         os.system(f'python3 expert.py --num_traj {n} '
                   f' --policy-path ../../../src/policies/PushBallToGoal-v0/policy_{success_rate}.zip'
                   f' --save-dir ../../datasets/PushBallToGoal-v0'
