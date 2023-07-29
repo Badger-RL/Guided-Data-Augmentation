@@ -10,7 +10,15 @@ class PushBallToGoalEnv(BaseEnv):
                 "render_fps": 30,
                 }
 
-    def __init__(self, continuous_actions=True, render_mode='rgb_array'):
+    def __init__(
+            self,
+            init_robot_x_range=(-4500, 4500),
+            init_robot_y_range=(-3000, 3000),
+            init_ball_x_range=(-4500,4500),
+            init_ball_y_range=(-3000,3000),
+            continuous_actions=True,
+            render_mode='rgb_array',
+    ):
         # Init base class
         super().__init__(continuous_actions=continuous_actions)
 
@@ -32,6 +40,11 @@ class PushBallToGoalEnv(BaseEnv):
         self.displacement_coef = 0.06
         self.angle_displacement = 0.25
         self.robot_radius = 20
+
+        self.init_ball_x_range = init_ball_x_range
+        self.init_ball_y_range = init_ball_y_range
+        self.init_robot_x_range = init_robot_x_range
+        self.init_robot_y_range = init_robot_y_range
 
         self.reward_dict = {
             "goal": 0,  # Team
@@ -79,7 +92,7 @@ class PushBallToGoalEnv(BaseEnv):
         self.ball_velocity = 0
         self.ball_angle = 0
 
-        self.robots = [[np.random.uniform(-4500, 4500), np.random.uniform(-3000, 3000)] for _ in
+        self.robots = [[np.random.uniform(*self.init_robot_x_range), np.random.uniform(*self.init_robot_y_range)] for _ in
                        range(len(self.agents))]
         self.angles = [np.random.uniform(-np.pi, np.pi) for _ in range(len(self.agents))]
 
@@ -87,7 +100,9 @@ class PushBallToGoalEnv(BaseEnv):
         self.reward_dict["is_out_of_bounds"] = False
 
         self.previous_distances = [None for _ in range(len(self.agents))]
-        self.ball = [np.random.uniform(-4500, 4500), np.random.uniform(-3000, 3000)]
+        self.ball = [np.random.uniform(*self.init_ball_x_range), np.random.uniform(*self.init_ball_y_range)]
+        if np.random.random() < 0.5:
+            self.ball[1] *= -1
 
         observations = {}
         for agent in self.agents:
