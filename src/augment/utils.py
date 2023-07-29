@@ -127,7 +127,7 @@ def convert_to_relative_obs(obs):
 
     return np.array(relative_obs, dtype=np.float32).T
 
-def check_in_bounds(absolute_obs, check_goal_post=True):
+def check_in_bounds(absolute_obs):
     is_in_bounds = False
     # print(np.max(np.abs(absolute_obs[:, 0])))
     # print(np.max(np.abs(absolute_obs[:, 1])))

@@ -5,7 +5,7 @@ from src.augment.utils import convert_to_absolute_obs, calculate_reward, convert
     check_in_bounds
 
 
-def rotate_reflect_traj(env, obs, action, next_obs, reward, done, check_goal_post):
+def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
     aug_abs_obs = obs.copy()
     aug_abs_next_obs = next_obs.copy()
     aug_action = action.copy()
@@ -18,8 +18,12 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, check_goal_pos
     while attempts < 100:
         attempts += 1
 
-        new_ball_final_pos_x = 4800
-        new_ball_final_pos_y = np.random.uniform(-500, 500)
+        if guided:
+            new_ball_final_pos_x = 4800
+            new_ball_final_pos_y = np.random.uniform(-500, 500)
+        else:
+            new_ball_final_pos_x = np.random.uniform(-4500, 4500)
+            new_ball_final_pos_y = np.random.uniform(-3500, 3500)
         # new_ball_final_pos_x = ball_at_goal_x
         # new_ball_final_pos_y = ball_at_goal_y
 
@@ -75,7 +79,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, check_goal_pos
         # Only need to check y since we only translate vertically.
         # break
         # check if agent and ball are in bounds
-        if check_in_bounds(aug_abs_obs, check_goal_post=check_goal_post):
+        if check_in_bounds(aug_abs_obs):
             break
         else:
             aug_abs_obs = copy.deepcopy(obs)

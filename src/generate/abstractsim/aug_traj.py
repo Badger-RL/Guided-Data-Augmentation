@@ -57,7 +57,7 @@ def gen_aug_dataset(env, observed_dataset, check_goal_post, validate=True, aug_s
     aug_obs_list, aug_action_list, aug_reward_list, aug_next_obs_list, aug_done_list = [], [], [], [], []
     aug_abs_obs_list, aug_abs_next_obs_list = [], []
 
-    guided = 'aug_func' == 'guided_traj'
+    guided = aug_func == 'guided_traj'
 
     aug_count = 0
     invalid_count = 0
