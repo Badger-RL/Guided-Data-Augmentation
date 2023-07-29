@@ -164,11 +164,11 @@ class PushBallToGoalEnv(BaseEnv):
 
         # ball to goal
         dist_ball_to_goal = self.get_distance(ball_pos, [4800, 0])
-        reward += 1*1/dist_ball_to_goal
+        reward += 0.1*1/dist_ball_to_goal
 
         # robot to ball
         dist_robot_to_ball = self.get_distance(robot_pos, ball_pos)
-        reward += 0.1*1/dist_robot_to_ball
+        reward += 0.01*1/dist_robot_to_ball
 
         if self.check_facing_ball(robot_pos, ball_pos, robot_angle):
             reward += self.reward_dict["looking_at_ball"]
