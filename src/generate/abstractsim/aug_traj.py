@@ -6,10 +6,7 @@ import h5py
 import argparse
 
 from stable_baselines3.common.utils import set_random_seed
-
-from augment.abstractsim.guided_trajectory import RotateReflectTranslateTrajGuided
 from src.augment.abstractsim.rotate_reflect_trajectory import rotate_reflect_traj
-from src.augment.abstractsim.translate_reflect_trajectory import translate_reflect_traj_y
 from src.augment.utils import check_valid
 import custom_envs
 
@@ -137,7 +134,7 @@ if __name__ == '__main__':
 
     set_random_seed(args.seed)
 
-    env = gym.make('PushBallToGoal-v0')
+    env = gym.make('PushBallToGoal-v1')
 
     observed_dataset = load_observed_data(dataset_path=args.observed_dataset_path)
     aug_dataset = gen_aug_dataset(env, observed_dataset, aug_size=args.aug_size, validate=args.validate, check_goal_post=args.check_goal_post, aug_func=args.aug_func)

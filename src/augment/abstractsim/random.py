@@ -85,9 +85,18 @@ class RotateReflectTranslate(AbstractSimAugmentationFunction):
         # Translate bottom left corner of the righter bounding box containing the robot and ball
         new_x = np.random.uniform(-4500, 4500 - (xmax - xmin))
         new_y = np.random.uniform(-3000, 3000 - (ymax - ymin))
-        # if np.random.random() < 0.2:
-        #     new_x = np.random.uniform(4400, 4500)
-        #     new_y = np.random.uniform(-500, 500)
+        if np.random.random() < 0.8:
+            new_x = np.random.uniform(0, 4700)
+            new_y = np.random.uniform(-3400, 3400)
+            if np.random.random() < 0.6:
+                new_x = np.random.uniform(0, 4700)
+                new_y = np.random.uniform(-3400, 3400)
+                if np.random.random() < 0.4:
+                    new_x = np.random.uniform(3000, 4700)
+                    new_y = np.random.uniform(-3400, 3400)
+                    if np.random.random() < 0.2:
+                        new_x = np.random.uniform(4400, 4500)
+                        new_y = np.random.uniform(-1000, 1000)
 
         delta_x = new_x - xmin
         delta_y = new_y - ymin
@@ -113,9 +122,19 @@ class RotateReflectTranslate(AbstractSimAugmentationFunction):
         # Translate bottom left corner of the righter bounding box containing the robot and ball
         new_x = np.random.uniform(-5000, 5000 - (xmax - xmin))
         new_y = np.random.uniform(-4000, 4000 - (ymax - ymin))
-        # if np.random.random() < 0.2:
-        #     new_x = np.random.uniform(4400, 4500)
-        #     new_y = np.random.uniform(-500, 500)
+        # np.random.choice(['left_half','3rd_quadrant', '4th_quadrant'], p=[0.1, 0.3, 0.4,])
+        if np.random.random() < 0.8:
+            new_x = np.random.uniform(0, 4700)
+            new_y = np.random.uniform(-3400, 3400)
+            if np.random.random() < 0.6:
+                new_x = np.random.uniform(0, 4700)
+                new_y = np.random.uniform(-3400, 3400)
+                if np.random.random() < 0.4:
+                    new_x = np.random.uniform(3000, 4700)
+                    new_y = np.random.uniform(-3400, 3400)
+                    if np.random.random() < 0.2:
+                        new_x = np.random.uniform(4400, 4700)
+                        new_y = np.random.uniform(-500, 500)
 
         delta_x = new_x - xmin
         delta_y = new_y - ymin
@@ -139,6 +158,19 @@ class RotateReflectTranslate(AbstractSimAugmentationFunction):
         # if np.random.random() < 0.2:
         #     new_x = np.random.uniform(4400, 4500)
         #     new_y = np.random.uniform(-500, 500)
+
+        if np.random.random() < 0.8:
+            new_x = np.random.uniform(0, 4400)
+            new_y = np.random.uniform(-3400, 3400)
+            if np.random.random() < 0.6:
+                new_x = np.random.uniform(0, 4400)
+                new_y = np.random.uniform(-3400, 3400)
+                if np.random.random() < 0.4:
+                    new_x = np.random.uniform(3000, 4400)
+                    new_y = np.random.uniform(-3400, 3400)
+                    if np.random.random() < 0.2:
+                        new_x = np.random.uniform(4400, 4700)
+                        new_y = np.random.uniform(-500, 500)
 
         delta_x = new_x - xmin
         delta_y = new_y - ymin

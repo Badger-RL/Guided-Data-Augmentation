@@ -127,22 +127,24 @@ def convert_to_relative_obs(obs):
 
     return np.array(relative_obs, dtype=np.float32).T
 
-def check_in_bounds(absolute_obs):
+def check_in_bounds(env, absolute_obs):
     is_in_bounds = False
     # print(np.max(np.abs(absolute_obs[:, 0])))
     # print(np.max(np.abs(absolute_obs[:, 1])))
+
+    ball_is_at_goal = (absolute_obs[:,2] > 4400) & (np.abs(absolute_obs[:, 3]) < 500)
+    absolute_obs = absolute_obs[~ball_is_at_goal]
     abs_robot_x = np.abs(absolute_obs[:, 0])
     abs_robot_y = np.abs(absolute_obs[:, 1])
     abs_ball_x = np.abs(absolute_obs[:, 2])
     abs_ball_y = np.abs(absolute_obs[:, 3])
+
     # check robot in bounds
-    if np.all(abs_robot_x < 4801):
+    if np.all(abs_robot_x < 4400):
         if np.all(abs_robot_y < 3500):
-            if np.all(abs_ball_x < 4801):
+            if np.all(abs_ball_x < 4500):
                 if np.all(abs_ball_y < 3500):
                     is_in_bounds = True
-
-
     # only check y positions, since there's sizeable uncertainty in x localization
     # if  np.all(np.abs(absolute_obs[:, 1]) < 3000) and np.all(np.abs(absolute_obs[:, 3]) < 3000):
     #         is_in_bounds = True
@@ -169,7 +171,7 @@ def check_valid(env, aug_abs_obs, aug_action, aug_reward, aug_abs_next_obs, aug_
             stop = 90
         # Augmented transitions at the goal are surely not valid, but that's fine.
         if not info['is_success']:
-            if not np.allclose(next_obs, aug_abs_next_obs[i], rtol=1e-4, atol=0.001):
+            if not np.allclose(next_obs, aug_abs_next_obs[i]):
                 valid = False
                 if verbose:
                     # print(f'{i}, true next obs - aug next obs\t', aug_abs_next_obs[i]-next_obs)

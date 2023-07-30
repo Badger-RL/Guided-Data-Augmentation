@@ -71,11 +71,16 @@ def main():
 
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--random_actions', type=int, default=0)
-    parser.add_argument('--render', type=bool, default=False)
+    parser.add_argument('--render', type=bool, default=0)
 
     args = parser.parse_args()
 
-    env = gym.make('PushBallToGoal-v0', init_ball_x_range=(-1000,1000),init_ball_y_range=(-3000,3000))
+    env = gym.make('PushBallToGoal-v1',
+                   # init_robot_x_range=(4400, 4400),
+                   # init_robot_y_range=(-3000, -3000),
+                   init_ball_x_range=(-1000,+1000),
+                   init_ball_y_range=(3000,3000)
+                   )
 
     set_random_seed(args.seed)
     s = env.reset()
@@ -106,6 +111,7 @@ def main():
             if args.render:
                 env.render()
 
+            # print(info['is_success'], info['terminated'],  done)
             append_data(data, s, act, r, ns, info['terminated'], done, info['absolute_obs'], info['absolute_next_obs'])
 
             if len(data['observations']) % 10000 == 0:

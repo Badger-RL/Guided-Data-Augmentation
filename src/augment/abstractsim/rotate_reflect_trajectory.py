@@ -19,7 +19,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
         attempts += 1
 
         if guided:
-            new_ball_final_pos_x = 4800
+            new_ball_final_pos_x = np.random.uniform(4500, 4700)
             new_ball_final_pos_y = np.random.uniform(-500, 500)
         else:
             new_ball_final_pos_x = np.random.uniform(-4500, 4500)
@@ -79,7 +79,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
         # Only need to check y since we only translate vertically.
         # break
         # check if agent and ball are in bounds
-        if check_in_bounds(aug_abs_obs):
+        if check_in_bounds(env, aug_abs_obs):
             break
         else:
             aug_abs_obs = copy.deepcopy(obs)
@@ -89,7 +89,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
         print(f'Skipping trajectory after {attempts} augmentation attempts.')
         return None, None, None, None, None, None, None
 
-    if np.random.random() < 1:
+    if np.random.random() < 0.5:
         aug_abs_obs[:, 1] *= -1
         aug_abs_next_obs[:, 1] *= -1
         aug_abs_obs[:, 3] *= -1
@@ -107,8 +107,12 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
     aug_obs = np.empty((n, 12))
     aug_next_obs = np.empty((n, 12))
     for i in range(len(obs)):
-        aug_reward[i], is_goal, is_out_of_bounds = env.calculate_reward(aug_abs_next_obs[i])
-        aug_done[i] = is_goal or is_out_of_bounds
+        aug_reward[i], ball_is_at_goal, ball_is_out_of_bounds = env.calculate_reward(aug_abs_next_obs[i])
+        # if done[i] and ball_is_at_goal:
+        #     aug_done[i] = True
+        # else:
+        #     aug_done[i] = ball_is_out_of_bounds
+        aug_done[i] = ball_is_out_of_bounds
 
         robot_pos = aug_abs_obs[i, :2]
         ball_pos = aug_abs_obs[i, 2:4]
