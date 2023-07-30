@@ -7,6 +7,15 @@ register(
 )
 
 register(
+    id="PushBallToGoal-v1",
+    entry_point="custom_envs.push_ball_to_goal:PushBallToGoalEnv",
+    max_episode_steps=2000,
+    kwargs={
+        'sparse': True,
+    }
+)
+
+register(
     id="PushBallToGoalCorner-v0",
     entry_point="custom_envs.push_ball_to_goal:PushBallToGoalEnv",
     max_episode_steps=2000,

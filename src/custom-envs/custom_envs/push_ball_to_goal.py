@@ -16,6 +16,7 @@ class PushBallToGoalEnv(BaseEnv):
             init_robot_y_range=(-3000, 3000),
             init_ball_x_range=(-4500,4500),
             init_ball_y_range=(-3000,3000),
+            sparse=False,
             continuous_actions=True,
             render_mode='rgb_array',
     ):
@@ -31,6 +32,7 @@ class PushBallToGoalEnv(BaseEnv):
         self.continous_actions = continuous_actions
         self.teams = [0, 0]
         self.agent_idx = {agent: i for i, agent in enumerate(self.agents)}
+        self.sparse = sparse
 
 
         self.episode_length = 1500
@@ -148,6 +150,8 @@ class PushBallToGoalEnv(BaseEnv):
             obs[agent] = self.get_obs(self.robots[0], self.ball, self.angles[0])
             rew[agent], is_goal, is_out_of_bounds = self.calculate_reward(absolute_next_obs)
             terminated[agent] = is_goal or is_out_of_bounds
+            if self.sparse:
+                terminated[agent] = is_out_of_bounds
 
             truncated[agent] = False
 
@@ -163,6 +167,30 @@ class PushBallToGoalEnv(BaseEnv):
         return obs[agent], rew[agent], terminated[agent], info[agent]
 
     def calculate_reward(self, abs_next_obs):
+        if self.sparse:
+            return self.calculate_reward_sparse(abs_next_obs)
+        else:
+            return self.calculate_reward_dense(abs_next_obs)
+
+    def calculate_reward_sparse(self, abs_next_obs):
+        reward = 0
+
+        ball_pos = abs_next_obs[2:4]
+
+        is_goal = False
+        is_out_of_bounds = False
+
+        if self.ball_is_at_goal(ball_pos):
+            reward += 1
+            is_goal = True
+
+        if not self.ball_is_in_bounds(ball_pos):
+            reward += -1
+            is_out_of_bounds = True
+
+        return reward, is_goal, is_out_of_bounds
+
+    def calculate_reward_dense(self, abs_next_obs):
         reward = -0.01
 
         robot_pos = abs_next_obs[:2]
