@@ -163,30 +163,30 @@ class PushBallToGoalEnv(BaseEnv):
         return obs[agent], rew[agent], terminated[agent], info[agent]
 
     def calculate_reward(self, abs_next_obs):
-        reward = 0
+        reward = -0.01
 
-        robot_pos = abs_next_obs[:2].copy()
-        robot_angle = abs_next_obs[-1].copy()
+        robot_pos = abs_next_obs[:2]
+        robot_angle = abs_next_obs[-1]
 
-        ball_pos = abs_next_obs[2:4].copy()
+        ball_pos = abs_next_obs[2:4]
 
         is_goal = False
         is_out_of_bounds = False
 
         if self.ball_is_at_goal(ball_pos):
-            reward += 1
+            reward += 10
             is_goal = True
 
         # ball to goal
         dist_ball_to_goal = self.get_distance(ball_pos, [4800, 0])
-        reward += 0.1*1/dist_ball_to_goal
+        reward += 10*1/dist_ball_to_goal
 
         # robot to ball
         dist_robot_to_ball = self.get_distance(robot_pos, ball_pos)
-        reward += 0.01*1/dist_robot_to_ball
+        reward += 1*1/dist_robot_to_ball
 
         if self.check_facing_ball(robot_pos, ball_pos, robot_angle):
-            reward += self.reward_dict["looking_at_ball"]
+            reward += 0.001
 
         if not self.ball_is_in_bounds(ball_pos):
             reward += -1
@@ -240,7 +240,11 @@ class PushBallToGoalEnv(BaseEnv):
         return eval_score/100
 
     def set_state(self, robot_pos, ball_pos, robot_angle, ):
-        self.robots[0] = robot_pos.tolist()
+        if isinstance(robot_pos, list):
+            self.robots[0] = robot_pos
+        else:
+            self.robots[0] = robot_pos.tolist()
+
         self.angles[0] = robot_angle
         self.ball = ball_pos.copy()
         self.ball_angle = np.arctan2(robot_pos[1] - ball_pos[1], robot_pos[0] - ball_pos[0])
