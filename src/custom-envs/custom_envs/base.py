@@ -1,3 +1,4 @@
+import copy
 import functools
 import math
 import time
@@ -291,7 +292,7 @@ class BaseEnv(gym.Env):
             distance_robot_ball = np.linalg.norm(ball_location - robot_location)
 
             # If collision, move ball away
-            if distance_robot_ball < (self.robot_radius + self.ball_radius) * 6:
+            if distance_robot_ball < (self.robot_radius + self.ball_radius) * 6 and not self.ball_is_at_goal(self.ball):
                 self.ball_angle = math.atan2(self.ball[1] - robot[1], self.ball[0] - robot[0])
 
                 # Angle needs to be adapted to be like real robots (do for both sides of 0 degrees)

@@ -23,7 +23,7 @@ AUG_FUNCTIONS = {
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--observed-dataset-path', type=str, default='../../datasets/PushBallToGoal-v0/no_aug_72_10k.hdf5')
+    parser.add_argument('--observed-dataset-path', type=str, default='../../datasets/PushBallToGoal-v1/no_aug.hdf5')
     parser.add_argument('--augmentation-ratio', '-aug-ratio', type=int, default=1, help='Number of augmentations per observed transition')
     parser.add_argument('--save-dir', type=str, default='.')
     parser.add_argument('--save-name', type=str, default='tmp.hdf5')
@@ -43,7 +43,7 @@ if __name__ == '__main__':
         observed_dataset[key] = np.array(observed_data_hdf5[key])
     n = observed_dataset['observations'].shape[0]
 
-    env = gym.make('PushBallToGoal-v0')
+    env = gym.make('PushBallToGoal-v1')
     aug_func = AUG_FUNCTIONS[args.aug]
     f = aug_func(env=env)
 
