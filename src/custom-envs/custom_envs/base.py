@@ -29,7 +29,7 @@ Optional:
 class BaseEnv(gym.Env):
     metadata = {'render_modes': ['human', 'rgb_array']}
 
-    def __init__(self, continuous_actions=True, render_mode='rgb_array', stochastic=True, clip_out_of_bounds=False):
+    def __init__(self, continuous_actions=True, render_mode='rgb_array', stochastic=False, clip_out_of_bounds=False):
         '''
         Required:
         - possible_agents
