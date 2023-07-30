@@ -75,7 +75,7 @@ def main():
 
     args = parser.parse_args()
 
-    env = gym.make('PushBallToGoal-v0')
+    env = gym.make('PushBallToGoal-v0', init_ball_x_range=(-1000,1000),init_ball_y_range=(-3000,3000))
 
     set_random_seed(args.seed)
     s = env.reset()
@@ -110,7 +110,7 @@ def main():
 
             if len(data['observations']) % 10000 == 0:
                 print(len(data['observations']))
-
+            # print(r)
             ts += 1
             if done:
                 s = env.reset()
