@@ -319,7 +319,7 @@ class BaseEnv(gym.Env):
                 self.ball_angle = self.angles[i]
 
                 if self.stochastic:
-                    self.ball_angle += np.clip(np.random.normal(0, 1), -2, 2) * np.pi / 6
+                    self.ball_angle += np.random.uniform(-np.pi/18,np.pi/18)
 
                 self.ball[0] += 247 * math.cos(self.ball_angle)
                 self.ball[1] += 247 * math.sin(self.ball_angle)
