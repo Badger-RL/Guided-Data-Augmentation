@@ -30,7 +30,7 @@ Optional:
 class BaseEnv(gym.Env):
     metadata = {'render_modes': ['human', 'rgb_array']}
 
-    def __init__(self, continuous_actions=True, render_mode='rgb_array', stochastic=False, clip_out_of_bounds=False):
+    def __init__(self, continuous_actions=True, render_mode='rgb_array', stochastic=False, realistic=False, clip_out_of_bounds=False):
         '''
         Required:
         - possible_agents
@@ -55,6 +55,7 @@ class BaseEnv(gym.Env):
 
         # Other variables
         self.stochastic = stochastic
+        self.realistic = realistic
         self.clip_out_of_bounds = clip_out_of_bounds
         self.ball_radius = 10
         self.ball_acceleration = -0.2
@@ -68,7 +69,7 @@ class BaseEnv(gym.Env):
             self.displacement_coef = 10
             self.angle_displacement = 0.05
 
-        self.episode_length = 2000
+        self.episode_length = 1000
 
         self.num_adversaries = 0
         self.kicking_time = 0
@@ -317,10 +318,11 @@ class BaseEnv(gym.Env):
                 # # Negative 3:
                 # elif self.ball_angle < np.radians(-30) and self.ball_angle > np.radians(-45):
                 #     self.ball_angle -= np.radians(50)
-                self.ball_angle = self.angles[i]
+                if not self.realistic:
+                    self.ball_angle = self.angles[i]
 
                 if self.stochastic:
-                    self.ball_angle += np.random.uniform(-np.pi/18,np.pi/18)
+                    self.ball_angle += np.random.uniform(-np.pi/6,np.pi/6)
 
                 self.ball[0] += 247 * math.cos(self.ball_angle)
                 self.ball[1] += 247 * math.sin(self.ball_angle)

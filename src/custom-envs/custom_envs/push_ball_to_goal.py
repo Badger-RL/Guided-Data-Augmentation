@@ -18,10 +18,13 @@ class PushBallToGoalEnv(BaseEnv):
             init_ball_y_range=(-3000, 3000),
             sparse=False,
             continuous_actions=True,
+            stochastic=False,
+            realistic=False,
             render_mode='rgb_array',
+
     ):
         # Init base class
-        super().__init__(continuous_actions=continuous_actions)
+        super().__init__(continuous_actions=continuous_actions, stochastic=stochastic, realistic=realistic)
 
         self.rendering_init = False
         self.render_mode = render_mode
