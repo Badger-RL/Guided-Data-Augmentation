@@ -16,6 +16,7 @@ class PushBallToGoalEnv(BaseEnv):
             init_robot_y_range=(-3000, 3000),
             init_ball_x_range=(-4500, 4500),
             init_ball_y_range=(-3000, 3000),
+            displacement_coef=0.06,
             sparse=False,
             continuous_actions=True,
             stochastic=False,
@@ -42,7 +43,7 @@ class PushBallToGoalEnv(BaseEnv):
 
         self.ball_acceleration = -3
         self.ball_velocity_coef = 4
-        self.displacement_coef = 0.06
+        self.displacement_coef = displacement_coef
         self.angle_displacement = 0.25
         self.robot_radius = 20
 
