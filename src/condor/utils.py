@@ -9,7 +9,9 @@ MEMDISK = {
         'antmaze-medium-diverse-v1': (2.2, 9),
         'antmaze-large-diverse-v1': (3.3, 9),
 
-        'PushBallToGoal-v0': (1.6, 9),
+        'PushBallToGoal-v0': (1.4, 9),
+        'PushBallToGoal-v1': (1.4, 9),
+
     },
     2: {
         'maze2d-umaze-v1': (1.9, 9),
