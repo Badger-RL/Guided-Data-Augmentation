@@ -124,10 +124,14 @@ class RotateReflectTranslateGuided(RotateReflectTranslate):
         aug_abs_obs, aug_abs_next_obs, aug_action, aug_reward, aug_done = \
             self._deepcopy_transition(abs_obs, abs_next_obs, action, reward, done)
 
-        if self.at_goal(abs_obs[2], abs_obs[3]) or self.at_goal(abs_next_obs[2], abs_next_obs[3]):
-            jitter = np.random.uniform(-10, 10, size=(2,))
-            aug_abs_obs[:2] += jitter
-            aug_abs_next_obs[:2] += jitter
+        if self.at_goal(abs_obs[2], abs_obs[3]):
+            new_x = np.random.uniform(4400, 4700)
+            new_y = np.random.uniform(-500, 500)
+            aug_abs_obs[2] = new_x
+            aug_abs_obs[3] = new_y
+            aug_abs_next_obs[2] = new_x
+            aug_abs_next_obs[3] = new_y
+
         else:
             # if agent kicked the ball, rotate both agent and ball. Otherwise, only rotate the agent.
             delta_ball = abs_next_obs[2:4] - abs_obs[2:4]
@@ -149,11 +153,16 @@ class RotateReflectTranslateGuided(RotateReflectTranslate):
         # assign reward and done signal
         aug_reward, ball_is_at_goal, ball_is_out_of_bounds = self.env.calculate_reward(aug_abs_next_obs)
         aug_done = ball_is_out_of_bounds
-        if ball_is_at_goal:
-            aug_abs_next_obs[2:4] = self.goal
 
         # convert absolute observation back to relative
-        aug_obs = self._convert_to_relative_obs(aug_abs_obs)
-        aug_next_obs = self._convert_to_relative_obs(aug_abs_next_obs)
+        robot_pos = aug_abs_obs[:2]
+        ball_pos = aug_abs_obs[2:4]
+        robot_angle = aug_abs_obs[4]
+        aug_obs = self.env.get_obs(robot_pos, ball_pos, robot_angle)
+
+        robot_pos = aug_abs_next_obs[:2]
+        ball_pos = aug_abs_next_obs[2:4]
+        robot_angle = aug_abs_next_obs[4]
+        aug_next_obs = self.env.get_obs(robot_pos, ball_pos, robot_angle)
 
         return aug_obs, aug_next_obs, aug_action, aug_reward, aug_done, aug_abs_obs, aug_abs_next_obs

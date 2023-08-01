@@ -263,7 +263,8 @@ def rotate_reflect_traj_kick(env, obs, action, next_obs, reward, done, guided):
         #     aug_done[i] = True
         # else:
         #     aug_done[i] = ball_is_out_of_bounds
-        aug_done[i] = ball_is_out_of_bounds
+        # aug_done[i] = ball_is_out_of_bounds or ball_is_at_goal
+        aug_done[i] = ball_is_out_of_bounds or done[i]
 
         robot_pos = aug_abs_obs[i, :2]
         ball_pos = aug_abs_obs[i, 2:4]
