@@ -11,12 +11,15 @@ def main():
     #     return
 
 
-    for i in range(1,20):
-        log_file = f'physical_data/traj/trajectories_5_{i}.log'
+    for i in range(0,50):
+        log_file = f'curated_kicks/trajectories_3_{i}.log'
 
-        with open(log_file, 'r') as f:
-            data = json.load(f)
-
+        try:
+            with open(log_file, 'r') as f:
+                data = json.load(f)
+        except:
+            print(f'skipping {i}')
+            continue
         # Get the robot and ball trajectories
         traj = data['observations']
         robot_traj = [obs[0:3] for obs in traj]
