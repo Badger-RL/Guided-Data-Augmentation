@@ -7,7 +7,7 @@ import argparse
 
 from stable_baselines3.common.utils import set_random_seed
 
-from src.augment.abstractsim.rotate_reflect_trajectory import rotate_reflect_traj
+from src.augment.abstractsim.rotate_reflect_trajectory import rotate_reflect_traj, random_traj
 from src.augment.abstractsim.translate_reflect_trajectory import translate_reflect_traj_y
 from src.augment.utils import check_valid
 import custom_envs
@@ -30,7 +30,7 @@ def load_observed_data(dataset_path):
 
     return observed_dataset
 
-def gen_aug_dataset(env, observed_dataset, check_goal_post, validate=True, aug_size=100000,):
+def gen_aug_dataset(env, observed_dataset, guided, check_goal_post, validate=True, aug_size=100000,):
 
     obs = observed_dataset['observations']
     action = observed_dataset['actions']
@@ -41,7 +41,7 @@ def gen_aug_dataset(env, observed_dataset, check_goal_post, validate=True, aug_s
     terminal_indices = np.where(done)[0]
     num_episodes = np.sum(done)
     episode_length = terminal_indices[0]+1
-
+    print(num_episodes)
     obs = obs.reshape(num_episodes, -1, 8)
     action = action.reshape(num_episodes, -1, 3)
     reward = reward.reshape(num_episodes, -1)
@@ -56,13 +56,18 @@ def gen_aug_dataset(env, observed_dataset, check_goal_post, validate=True, aug_s
     num_guided_traj_to_generate = aug_size//episode_length - num_episodes
     aug_count = 0
     invalid_count = 0
-    while aug_count < num_guided_traj_to_generate:
+
+    if guided:
+        aug_function = rotate_reflect_traj
+    else:
+        aug_function = random_traj
+
+    while aug_count < aug_size:
 
         for episode_i in range(num_episodes):
-            aug_function = rotate_reflect_traj
-
+            print(episode_i)
             aug_obs, aug_action, aug_reward, aug_next_obs, aug_done = aug_function(
-                obs[episode_i], action[episode_i], next_obs[episode_i], reward[episode_i], done[episode_i], check_goal_post)
+                obs[episode_i], action[episode_i], next_obs[episode_i], reward[episode_i], done[episode_i], check_goal_post, guided=guided)
             # episode_obs, episode_action, episode_next_obs, episode_reward, episode_done, check_goal_post)
             if aug_obs is None:
                 continue
@@ -73,7 +78,7 @@ def gen_aug_dataset(env, observed_dataset, check_goal_post, validate=True, aug_s
                 is_valid = True
 
             if is_valid and not(aug_obs is None):
-                aug_count += 1
+                aug_count += len(aug_obs)
                 print(aug_count)
                 aug_obs_list.append(aug_obs)
                 aug_action_list.append(aug_action)
@@ -83,8 +88,10 @@ def gen_aug_dataset(env, observed_dataset, check_goal_post, validate=True, aug_s
             else:
                 invalid_count += 1
 
-            if aug_count >= num_guided_traj_to_generate:
+            if aug_count >= aug_size:
                 break
+        if aug_count >= aug_size:
+            break
 
     aug_obs = np.concatenate(aug_obs_list)
     aug_action = np.concatenate(aug_action_list)
@@ -107,6 +114,7 @@ def gen_aug_dataset(env, observed_dataset, check_goal_post, validate=True, aug_s
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('--guided', type=int, default=0)
     parser.add_argument('--aug-size', type=int, default=int(100e3), help='Number of augmented trajectories to generate')
     parser.add_argument('--observed-dataset-path', type=str, default=f'../datasets/expert/no_aug/50k.hdf5', help='path to observed trajectory dataset')
     parser.add_argument('--save-dir', type=str, default='../datasets/physical/aug_guided', help='Directory to save augmented dataset')
@@ -123,7 +131,7 @@ if __name__ == '__main__':
     env = gym.make('PushBallToGoal-v0')
 
     observed_dataset = load_observed_data(dataset_path=args.observed_dataset_path)
-    aug_dataset = gen_aug_dataset(env, observed_dataset, aug_size=args.aug_size, validate=args.validate, check_goal_post=args.check_goal_post)
+    aug_dataset = gen_aug_dataset(env, observed_dataset, aug_size=args.aug_size, guided=args.guided, validate=args.validate, check_goal_post=args.check_goal_post)
 
     os.makedirs(args.save_dir, exist_ok=True)
     fname = f'{args.save_dir}/{args.save_name}'

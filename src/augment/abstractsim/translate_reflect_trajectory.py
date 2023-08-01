@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.augment.abstractsim.utils import convert_to_absolute_obs, calculate_reward, convert_to_relative_obs, check_in_bounds
+from src.augment.utils import convert_to_absolute_obs, calculate_reward, convert_to_relative_obs, check_in_bounds
 
 
 def translate_reflect_traj_y(obs, action, next_obs, reward, done, check_goal_post):
