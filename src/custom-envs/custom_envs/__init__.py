@@ -19,12 +19,12 @@ register(
 register(
     id="PushBallToGoal-v2",
     entry_point="custom_envs.push_ball_to_goal:PushBallToGoalEnv",
-    max_episode_steps=1000,
+    max_episode_steps=500,
     kwargs={
         'sparse': True,
-        'stochastic': True,
-        'realistic': True,
-        'displacement_coef': 0.12
+        'stochastic': False,
+        'realistic': False,
+        'displacement_coef': 0.20
     }
 )
 

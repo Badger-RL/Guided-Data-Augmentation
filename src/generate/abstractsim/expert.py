@@ -61,6 +61,7 @@ def npify(data):
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--env-id', type=str, help='PushBallToGoal-v1')
     parser.add_argument('--num_samples', type=int, default=int(100e3), help='Num samples to collect')
     parser.add_argument('--num_traj', type=int, default=5, help='Num trajectories to collect. Overrides num_samples')
     parser.add_argument('--num_traj_success', type=int, default=5, help='Num trajectories to collect. Overrides num_samples')
@@ -75,7 +76,7 @@ def main():
 
     args = parser.parse_args()
 
-    env = gym.make('PushBallToGoal-v1',
+    env = gym.make(args.env_id,
                    # init_robot_x_range=(4400, 4400),
                    # init_robot_y_range=(-3000, -3000),
                    init_ball_x_range=(-1000,+1000),
@@ -118,6 +119,8 @@ def main():
                 print(len(data['observations']))
             # print(r)
             ts += 1
+            if ts % 50 == 0:
+                print(f't = {ts}')
             if done:
                 s = env.reset()
                 num_episodes += 1

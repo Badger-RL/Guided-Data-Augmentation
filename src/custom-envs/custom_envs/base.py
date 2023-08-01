@@ -30,7 +30,10 @@ Optional:
 class BaseEnv(gym.Env):
     metadata = {'render_modes': ['human', 'rgb_array']}
 
-    def __init__(self, continuous_actions=True, render_mode='rgb_array', stochastic=False, realistic=False, clip_out_of_bounds=False):
+    def __init__(self, continuous_actions=True, render_mode='rgb_array', stochastic=False,
+                 ball_displacement=287,
+                 realistic=False,
+                 clip_out_of_bounds=False):
         '''
         Required:
         - possible_agents
@@ -62,6 +65,7 @@ class BaseEnv(gym.Env):
         self.ball_velocity_coef = 1
         self.robot_radius = 25
 
+        self.ball_displacement = ball_displacement
         if self.continous_actions:
             self.displacement_coef = 0.1
             self.angle_displacement = 0.25
@@ -322,10 +326,10 @@ class BaseEnv(gym.Env):
                     self.ball_angle = self.angles[i]
 
                 if self.stochastic:
-                    self.ball_angle += np.random.uniform(-np.pi/6,np.pi/6)
+                    self.ball_angle += np.clip(np.random.normal(0, 1), -2, 2) * np.pi/12
 
-                self.ball[0] += 247 * math.cos(self.ball_angle)
-                self.ball[1] += 247 * math.sin(self.ball_angle)
+                self.ball[0] += self.ball_displacement * math.cos(self.ball_angle)
+                self.ball[1] += self.ball_displacement * math.sin(self.ball_angle)
 
         # If ball is in goal, stop ball
         # if self.ball[0] > 4400 and (self.ball[1] < 500 and self.ball[1] > -500):
