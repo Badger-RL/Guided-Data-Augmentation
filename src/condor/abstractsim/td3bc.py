@@ -38,7 +38,7 @@ if __name__ == "__main__":
                             )
                             mem, disk = MEMDISK[1][env_id]
                             memdisk = f'{mem},{disk},'
-                            # command = memdisk + command.replace(' ', '*')
+                            command = memdisk + command.replace(' ', '*')
                             print(command)
                             i += 1
                             all_commands += command + '\n'
