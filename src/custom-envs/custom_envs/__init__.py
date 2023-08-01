@@ -24,6 +24,21 @@ register(
         'sparse': True,
         'stochastic': False,
         'realistic': False,
+        'clip_out_of_bounds': False,
+        'displacement_coef': 0.20,
+        # "init_ball_x_range": [-3000, 3000],
+        # "init_ball_y_range": [-3000, 3000],
+    }
+)
+
+register(
+    id="PushBallToGoal-v3",
+    entry_point="custom_envs.push_ball_to_goal:PushBallToGoalEnv",
+    max_episode_steps=500,
+    kwargs={
+        'sparse': True,
+        'stochastic': False,
+        'realistic': False,
         'displacement_coef': 0.20
     }
 )

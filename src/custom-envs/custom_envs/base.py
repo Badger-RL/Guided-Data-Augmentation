@@ -237,9 +237,9 @@ class BaseEnv(gym.Env):
     def dynamics_action_scale(self, action):
         # Action is a 4 dimensional vector, (angle, x, y, kick)
         # Unable to move if turning faster than 0.5
-        if abs(action[0]) > 0.4:
-            action[1] = 0
-            action[2] = 0
+        # if abs(action[0]) > 0.4:
+        #     action[1] = 0
+        #     action[2] = 0
 
         # Make moving backwards slower
         if action[1] < 0:

@@ -22,11 +22,12 @@ class PushBallToGoalEnv(BaseEnv):
             continuous_actions=True,
             stochastic=False,
             realistic=False,
+            clip_out_of_bounds=False,
             render_mode='rgb_array',
 
     ):
         # Init base class
-        super().__init__(continuous_actions=continuous_actions, stochastic=stochastic, realistic=realistic)
+        super().__init__(continuous_actions=continuous_actions, stochastic=stochastic, realistic=realistic, clip_out_of_bounds=clip_out_of_bounds)
 
         self.rendering_init = False
         self.render_mode = render_mode
@@ -109,8 +110,8 @@ class PushBallToGoalEnv(BaseEnv):
 
         self.previous_distances = [None for _ in range(len(self.agents))]
         self.ball = [np.random.uniform(*self.init_ball_x_range), np.random.uniform(*self.init_ball_y_range)]
-        if np.random.random() < 0.5:
-            self.ball[1] *= -1
+        # if np.random.random() < 0.5:
+        #     self.ball[1] *= -1
 
         observations = {}
         for agent in self.agents:
@@ -190,8 +191,8 @@ class PushBallToGoalEnv(BaseEnv):
             reward += 1
             is_goal = True
 
-        if not self.ball_is_in_bounds(ball_pos):
-            reward += -1
+        if not self.clip_out_of_bounds and not self.ball_is_in_bounds(ball_pos):
+            reward += -10
             is_out_of_bounds = True
 
         return reward, is_goal, is_out_of_bounds

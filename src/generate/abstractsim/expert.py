@@ -50,7 +50,7 @@ def append_dataset(data, append_data):
 
 def npify(data):
     for k in data:
-        if k in ['terminals', 'timeouts']:
+        if k in ['terminals', 'timeouts', 'dones']:
             dtype = np.bool_
         else:
             dtype = np.float32
@@ -61,11 +61,11 @@ def npify(data):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--env-id', type=str, help='PushBallToGoal-v1')
+    parser.add_argument('--env-id', type=str, default='PushBallToGoal-v2')
     parser.add_argument('--num_samples', type=int, default=int(100e3), help='Num samples to collect')
     parser.add_argument('--num_traj', type=int, default=5, help='Num trajectories to collect. Overrides num_samples')
     parser.add_argument('--num_traj_success', type=int, default=5, help='Num trajectories to collect. Overrides num_samples')
-    parser.add_argument('--policy-path', type=str, default='../../../src/results/PushBallToGoal-v0/rl_model_3200000_steps.zip')
+    parser.add_argument('--policy-path', type=str, default='../../../src/policies/PushBallToGoal-v2/policy_72.zip')
     parser.add_argument('--norm-path', type=str, default='')
     parser.add_argument('--save-dir', type=str, help='file_name')
     parser.add_argument('--save-name', type=str, help='file_name')
@@ -77,6 +77,11 @@ def main():
     args = parser.parse_args()
 
     env = gym.make(args.env_id,
+                   # init_robot_x_range=(4400, 4400),
+                   # init_robot_y_range=(-3000, -3000),
+                   # init_ball_x_range=(-4400, -4400),
+                   # init_ball_y_range=(3000, 3000)
+
                    # init_robot_x_range=(4400, 4400),
                    # init_robot_y_range=(-3000, -3000),
                    init_ball_x_range=(-1000,+1000),
@@ -113,7 +118,7 @@ def main():
                 env.render()
 
             # print(info['is_success'], info['terminated'],  done)
-            append_data(data, s, act, r, ns, info['terminated'], done, info['absolute_obs'], info['absolute_next_obs'])
+            append_data(data, s, act, r, ns, done, done, info['absolute_obs'], info['absolute_next_obs'])
 
             if len(data['observations']) % 10000 == 0:
                 print(len(data['observations']))
