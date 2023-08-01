@@ -25,6 +25,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--observed-dataset-path', type=str, default='../../datasets/PushBallToGoal-v1/no_aug.hdf5')
     parser.add_argument('--augmentation-ratio', '-aug-ratio', type=int, default=1, help='Number of augmentations per observed transition')
+    parser.add_argument('--aug-size', '-aug-size', type=int, default=1, help='Number of augmentations per observed transition')
     parser.add_argument('--save-dir', type=str, default='.')
     parser.add_argument('--save-name', type=str, default='tmp.hdf5')
     parser.add_argument('--aug', type=str, default='guided')
@@ -54,7 +55,7 @@ if __name__ == '__main__':
     goal_count = 0
     new_pos = None
     new_pos = np.array([4400,0])
-    while aug_count < 100000: #n*aug_ratio:
+    while aug_count < args.aug_size: #n*aug_ratio:
         for _ in range(aug_ratio):
             idx = i % n
 
@@ -85,10 +86,8 @@ if __name__ == '__main__':
                     )
                 if is_valid:
                     aug_count += 1
-                    print(aug_count, goal_count)
-
                     if aug_count % 10000 == 0:
-                        print(aug_count)
+                        print(aug_count, goal_count)
                     append_data(aug_dataset, obs, action, reward, next_obs, done, done, abs_obs, abs_next_obs)
                 else:
                     invalid_count += 1

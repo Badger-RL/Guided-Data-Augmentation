@@ -7,56 +7,6 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 import json
 
-
-def get_coords(observation, action):
-    """Function to extract absolute coordinates from and observation and an action."""
-    ball_agent_x_offset = observation[0] * 9000
-    ball_agent_y_offset = observation[1] * 6000
-    goal_ball_x_offset = observation[2] * 9000
-    goal_ball_y_offset = observation[3] * 6000
-
-    ball_robot_angle_offset_sin = observation[4]
-    ball_robot_angle_offset_cos = observation[5]
-    goal_robot_angle_offset_sin = observation[6]
-    goal_robot_angle_offset_cos = observation[7]
-
-    target_x = 4800 - goal_ball_x_offset
-    target_y = 0 - goal_ball_y_offset
-
-    robot_x = target_x - ball_agent_x_offset
-    robot_y = target_y - ball_agent_y_offset
-
-    ball_robot_angle_offset = np.arctan2(
-        ball_robot_angle_offset_sin, ball_robot_angle_offset_cos
-    )
-    goal_robot_angle_offset = np.arctan2(
-        goal_robot_angle_offset_sin, goal_robot_angle_offset_cos
-    )
-
-    robot_angle_to_ball = np.arctan2(ball_agent_y_offset, ball_agent_x_offset)
-
-    robot_angle_to_ball = robot_angle_to_ball
-
-    robot_angle = robot_angle_to_ball - ball_robot_angle_offset
-
-    policy_target_x = robot_x + (
-            (
-                    (np.cos(robot_angle) * np.clip(action[1], -1, 1))
-                    + (np.cos(robot_angle + np.pi / 2) * np.clip(action[2], -1, 1))
-            )
-            * 200
-    )  # the x component of the location targeted by the high level action
-    policy_target_y = robot_y + (
-            (
-                    (np.sin(robot_angle) * np.clip(action[1], -1, 1))
-                    + (np.sin(robot_angle + np.pi / 2) * np.clip(action[2], -1, 1))
-            )
-            * 200
-    )  # the y component of the location targeted by the high level action
-
-    return robot_x, robot_y, target_x, target_y, policy_target_x, policy_target_y
-
-
 def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_episode=False):
     agent_x_list = []
     agent_y_list = []
@@ -122,8 +72,8 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
         col = LineCollection(lines)
         ax.add_collection(col)
 
-    plt.xlim(-5000, 5000)
-    plt.ylim(-3500, 3500)
+    # plt.xlim(-6000, 6000)
+    # plt.ylim(-4500, 4500)
     plt.xlabel('x position')
     plt.ylabel('y position')
     # plt.show()
@@ -134,12 +84,13 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset-path', type=str, default='/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/generate/abstractsim/tmp.hdf5')
+    # parser.add_argument('--dataset-path', type=str, default='/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/generate/abstractsim/tmp.hdf5')
     # parser.add_argument('--dataset-path', type=str,
-    #                     default='/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/datasets/PushBallToGoal-v0/no_aug_40_5k.hdf5')
-
+    #                     default='/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/datasets/PushBallToGoal-v1/physical/guided_traj.hdf5')
+    parser.add_argument('--dataset-path', type=str,
+                        default='/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/datasets/PushBallToGoal-v2/no_aug.hdf5')
     parser.add_argument('--save-dir', type=str, default='./figures/PushBallToGoal-v0/')
-    parser.add_argument('--save-name', type=str, default='tmp.png')
+    parser.add_argument('--save-name', type=str, default='tmp1.png')
     parser.add_argument('--single-episode', type=bool, default=False)
     parser.add_argument('--show-actions', type=bool, default=False)
     args = parser.parse_args()
@@ -150,18 +101,8 @@ if __name__ == "__main__":
     dataset = {}
     data_hdf5 = h5py.File(args.dataset_path, "r")
     for key in data_hdf5.keys():
-        start = 5000
-        end = 6000
+        start = 000
+        end = 100000
         dataset[key] = np.array(data_hdf5[key][start:end])
-
-    """
-    print(len(dataset["terminals"]))
-
-
-    for i in range(len(dataset["terminals"])-1):
-        assert(dataset["terminals"][i] == 0)
-    assert(dataset["terminals"][-1] == 1)
-    assert(len(dataset["observations"]) == 2000)
-    """
 
     visualize_recorded_rollout(dataset, save_path, show_actions=args.show_actions, single_episode=args.single_episode)
