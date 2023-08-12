@@ -5,20 +5,17 @@ if __name__ == "__main__":
     all_commands = ""
 
     i = 0
-    for env_id in ['maze2d-umaze-v1', 'maze2d-medium-v1', 'maze2d-large-v1']:
+    for env_id in ['PushBallToGoal-v0']:
         for aug in ['no_aug', 'random', 'guided']:
             # for expert in [50, 85]:
             #     aug = f'{aug}_{expert}'
                 aug = f'{aug}'
                 for gap in [5]:
-                        for nl in [1,2]:
+                        for nl in [1]:
                             for hd in [256]:
-                                if aug == 'no_aug':
-                                    dataset_name = None
-                                else:
-                                    dataset_name = f'/staging/ncorrado/datasets/{env_id}/{aug}/m_1.hdf5'
+                                dataset_name = f'/staging/ncorrado/datasets/{env_id}/{aug}.hdf5'
 
-                                save_dir = f'results/{env_id}/{aug}/cql/nl_{nl}/gap_{gap}'
+                                save_dir = f'results/{env_id}/{aug}/td3bc/nl_{nl}/gap_{gap}'
                                 hidden_dims = 256
 
                                 max_timesteps = int(1e6) if nl == 2 else int(1e6)

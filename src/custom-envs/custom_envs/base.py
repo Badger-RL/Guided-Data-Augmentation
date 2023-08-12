@@ -148,6 +148,14 @@ class BaseEnv(gym.Env):
         else:
             return False
 
+    def ball_is_in_bounds(self, ball_pos):
+        if self.at_goal():
+            return True
+        elif np.abs(self.target_x) < 4500 and np.abs(self.target_y) < 3500:
+            return True
+        else:
+            return False
+
     def calculate_reward(self):
         robot_location = np.array([self.robot_x, self.robot_y])
         target_location = np.array([self.target_x, self.target_y])
@@ -162,6 +170,9 @@ class BaseEnv(gym.Env):
 
         if self.at_goal():
             reward += 1
+
+        # if not self.ball_is_in_bounds():
+        #     reward -= 100
 
         return reward
 
