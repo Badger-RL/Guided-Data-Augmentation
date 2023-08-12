@@ -9,7 +9,9 @@ from matplotlib import pyplot as plt
 from algorithms.utils import load_dataset
 
 
-for env_id in ['maze2d-umaze-v1', 'maze2d-medium-v1', 'maze2d-large-v1']:
+# for env_id in ['maze2d-umaze-v1', 'maze2d-medium-v1', 'maze2d-large-v1']:
+for env_id in ['maze2d-umaze-v1']:
+
     for aug in ['random', 'guided']:
         plt.figure(figsize=(12, 12))
 
@@ -21,23 +23,23 @@ for env_id in ['maze2d-umaze-v1', 'maze2d-medium-v1', 'maze2d-large-v1']:
         for key in data_hdf5.keys():
             dataset[key] = np.array(data_hdf5[key])
 
-        # plot no_aug
-        start = int(0e6)
-        end = start + int(5e3)
-
-        observations = dataset['observations'][start:end]
-        next_observations = dataset['next_observations'][start:end]
-        rewards = dataset['rewards'][start:end]
-        at_goal = rewards > 0
-
-        x = observations[:, 0]
-        y = observations[:, 1]
-        plt.scatter(x, y, alpha=0.5)
-        plt.scatter(x[at_goal], y[at_goal], alpha=0.5, color='g')
+        # # plot no_aug
+        # start = int(0e6)
+        # end = start + int(5e3)
+        #
+        # observations = dataset['observations'][start:end]
+        # next_observations = dataset['next_observations'][start:end]
+        # rewards = dataset['rewards'][start:end]
+        # at_goal = rewards > 0
+        #
+        # x = observations[:, 0]
+        # y = observations[:, 1]
+        # plt.scatter(x, y, alpha=0.5)
+        # plt.scatter(x[at_goal], y[at_goal], alpha=0.5, color='g')
 
         # plot aug
-        start = len(dataset['observations']) - int(3e3)
-        end = start + int(3e3)
+        start = len(dataset['observations']) - int(1e3)
+        end = start + int(1e3)
         observations = dataset['observations'][start:end]
         next_observations = dataset['next_observations'][start:end]
         rewards = dataset['rewards'][start:end]
@@ -50,19 +52,20 @@ for env_id in ['maze2d-umaze-v1', 'maze2d-medium-v1', 'maze2d-large-v1']:
 
         u = next_x - x
         v = next_y - y
-        norm = np.sqrt(u**2 + v**2)
-        u /= norm
-        v /= norm
+        # u *= 2
+        # v *= 2
+        # norm = np.sqrt(u**2 + v**2)
+        # u /= norm
+        # v /= norm
 
-        plt.quiver(x, y, u, v)
-        plt.scatter(next_x[at_goal],next_y[at_goal], alpha=0.5, color='g')
-
-        plt.title(f'{env_id}: {aug}', fontsize=24)
-        plt.xlabel('x position', fontsize=24)
-        plt.ylabel('y position', fontsize=24)
-        plt.xticks(fontsize=20)
-        plt.yticks(fontsize=20)
+        plt.quiver(x, y, u, v, scale=3, width=0.005)
+        # plt.scatter(next_x[at_goal],next_y[at_goal], alpha=0.5, color='g')
+        plt.title(f'{env_id}\n{aug.capitalize()} Augmentation', fontsize=56)
+        plt.xlabel('x position', fontsize=56)
+        plt.ylabel('y position', fontsize=56)
+        plt.xticks(fontsize=48)
+        plt.yticks(fontsize=48)
         plt.tight_layout()
+        os.makedirs(f'figures/{env_id}', exist_ok=True)
+        plt.savefig(f'figures/{env_id}/{aug}.png')
         plt.show()
-        # os.makedirs(f'figures/{env_id}', exist_ok=True)
-        # plt.savefig(f'figures/{env_id}/{aug}.png')
