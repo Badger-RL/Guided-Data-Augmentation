@@ -24,11 +24,18 @@ def main():
 
 
     # env = gym.make('maze2d-umaze-v0')
-    env = gym.make('antmaze-umaze-diverse-v1')
-    dataset = load_dataset('../../datasets/antmaze-umaze-diverse-v1/guided_traj/m_1.hdf5')
+    env = gym.make('antmaze-umaze-diverse-v2')
+    dataset = d4rl.qlearning_dataset(env)
+    # dataset = load_dataset('../../datasets/antmaze-umaze-diverse-v1/no_aug_no_collisions_relabeled_1k.hdf5')
     # dataset = load_dataset('tmp/tmp.hdf5')
 
-    dataset = d4rl.qlearning_dataset(env)
+    print('terminals', dataset['terminals'].sum())
+    t = dataset['terminals'][:10000000]
+    o = dataset['observations'][:10000000]
+    r = dataset['rewards'][:10000000]
+
+    overlap = t & (r > 0)
+    print('overlap', overlap.sum())
 
     seed = 0
     random.seed(seed)
@@ -58,14 +65,15 @@ def main():
         action = dataset['actions'][t]
 
 
-        # qpos = obs[:15]
-        # qvel = obs[15:]
-        # env.set_state(qpos, qvel)
+        qpos = obs[:15]
+        qvel = obs[15:]
+        env.set_state(qpos, qvel)
         next_obs, reward, done, info = env.step(action)
         env.render()
 
         true_next_obs = dataset['next_observations'][t]
-        print(next_obs-true_next_obs)
+        # print(next_obs-true_next_obs)
+        # print(dataset['truncateds'][t])
 
         # print(rowcol)
         if reward > 0:

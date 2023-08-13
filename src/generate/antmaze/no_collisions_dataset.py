@@ -25,8 +25,8 @@ def main():
 
 
     # env = gym.make('maze2d-medium-v0')
-    env = gym.make('antmaze-medium-diverse-v1')
-    env_empty = gym.make('antmaze-open-medium-diverse-v1')
+    env = gym.make('antmaze-umaze-diverse-v1')
+    env_empty = gym.make('antmaze-open-umaze-diverse-v1')
 
     dataset = d4rl.qlearning_dataset(env)
 

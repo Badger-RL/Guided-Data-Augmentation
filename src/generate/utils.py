@@ -34,7 +34,7 @@ def extend_data(data, s, a, r, ns, done):
 
 def npify(data):
     for k in data:
-        if k in ['terminals', 'timeouts']:
+        if k in ['terminals', 'timeouts', 'truncateds']:
             dtype = np.bool_
         else:
             dtype = np.float32

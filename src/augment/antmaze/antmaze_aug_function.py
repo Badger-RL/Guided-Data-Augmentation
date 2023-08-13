@@ -114,12 +114,11 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
         # store target goal
         l = len(self.env.maze_arr)
         if l == 5:
-            self.target = np.array([0.75, 8.5])
+            self.target = np.array([0.5, 8])
             self.env.maze_arr = U_MAZE
         elif l == 8:
             self.target = np.array([20.5, 20.5])
             self.env.maze_arr = MEDIUM_MAZE
-
         else:
             self.target = np.array([33.334047004876766, 24.540936989331545])
             self.env.maze_arr = LARGE_MAZE
