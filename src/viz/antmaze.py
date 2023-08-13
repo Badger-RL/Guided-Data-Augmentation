@@ -15,15 +15,15 @@ from matplotlib import pyplot as plt
 from algorithms.utils import load_dataset
 
 
-for env_id in ['antmaze-medium-diverse-v1']:
+for env_id in ['antmaze-umaze-diverse-v2']:
     for aug in ['guided_traj']:
         plt.figure(figsize=(12, 12))
 
-        dataset_name = f'../datasets/{env_id}/{aug}/m_1.hdf5'
+        dataset_name = f'../datasets/{env_id}/{aug}/m_1000.hdf5'
         # dataset_name = f'../datasets/{env_id}/no_aug_clean.hdf5'
         # dataset_name = f'../augment/antmaze/tmp/tmp.hdf5'
-        # dataset_name = f'../datasets/{env_id}/no_aug_no_collisions.hdf5'
-        # dataset_name = f'../datasets/{env_id}/no_aug_no_collisions_relabeled.hdf5'
+        # dataset_name = f'../datasets/{env_id}/no_aug_no_collisions_1k.hdf5'
+        # dataset_name = f'../datasets/{env_id}/no_aug_no_collisions_relabeled_1k.hdf5'
         # dataset_name = f'../datasets/{env_id}/no_aug_relabeled.hdf5'
 
         # dataset_name = None 327271
@@ -37,10 +37,10 @@ for env_id in ['antmaze-medium-diverse-v1']:
             env = gym.make(env_id)
             dataset = d4rl.qlearning_dataset(env)
 
-        n = int(50e3)
+        n = int(1e3)
 
         # plot no_aug
-        start = int(0e6)
+        start = int(0e3)
         end = start + n
 
         observations = dataset['observations'][start:end]
@@ -55,6 +55,7 @@ for env_id in ['antmaze-medium-diverse-v1']:
         plt.scatter(x[at_goal], y[at_goal], alpha=0.5, color='g')
 
         # plot aug
+        n = int(50e3)
         start = len(dataset['observations']) - n
         end = start + n
         observations = dataset['observations'][start:end] #+ 0.5
