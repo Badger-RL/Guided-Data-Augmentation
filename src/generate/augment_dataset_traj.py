@@ -45,6 +45,13 @@ AUG_FUNCTIONS = {
         'guided2': AntMazeGuided2AugmentationFunction,
         'mixed': AntMazeAugmentationFunction,
     },
+    'antmaze-umaze-diverse-v2': {
+        'random': AntMazeAugmentationFunction,
+        'guided_traj': AntMazeGuidedTrajAugmentationFunction,
+        'random_traj': AntMazeRandomTrajAugmentationFunction,
+        'guided2': AntMazeGuided2AugmentationFunction,
+        'mixed': AntMazeAugmentationFunction,
+    },
     'antmaze-eval-umaze-diverse-v0': {
         'random': AntMazeAugmentationFunction,
         'guided': AntMazeGuidedAugmentationFunction,
@@ -66,16 +73,16 @@ AUG_FUNCTIONS = {
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--env-id', type=str, default='antmaze-medium-diverse-v1')
+    parser.add_argument('--env-id', type=str, default='antmaze-umaze-diverse-v2')
     # parser.add_argument('--observed-dataset-path', type=str, default=None)
     # parser.add_argument('--observed-dataset-path', type=str, default='../datasets/antmaze-umaze-diverse-v1/no_aug_no_collisions_relabeled.hdf5')
-    parser.add_argument('--observed-dataset-path', type=str, default='../datasets/antmaze-medium-diverse-v1/no_aug_no_collisions_relabeled.hdf5')
+    parser.add_argument('--observed-dataset-path', type=str, default='../datasets/antmaze-umaze-diverse-v2/no_aug_no_collisions_relabeled_1k.hdf5')
 
     parser.add_argument('--observed-dataset-frac', '-frac', type=float, default=None)
-    parser.add_argument('--observed-dataset-size', '-size', type=int, default=1000000)
+    parser.add_argument('--observed-dataset-size', '-size', type=int, default=10000)
 
     parser.add_argument('--aug-func', type=str, default='guided_traj')
-    parser.add_argument('--aug-ratio', '-m', type=int, default=1, help='Number of augmentations per observed transition')
+    parser.add_argument('--aug-ratio', '-m', type=int, default=1000, help='Number of augmentations per observed transition')
     parser.add_argument('--save-dir', '-fd', type=str, default=None)
     parser.add_argument('--save-name', '-fn', type=str, default=None)
 
@@ -95,8 +102,8 @@ if __name__ == '__main__':
     if args.observed_dataset_path:
         observed_dataset = load_dataset(args.observed_dataset_path)
         # original_observed_dataset = d4rl.qlearning_dataset(env)
-        original_observed_dataset = load_dataset('../datasets/antmaze-medium-diverse-v1/no_aug_relabeled.hdf5')
-        # original_observed_dataset = None
+        # original_observed_dataset = load_dataset('../datasets/antmaze-medium-diverse-v1/no_aug_relabeled.hdf5')
+        original_observed_dataset = None
     else:
         original_observed_dataset = None
         observed_dataset = d4rl.qlearning_dataset(env)
@@ -127,7 +134,6 @@ if __name__ == '__main__':
     while aug_count < n*m:
 
         start = start % n
-
         end = start
         truncated = False
         while not truncated:
@@ -136,7 +142,7 @@ if __name__ == '__main__':
             if end >= n:
                 break
             truncated = observed_dataset_truncated[end]
-
+        end += 1
         length = end - start + 1
 
         obs, action, reward, next_obs, done = f.augment(
@@ -147,8 +153,8 @@ if __name__ == '__main__':
             done=observed_dataset_done[start:end],
         )
 
-        start = end+1
-        if obs is not None and len(obs) > 50:
+        start = end
+        if obs is not None and len(obs) > 25:
             aug_count += len(obs)
             # if aug_count % 10000 == 0: print('aug_count:', aug_count)
             print('aug_count:', aug_count)

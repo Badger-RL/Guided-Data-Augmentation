@@ -64,13 +64,13 @@ if __name__ == '__main__':
     parser.add_argument('--env-id', type=str, default='antmaze-umaze-diverse-v1')
     # parser.add_argument('--observed-dataset-path', type=str, default=None)
     # parser.add_argument('--observed-dataset-path', type=str, default='../datasets/antmaze-umaze-diverse-v1/no_aug_no_collisions_relabeled.hdf5')
-    parser.add_argument('--observed-dataset-path', type=str, default='../datasets/antmaze-umaze-diverse-v1/no_aug_no_collisions_relabeled.hdf5')
+    parser.add_argument('--observed-dataset-path', type=str, default='../datasets/antmaze-umaze-diverse-v1/no_aug_no_collisions_relabeled_1k.hdf5')
 
     parser.add_argument('--observed-dataset-frac', '-frac', type=float, default=None)
     parser.add_argument('--observed-dataset-size', '-size', type=int, default=10000000)
 
     parser.add_argument('--aug-func', type=str, default='guided')
-    parser.add_argument('--aug-ratio', '-m', type=int, default=7, help='Number of augmentations per observed transition')
+    parser.add_argument('--aug-ratio', '-m', type=int, default=99, help='Number of augmentations per observed transition')
     parser.add_argument('--save-dir', '-fd', type=str, default=None)
     parser.add_argument('--save-name', '-fn', type=str, default=None)
 
@@ -90,8 +90,8 @@ if __name__ == '__main__':
     if args.observed_dataset_path:
         observed_dataset = load_dataset(args.observed_dataset_path)
         # original_observed_dataset = d4rl.qlearning_dataset(env)
-        original_observed_dataset = load_dataset('../datasets/antmaze-umaze-diverse-v1/no_aug_relabeled.hdf5')
-        # original_observed_dataset = None
+        # original_observed_dataset = load_dataset('../datasets/antmaze-umaze-diverse-v1/no_aug_relabeled.hdf5')
+        original_observed_dataset = None
     else:
         original_observed_dataset = None
         observed_dataset = d4rl.qlearning_dataset(env)
@@ -145,6 +145,7 @@ if __name__ == '__main__':
     new_dataset = h5py.File(save_path, 'w')
     npify(aug_dataset)
     for k in aug_dataset:
+        if k == 'truncateds': continue
         if original_observed_dataset:
             data = np.concatenate([original_observed_dataset[k], aug_dataset[k]])
         else:
