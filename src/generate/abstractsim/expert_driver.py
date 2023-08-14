@@ -1,9 +1,21 @@
 import os
 
-for expert_success_rate in [50]:
-    os.system('python3 expert.py --num_samples 1500 '
-              # ' --render 1'
-              f' --policy-path ../../policies/PushBallToGoal-v0/policy_{expert_success_rate}'
-              f' --norm-path ../../policies/PushBallToGoal-v0/vector_normalize_{expert_success_rate}'
-              f' --save-dir ../../datasets/PushBallToGoal-v0'
-              f' --save-name no_aug_{expert_success_rate}.hdf5')
+
+# 40 893.5071630557165
+# 60 1195.693313336531
+# 72 1353.9820733017361
+for success_rate in [60, ]:
+    for n in [100]:
+        os.system(f'python3 expert.py --env-id PushBallToGoal-v2 --num_traj {n} --seed 42' # v0 seed = 42
+                  f' --policy-path ../../../src/policies/PushBallToGoal-v2/policy_{success_rate}.zip'
+                  # f' --policy-path ../../../src/results/PushBallToGoal-v0/rl_model_1600000_steps.zip'
+                  f' --save-dir ../../datasets/PushBallToGoal-v2'
+                  f' --save-name no_aug.hdf5 '
+                  # f' --render 1'
+                  )
+
+# for success_rate in [60, 40]:
+#     os.system('python3 expert.py --num_samples 500000 '
+#               f' --policy-path ../../../src/policies/PushBallToGoal-v0/policy_{success_rate}.zip'
+#               f' --save-dir ../../datasets/PushBallToGoal-v0'
+#               f' --save-name no_aug_{success_rate}_deterministic.hdf5')

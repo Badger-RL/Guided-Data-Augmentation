@@ -27,6 +27,7 @@ def load_data(paths, field_name='return'):
 
         data = np.load(path, allow_pickle=True)
         avg = data[field_name]
+
         avgs.append(avg)
 
         if t is None:

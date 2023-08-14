@@ -4,8 +4,8 @@ if __name__ == "__main__":
     all_commands = ""
 
     env_id = 'PushBallToGoal-v1'
-    for env_id in ['PushBallToGoal-v0']:
-        for aug in ['no_aug', 'random', 'guided']:
+    for env_id in ['PushBallToGoal-v2']:
+        for aug in ['no_aug', 'random_traj', 'guided_traj']:
             aug = f'{aug}'
             # for aug in ['guided_transition']:
             for lr in [3e-4, 3e-5]:
