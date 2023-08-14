@@ -366,3 +366,75 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
         aug_done = aug_reward > 0
 
         return aug_obs, aug_action, aug_reward, aug_next_obs, aug_done
+
+
+class AntMazeTrajectoryAugmentationFunction(AntMazeAugmentationFunction):
+    def _get_location(self, obs):
+        #location = (int(np.round(obs[0]+self.agent_offset)), int(np.round(obs[1]+self.agent_offset)))
+        for i in range(len(self.valid_locations)):
+            location = np.array(self.valid_locations[i]).astype(self.env.observation_space.dtype)
+            boundaries = self._get_valid_boundaries(*location)
+            if self._is_in_box(*boundaries, obs[0], obs[1]):
+                return location
+        return None
+
+    def augment_trajectory(self, trajectory: dict):
+        length = len(trajectory['observations'])
+    
+        augmented_trajectory = {
+            'observations': [],
+            'actions': [],
+            'rewards': [],
+            'next_observations': [],
+            'terminals': [],
+        }
+        is_new_trajectory = True
+        for i in range(length):
+            observation = trajectory['observations'][i]
+            action = trajectory['actions'][i]
+            next_observation = trajectory['next_observations'][i]
+            reward = trajectory['rewards'][i]
+            done = trajectory['terminals'][i]
+
+            if is_new_trajectory:
+                r, c = self._xy_to_rowcol(observation[:2])
+                boundary = self._get_valid_boundaries(r, c)
+                new_origin = self._sample_from_box(*boundary)
+                delta_pos = new_origin[:2] - observation[:2]
+
+            augmented_obs = observation.copy()
+            augmented_next_obs = next_observation.copy()
+            augmented_action = action.copy()
+            augmented_reward = reward.copy()
+            augmented_done = done.copy()
+
+            augmented_obs[:2] = observation[:2].copy() + delta_pos
+            augmented_next_obs[:2] = next_observation[:2].copy() + delta_pos
+            augmented_reward = self._reward(augmented_next_obs)
+            augmented_obs[:2] += 0.5
+            augmented_next_obs[:2] += 0.5
+
+            aug_location = self._get_location(augmented_obs)
+            if aug_location is None:
+                is_new_trajectory = True
+                i -= 1
+                continue
+            pos_is_valid = self._check_corners(augmented_obs[:2], aug_location)
+            next_pos_is_valid = self._check_corners(augmented_next_obs[:2], aug_location)
+
+            if not (pos_is_valid and next_pos_is_valid):
+                is_new_trajectory = True
+                i -= 1
+                continue
+
+            if self.is_valid_input(augmented_obs, augmented_next_obs):
+                is_new_trajectory = False
+                augmented_trajectory['observations'].append(augmented_obs)
+                augmented_trajectory['actions'].append(augmented_action)
+                augmented_trajectory['rewards'].append(augmented_reward)
+                augmented_trajectory['next_observations'].append(augmented_next_obs)
+                augmented_trajectory['terminals'].append(augmented_done)
+            else:
+                is_new_trajectory = True
+                i -= 1
+        return augmented_trajectory
