@@ -8,6 +8,7 @@ from src.augment.utils import convert_to_absolute_obs, calculate_reward, convert
 def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
     aug_abs_obs = obs.copy()
     aug_abs_next_obs = next_obs.copy()
+
     aug_action = action.copy()
     aug_done = done.copy()
 
@@ -204,10 +205,12 @@ def rotate_reflect_traj_kick(env, obs, action, next_obs, reward, done, guided):
 
         # rotate robot and ball position about ball's final position
         theta = np.random.uniform(-180, -180) * np.pi / 180
+
         M = np.array([
             [np.cos(theta), -np.sin(theta)],
             [np.sin(theta), np.cos(theta)]
         ])
+
         aug_abs_obs[:, :2] = M.dot(aug_abs_obs[:, :2].T).T
         aug_abs_obs[:, 2:4] = M.dot(aug_abs_obs[:, 2:4].T).T
         aug_abs_obs[:, 4] += theta

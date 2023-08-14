@@ -43,6 +43,8 @@ class TrainConfig(TrainConfigBase):
     orthogonal_init: bool = True  # Orthogonal initialization
     normalize: bool = True  # Normalize states
     normalize_reward: bool = False  # Normalize reward
+    n_layers: int = 1
+    hidden_dims: int = 256
 
     def __post_init__(self):
         self.name = self.name
@@ -105,12 +107,14 @@ class ReparameterizedTanhGaussian(nn.Module):
         return action_sample, log_prob
 
 
-class TanhGaussianPolicy(nn.Module):
+class TanhGaussianPolicy(nn.Module, ):
     def __init__(
         self,
         state_dim: int,
         action_dim: int,
         max_action: float,
+        n_layers,
+        hidden_dims,
         log_std_multiplier: float = 1.0,
         log_std_offset: float = -1.0,
         orthogonal_init: bool = False,
@@ -123,13 +127,24 @@ class TanhGaussianPolicy(nn.Module):
         self.orthogonal_init = orthogonal_init
         self.no_tanh = no_tanh
 
-        self.base_network = nn.Sequential(
-            nn.Linear(state_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, 128),
-            nn.ReLU(),
-            nn.Linear(128, 2 * action_dim),
-        )
+        if n_layers == 1:
+            self.base_network = nn.Sequential(
+                nn.Linear(state_dim, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, 2 * action_dim),
+            )
+        elif n_layers == 2:
+            self.base_network = nn.Sequential(
+                nn.Linear(state_dim, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, 2 * action_dim),
+            )
 
         if orthogonal_init:
             self.base_network.apply(lambda m: init_module_weights(m, True))
@@ -177,20 +192,33 @@ class FullyConnectedQFunction(nn.Module):
         self,
         observation_dim: int,
         action_dim: int,
+        n_layers,
+        hidden_dims,
         orthogonal_init: bool = False,
     ):
         super().__init__()
         self.observation_dim = observation_dim
         self.action_dim = action_dim
         self.orthogonal_init = orthogonal_init
-
-        self.network = nn.Sequential(
-            nn.Linear(observation_dim + action_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128,128),
-            nn.ReLU(),
-            nn.Linear(128, 1),
-        )
+        print(n_layers)
+        if n_layers == 1:
+            self.network = nn.Sequential(
+                nn.Linear(observation_dim + action_dim, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, 1),
+            )
+        elif n_layers == 2:
+            self.network = nn.Sequential(
+                nn.Linear(observation_dim + action_dim, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims,hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, 1),
+            )
         if orthogonal_init:
             self.network.apply(lambda m: init_module_weights(m, True))
         else:
@@ -626,13 +654,13 @@ def train(config: TrainConfig):
     action_dim = env.action_space.shape[0]
 
     # create nets
-    critic_1 = FullyConnectedQFunction(state_dim, action_dim, config.orthogonal_init).to(config.device)
-    critic_2 = FullyConnectedQFunction(state_dim, action_dim, config.orthogonal_init).to(config.device)
+    critic_1 = FullyConnectedQFunction(state_dim, action_dim, config.n_layers, config.hidden_dims, config.orthogonal_init).to(config.device)
+    critic_2 = FullyConnectedQFunction(state_dim, action_dim, config.n_layers, config.hidden_dims, config.orthogonal_init).to(config.device)
     critic_1_optimizer = torch.optim.Adam(list(critic_1.parameters()), config.qf_lr)
     critic_2_optimizer = torch.optim.Adam(list(critic_2.parameters()), config.qf_lr)
 
     max_action = float(env.action_space.high[0])
-    actor = TanhGaussianPolicy(state_dim, action_dim, max_action, orthogonal_init=config.orthogonal_init).to(config.device)
+    actor = TanhGaussianPolicy(state_dim, action_dim, max_action, config.n_layers, config.hidden_dims, orthogonal_init=config.orthogonal_init).to(config.device)
     actor_optimizer = torch.optim.Adam(actor.parameters(), config.policy_lr)
 
     kwargs = {

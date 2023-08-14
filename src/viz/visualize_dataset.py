@@ -76,9 +76,10 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
     # plt.ylim(-4500, 4500)
     plt.xlabel('x position')
     plt.ylabel('y position')
-    # plt.show()
+    plt.show()
 
-    plt.savefig(save_path)
+    # plt.savefig(save_path)
+
 
 
 if __name__ == "__main__":

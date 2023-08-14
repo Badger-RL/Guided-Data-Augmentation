@@ -69,7 +69,6 @@ def main():
     parser.add_argument('--norm-path', type=str, default='')
     parser.add_argument('--save-dir', type=str, help='file_name')
     parser.add_argument('--save-name', type=str, help='file_name')
-
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--random_actions', type=int, default=0)
     parser.add_argument('--render', type=bool, default=0)
@@ -130,7 +129,6 @@ def main():
                 s = env.reset()
                 num_episodes += 1
 
-
                 if info['is_success']:
                     successes.append(1)
 
@@ -145,6 +143,7 @@ def main():
                 s = ns
 
     print(np.average(successes), np.std(successes)/np.sqrt(len(rets)), np.average(rets), np.std(rets)/np.sqrt(len(rets)))
+
     save_dir = args.save_dir
     os.makedirs(save_dir, exist_ok=True)
     fname = f'{save_dir}/{args.save_name}'

@@ -37,17 +37,17 @@ AUG_FUNCTIONS = {
     'antmaze-umaze-diverse-v1': {
         'random': AntMazeAugmentationFunction,
         'guided': AntMazeGuidedAugmentationFunction,
-        # 'mixed': AntMazeAugmentationFunction,
+        'mixed': AntMazeAugmentationFunction,
     },
     'antmaze-medium-diverse-v1': {
         'random': AntMazeAugmentationFunction,
         'guided': AntMazeGuidedAugmentationFunction,
-        # 'mixed': AntMazeAugmentationFunction,
+        'mixed': AntMazeAugmentationFunction,
     },
     'antmaze-large-diverse-v1': {
         'random': AntMazeAugmentationFunction,
         'guided': AntMazeGuidedAugmentationFunction,
-        # 'mixed': AntMazeAugmentationFunction,
+        'mixed': AntMazeAugmentationFunction,
     },
 }
 

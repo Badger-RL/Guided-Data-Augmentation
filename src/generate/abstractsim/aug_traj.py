@@ -30,6 +30,7 @@ def load_observed_data(dataset_path):
 
 def gen_aug_dataset(env, observed_dataset, check_goal_post, validate=True, aug_size=100000, aug_func=False):
 
+
     obs = observed_dataset['absolute_observations']
     action = observed_dataset['actions']
     reward = observed_dataset['rewards']
@@ -50,7 +51,6 @@ def gen_aug_dataset(env, observed_dataset, check_goal_post, validate=True, aug_s
     # terminal = done.reshape(num_episodes, -1)
     # done = done.reshape(num_episodes, -1)
 
-
     aug_obs_list, aug_action_list, aug_reward_list, aug_next_obs_list, aug_done_list = [], [], [], [], []
     aug_abs_obs_list, aug_abs_next_obs_list = [], []
 
@@ -68,6 +68,7 @@ def gen_aug_dataset(env, observed_dataset, check_goal_post, validate=True, aug_s
             aug_obs, aug_action, aug_reward, aug_next_obs, aug_done, aug_abs_obs, aug_abs_next_obs = aug_function(
                 env,
                 obs[start:end], action[start:end], next_obs[start:end], reward[start:end], terminal[start:end], guided)
+
             # episode_obs, episode_action, episode_next_obs, episode_reward, episode_done, check_goal_post)
             start = end
             if aug_obs is None:
@@ -94,6 +95,7 @@ def gen_aug_dataset(env, observed_dataset, check_goal_post, validate=True, aug_s
                 break
         if aug_count > aug_size:
             break
+
     aug_obs = np.concatenate(aug_obs_list)
     aug_action = np.concatenate(aug_action_list)
     aug_reward = np.concatenate(aug_reward_list)

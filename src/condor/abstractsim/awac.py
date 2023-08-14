@@ -5,13 +5,12 @@ if __name__ == "__main__":
 
     env_id = 'PushBallToGoal-v1'
     for env_id in ['PushBallToGoal-v2']:
-
         for aug in ['no_aug', 'random_traj', 'guided_traj']:
             aug = f'{aug}'
             # for aug in ['guided_transition']:
             for lr in [3e-4, 3e-5]:
                 for lmbda in [0.5, 1, 2]:
-                    for n_layers in [1]:
+                    for n_layers in [1,2]:
                         for hidden_dims in [256]:
 
                             dataset_name = f'/staging/ncorrado/datasets/{env_id}/{aug}.hdf5'
@@ -27,7 +26,7 @@ if __name__ == "__main__":
                                       f' --n_layers {n_layers}' \
                                       f' --hidden_dim {hidden_dims} '\
                                       f' --tau {5e-3}' \
-                                      f' --gamma 0.999'
+                                      f' --gamma 0.99'
 
                             if dataset_name:
                                 command += f' --dataset_name {dataset_name}'

@@ -364,7 +364,6 @@ class BaseEnv(gym.Env):
             return True
         else:
             return False
-
     def check_facing_ball_vec(self, robot_pos, ball_pos, agent_angle):
         # Convert from radians to degrees
         robot_angle = np.degrees(agent_angle) % 360
@@ -802,3 +801,7 @@ class Point:
             return (C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x)
 
         return ccw(A, C, D) != ccw(B, C, D) and ccw(A, B, C) != ccw(A, B, D)
+
+    def get_normalized_score(self, eval_score):
+        return eval_score/100
+
