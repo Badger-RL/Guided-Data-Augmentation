@@ -48,12 +48,13 @@ def wrap_env(
 # checkpoint = torch.load(Path(sys.argv[2]))
 
 dataset = {}
-data_hdf5 = h5py.File(sys.argv[1], "r")
+data_hdf5 = h5py.File('../../../datasets/PushBallToGoal-v0/simrobot/guided_traj.hdf5', "r")
 for key in data_hdf5.keys():
     dataset[key] = np.array(data_hdf5[key])
 
 
-state_mean, state_std = compute_mean_std(dataset["observations"], eps=1e-3)
+eps = 1e-3
+state_mean, state_std = compute_mean_std(dataset["observations"], eps=eps)
 
 # env = gym.make("maze2d-umaze-v1" )
 env = gym.make("PushBallToGoal-v0")
@@ -70,23 +71,23 @@ metadata = {
     "policy_type": "CORL_CQL"
 }
 metadata["mean"] = [float(entry) for entry in state_mean]
-metadata["var"] = [float(std**2) for std in state_std]
-metadata["clip"] = 1000
-metadata["epsilon"] = 0
+metadata["var"] = [float(std) for std in state_std]
+metadata["clip"] = 10000000000
+metadata["epsilon"] = eps
 print(metadata)
 with open("metadata.json", "w") as metadata_file:
     json.dump(metadata, metadata_file)
 
-actor = TanhGaussianPolicy(
-    state_dim, action_dim, max_action, orthogonal_init=orthogonal_init
+actor = algorithms.td3_bc.Actor(
+    state_dim, action_dim, max_action, hidden_dims=128, n_layers=1,
 ).to("cpu")
 
-checkpoint = torch.load('/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/results/run_286/best_model.pt')
+checkpoint = torch.load('/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/results/run_410/best_model.pt')
 actor.load_state_dict(state_dict = checkpoint["actor"])
 
 
-keras_actor  = pytorch_to_keras(
-        actor.base_network, torch.zeros((1, env.observation_space.shape[0])), verbose=True, name_policy="renumerate"
+keras_actor = pytorch_to_keras(
+        actor.net, torch.zeros((1, env.observation_space.shape[0])), verbose=True, name_policy="renumerate"
 )
 
 keras_actor.save("policy.h5", save_format="h5")

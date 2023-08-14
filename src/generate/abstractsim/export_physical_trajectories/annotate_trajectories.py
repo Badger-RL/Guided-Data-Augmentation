@@ -7,6 +7,7 @@ from custom_envs.push_ball_to_goal import PushBallToGoalEnv
 import h5py
 import os
 import numpy as np
+import natsort
 
 #this file is for annotating trajectories returned from the physical robots with rewards and terminals.
 
@@ -38,7 +39,7 @@ def annotate_trajectories(paths):
 
 
         # reorder obs to match what I use in abstractim
-        observations = np.array(dataset["observations"])
+        observations = np.array(dataset["absolute_observations"])
         observations = np.concatenate([observations[:, :2], observations[:, 3:5], observations[:, [2]]], axis=-1)
         # chop off last obs; we use it as the last next_obs
         obs = observations[:-1]
@@ -70,16 +71,43 @@ def annotate_trajectories(paths):
 
             # env.render()
 
-        trajectories["dones"][-1] = True
 
         print([str(len(trajectories[key]) )for key in trajectories.keys()])
+
+
+    for i in range(3000 - len(trajectories['absolute_observations'])):
+        obs = trajectories['absolute_observations'][-1].copy()
+        next_obs = trajectories['absolute_next_observations'][-1].copy()
+
+        noise = np.random.uniform(-10, 10, size=(2,))
+        obs[:2] += noise
+        next_obs[:2] += noise
+
+        reward, ball_is_at_goal, ball_is_out_of_bounds = env.calculate_reward(next_obs)
+        trajectories["rewards"].append(reward)
+        trajectories["actions"].append(trajectories["actions"][-1])
+        trajectories["terminals"].append(ball_is_at_goal or ball_is_out_of_bounds)
+        trajectories["dones"].append(False)
+        if reward > 1:
+            print('goal')
+        if reward < 0:
+            print('out of bounds')
+
+
+        trajectories["observations"].append(env.get_obs(obs[:2], obs[2:4], obs[-1]))
+        trajectories["next_observations"].append(env.get_obs(next_obs[:2], next_obs[2:4], next_obs[-1]))
+        trajectories["absolute_observations"].append(obs)
+        trajectories["absolute_next_observations"].append(next_obs)
+
+    trajectories["dones"][-1] = True
+    trajectories["terminals"][-1] = True
 
     return trajectories
 
 
 def npify(data):
     for k in data:
-        if k in ['terminals', 'timeouts']:
+        if k in ['terminals', 'timeouts', 'dones']:
             dtype = np.bool_
         else:
             dtype = np.float32
@@ -89,25 +117,25 @@ def npify(data):
 
 if __name__ == "__main__":
 
-    
+
 
     # if not len(sys.argv) >= 3:
     #     print("usage: python3 ./annotate_trajectories.py <input_path> <output_path>")
     #     exit()
 
     argv = [None, None, None]
-    argv[1] = 'curated_kicks'
-    argv[2] = 'curated_kicks.hdf5'
+    argv[1] = 'simrobot'
+    argv[2] = '../../../datasets/PushBallToGoal-v0/simrobot/no_aug.hdf5'
     # argv[1] = 'best'
     # argv[2] = 'best.hdf5'
     trajectory_files = []
 
     for path, subdirs, files in os.walk(argv[1]):
         print(files)
-        files = sorted(files)
+        files = natsort.natsorted(files)
         for name in files:
 
-            if "trajectories_" in name: 
+            if "trajectories_" in name:
                 print(name)
                 trajectory_files.append(os.path.join(path, name))
 
@@ -129,4 +157,4 @@ if __name__ == "__main__":
         for k in dataset:
             out_file.create_dataset(k, data=dataset[k], compression='gzip')
 
-    
+
