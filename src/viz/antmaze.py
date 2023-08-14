@@ -12,14 +12,15 @@ import h5py
 import numpy as np
 from matplotlib import pyplot as plt
 
-from algorithms.utils import load_dataset
+from src.algorithms.utils import load_dataset
 
 
-for env_id in ['antmaze-medium-diverse-v1']:
-    for aug in ['guided_traj']:
+for env_id in ['antmaze-umaze-diverse-v1']:
+    for aug in ['guided']:
         plt.figure(figsize=(12, 12))
 
-        dataset_name = f'../datasets/{env_id}/{aug}/m_1.hdf5'
+        # dataset_name = f'../datasets/{env_id}/{aug}/m_1.hdf5'
+        dataset_name = "/Users/yxqu/Desktop/Research/GuDA/GuidedDataAugmentationForRobotics/src/generate/generated.hdf5"
         # dataset_name = f'../datasets/{env_id}/no_aug_clean.hdf5'
         # dataset_name = f'../augment/antmaze/tmp/tmp.hdf5'
         # dataset_name = f'../datasets/{env_id}/no_aug_no_collisions.hdf5'
@@ -37,7 +38,7 @@ for env_id in ['antmaze-medium-diverse-v1']:
             env = gym.make(env_id)
             dataset = d4rl.qlearning_dataset(env)
 
-        n = int(50e3)
+        n = int(300)
 
         # plot no_aug
         start = int(0e6)
@@ -55,6 +56,7 @@ for env_id in ['antmaze-medium-diverse-v1']:
         plt.scatter(x[at_goal], y[at_goal], alpha=0.5, color='g')
 
         # plot aug
+        n = 1000
         start = len(dataset['observations']) - n
         end = start + n
         observations = dataset['observations'][start:end] #+ 0.5
@@ -98,6 +100,6 @@ for env_id in ['antmaze-medium-diverse-v1']:
         plt.yticks(fontsize=20)
         plt.tight_layout()
         os.makedirs(f'figures/{env_id}', exist_ok=True)
-        plt.savefig(f'figures/{env_id}/{aug}.png')
-        plt.show()
+        plt.savefig(f'{aug}.png')
+        # plt.show()
 
