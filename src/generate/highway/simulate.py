@@ -4,7 +4,7 @@ import os.path
 import gymnasium as gym
 import h5py
 import numpy as np
-from stable_baselines3 import SAC, DDPG
+from stable_baselines3 import SAC, DDPG, DQN, PPO
 from stable_baselines3.common.utils import set_random_seed
 
 
@@ -37,15 +37,21 @@ def simulate(env, model, num_samples, num_episodes=None,  seed=0, render=False, 
             else:
                 action = env.action_space.sample() # np.random.uniform(-1, +1, size=env.action_space.shape)
 
-            ep_actions.append(action)
             ep_observations.append(obs)
 
             obs, reward, terminated, truncated, info = env.step(action)
             done = terminated or truncated
 
+
+            action_dict = env.controlled_vehicles[0].action
+            action = np.array([action_dict['steering'], action_dict['acceleration']])
+            # action[0] += np.random.uniform(-0.05, +0.05)
+            # action[1] += np.random.uniform(-0.05, +0.05)
+
+            ep_actions.append(action)
             ep_next_observations.append(obs)
             ep_rewards.append(reward)
-            ep_dones.append(terminated)
+            ep_dones.append(done)
             ep_infos.append(info)
             ep_step_count += 1
 
@@ -88,15 +94,15 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--algo", help="RL Algorithm", default='sac', type=str)
-    parser.add_argument("--env_id", type=str, default="highway-v0", help="environment ID")
+    parser.add_argument("--algo", help="RL Algorithm", default='dqn', type=str)
+    parser.add_argument("--env_id", type=str, default="intersection-v0", help="environment ID")
     parser.add_argument("--seed", help="Random generator seed", type=int, default=0)
-    parser.add_argument('--num_samples', type=int, default=int(10e3), help='Num samples to collect')
+    parser.add_argument('--num_samples', type=int, default=int(300), help='Num samples to collect')
     parser.add_argument('--policy_path', type=str, default='file_name')
     parser.add_argument('--save_dir', type=str, default='tmp_dir')
     parser.add_argument('--save_name', type=str, default='tmp_name')
     parser.add_argument('--render', type=bool, default=False)
-    parser.add_argument('--skip_terminated_episodes', type=int, default=True)
+    parser.add_argument('--skip_terminated_episodes', type=int, default=False)
 
     args = parser.parse_args()
 
@@ -104,7 +110,12 @@ if __name__ == "__main__":
     env_kwargs = {}
     env = gym.make(args.env_id, **env_kwargs)
 
-    model = DDPG.load(args.policy_path)
+
+    args.policy_path = f'../../results/{args.env_id}/{args.algo}/rl_model_10000_steps.zip'
+    model = DQN.load(args.policy_path)
+
+    # args.policy_path = f'../../results/{args.env_id}/rl_model_3000_steps.zip'
+    # model = PPO.load(args.policy_path)
 
     data = simulate(env=env, model=model, num_samples=args.num_samples, render=False, skip_terminated_episodes=args.skip_terminated_episodes)
 
@@ -114,5 +125,6 @@ if __name__ == "__main__":
     fname = f'{save_dir}/{args.save_name}'
     dataset = h5py.File(fname, 'w')
     for k in data:
+        print(k, data[k].shape)
         dataset.create_dataset(k, data=data[k], compression='gzip')
 
