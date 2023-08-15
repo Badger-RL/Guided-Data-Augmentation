@@ -132,7 +132,7 @@ def check_in_bounds(env, absolute_obs):
     # print(np.max(np.abs(absolute_obs[:, 0])))
     # print(np.max(np.abs(absolute_obs[:, 1])))
 
-    ball_is_at_goal = (absolute_obs[:,2] > 4400) & (np.abs(absolute_obs[:, 3]) < 500)
+    ball_is_at_goal = (absolute_obs[:,2] > 4400) & (absolute_obs[:,2] < 4800) & (np.abs(absolute_obs[:, 3]) < 500)
     # robot_is_at_goal = (absolute_obs[:,0] > 4400) & (np.abs(absolute_obs[:, 1]) < 500)
     absolute_obs_truncated = absolute_obs[~ball_is_at_goal]
     abs_robot_x = np.abs(absolute_obs[:, 0])

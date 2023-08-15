@@ -150,6 +150,18 @@ class RotateReflectTranslateGuided(RotateReflectTranslate):
                 theta = self._sample_theta_for_walking(aug_abs_obs, aug_abs_next_obs)
                 self._rotate_agent(aug_abs_obs, aug_abs_next_obs, theta)
 
+        if np.random.random() < 0.5:
+            aug_abs_obs[:, 1] *= -1
+            aug_abs_next_obs[:, 1] *= -1
+            aug_abs_obs[:, 3] *= -1
+            aug_abs_next_obs[:, 3] *= -1
+            aug_abs_obs[:, 4] *= -1
+            aug_abs_next_obs[:, 4] *= -1
+
+            aug_action[:, 0] *= -1
+            aug_action[:, 1] *= 1
+            aug_action[:, 2] *= -1
+
         # assign reward and done signal
         aug_reward, ball_is_at_goal, ball_is_out_of_bounds = self.env.calculate_reward(aug_abs_next_obs)
         aug_done = ball_is_out_of_bounds

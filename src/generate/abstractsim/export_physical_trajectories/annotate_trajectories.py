@@ -39,7 +39,7 @@ def annotate_trajectories(paths):
 
 
         # reorder obs to match what I use in abstractim
-        observations = np.array(dataset["absolute_observations"])
+        observations = np.array(dataset["observations"])
         observations = np.concatenate([observations[:, :2], observations[:, 3:5], observations[:, [2]]], axis=-1)
         # chop off last obs; we use it as the last next_obs
         obs = observations[:-1]
@@ -75,32 +75,32 @@ def annotate_trajectories(paths):
         print([str(len(trajectories[key]) )for key in trajectories.keys()])
 
 
-    for i in range(3000 - len(trajectories['absolute_observations'])):
-        obs = trajectories['absolute_observations'][-1].copy()
-        next_obs = trajectories['absolute_next_observations'][-1].copy()
+        for i in range(1500 - len(trajectories['absolute_observations'])):
+            obs = trajectories['absolute_observations'][-1].copy()
+            next_obs = trajectories['absolute_next_observations'][-1].copy()
 
-        noise = np.random.uniform(-10, 10, size=(2,))
-        obs[:2] += noise
-        next_obs[:2] += noise
+            noise = np.random.uniform(-10, 10, size=(2,))
+            obs[:2] += noise
+            next_obs[:2] += noise
 
-        reward, ball_is_at_goal, ball_is_out_of_bounds = env.calculate_reward(next_obs)
-        trajectories["rewards"].append(reward)
-        trajectories["actions"].append(trajectories["actions"][-1])
-        trajectories["terminals"].append(ball_is_at_goal or ball_is_out_of_bounds)
-        trajectories["dones"].append(False)
-        if reward > 1:
-            print('goal')
-        if reward < 0:
-            print('out of bounds')
+            reward, ball_is_at_goal, ball_is_out_of_bounds = env.calculate_reward(next_obs)
+            trajectories["rewards"].append(reward)
+            trajectories["actions"].append(trajectories["actions"][-1])
+            trajectories["terminals"].append(ball_is_at_goal or ball_is_out_of_bounds)
+            trajectories["dones"].append(False)
+            if reward > 1:
+                print('goal')
+            if reward < 0:
+                print('out of bounds')
 
 
-        trajectories["observations"].append(env.get_obs(obs[:2], obs[2:4], obs[-1]))
-        trajectories["next_observations"].append(env.get_obs(next_obs[:2], next_obs[2:4], next_obs[-1]))
-        trajectories["absolute_observations"].append(obs)
-        trajectories["absolute_next_observations"].append(next_obs)
+            trajectories["observations"].append(env.get_obs(obs[:2], obs[2:4], obs[-1]))
+            trajectories["next_observations"].append(env.get_obs(next_obs[:2], next_obs[2:4], next_obs[-1]))
+            trajectories["absolute_observations"].append(obs)
+            trajectories["absolute_next_observations"].append(next_obs)
 
-    trajectories["dones"][-1] = True
-    trajectories["terminals"][-1] = True
+        trajectories["dones"][-1] = True
+        trajectories["terminals"][-1] = True
 
     return trajectories
 
@@ -124,8 +124,10 @@ if __name__ == "__main__":
     #     exit()
 
     argv = [None, None, None]
-    argv[1] = 'simrobot'
-    argv[2] = '../../../datasets/PushBallToGoal-v0/simrobot/no_aug.hdf5'
+    # argv[1] = 'simrobot_normal/traj3'
+    # argv[2] = '../../../datasets/PushBallToGoal-v0/simrobot/no_aug_3.hdf5'
+    argv[1] = 'curated_kicks'
+    argv[2] = '../../../datasets/PushBallToGoal-v2/physical/no_aug.hdf5'
     # argv[1] = 'best'
     # argv[2] = 'best.hdf5'
     trajectory_files = []

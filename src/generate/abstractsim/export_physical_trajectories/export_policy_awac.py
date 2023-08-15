@@ -82,7 +82,7 @@ actor = algorithms.awac.Actor(
     state_dim, action_dim, max_action=max_action, hidden_dim=128, n_layers=1,
 ).to("cpu")
 
-checkpoint = torch.load('/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/results/run_411/best_model.pt')
+checkpoint = torch.load('/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/results/run_416/best_model.pt')
 actor.load_state_dict(state_dict = checkpoint["actor"])
 
 
