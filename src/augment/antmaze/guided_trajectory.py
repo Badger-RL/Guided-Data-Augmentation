@@ -95,22 +95,22 @@ class AntMazeGuidedTrajAugmentationFunction(AntMazeAugmentationFunction):
         x, y = obs[0], obs[1]
 
         # bottom
-        if x > 0 and x < 8.5 and y > 0 and y < 0.5:
+        if x > 0 and x < 8.5 and y > -2 and y < 2:
             new_pos = np.random.uniform(
-                low=np.array([0, 0]),
-                high=np.array([8.5, 0.5])
+                low=np.array([0, -1]),
+                high=np.array([8, 1])
             )
 
         # right side
-        elif x > 8.5 and x < 9 and y > 0 and y < 8:
+        elif x > 7 and x < 10 and y > 0 and y < 8:
             new_pos = np.random.uniform(
-                low=np.array([8.5, 0]),
+                low=np.array([7, -1]),
                 high=np.array([9, 8])
             )
         elif x > 2 and x < 9 and y > 8 and y < 8.5:
             new_pos = np.random.uniform(
-                low=np.array([0, 8]),
-                high=np.array([9, 8.5])
+                low=np.array([0, 7]),
+                high=np.array([9, 9])
             )
         else:
             new_pos = None
@@ -167,11 +167,11 @@ class AntMazeGuidedTrajAugmentationFunction(AntMazeAugmentationFunction):
         x, y = obs[:,0], obs[:,1]
 
         # bottom
-        mask1 = (x > 0) & (x < 9) & (y > -1) & (y < 1)
+        mask1 = (x > 0) & (x < 8) & (y > -0.5) & (y < 0.5)
         # right side
-        mask2 = (x > 7) & (x < 9) & (y > 0) & (y < 8)
+        mask2 = (x > 7.5) & (x < 8.5) & (y > 0.5) & (y < 8)
         # top
-        mask3 = (x > 0) & (x < 9) & (y > 7) & (y < 9)
+        mask3 = (x > 0) & (x < 8.5) & (y > 7.5) & (y < 8.5)
 
         return mask1 | mask2 | mask3
 
@@ -276,14 +276,27 @@ class AntMazeGuidedTrajAugmentationFunction(AntMazeAugmentationFunction):
 
         return guide_theta
 
+    def _get_aug_theta_umaze(self, new_pos):
+
+        if new_pos[0] < 4 and new_pos[1] > -0.2 and new_pos[1] < 0.2:
+            guide_theta = np.pi #+ np.random.uniform(-np.pi/12, np.pi/12)
+        elif new_pos[0] > 7.5 and new_pos[0] < 8.5 and new_pos[1] > 0 and new_pos[1] < 4:
+            guide_theta = np.pi / 2 #+ np.random.uniform(-np.pi/12, np.pi/12)
+        elif new_pos[0] > 0 and new_pos[0] < 8.5 and new_pos[1] > 7 and new_pos[1] < 9:
+            guide_theta = 0 #+ np.random.uniform(-np.pi/12, np.pi/12)
+        else:
+            guide_theta = None
+
+        return guide_theta
+
     def _sample_theta(self, obs, next_obs, new_pos, new_location, **kwargs):
         guide_theta = self._get_guided_theta_umaze(new_pos)
         if guide_theta == 0:
             stop = 0
         # guide_theta = np.pi*3/2
         delta_obs = next_obs[:2] - obs[:2]
-        theta = 2*np.arctan2(delta_obs[1], delta_obs[0])
-        aug_theta = -(guide_theta - theta) #+ np.random.uniform(low=-np.pi/6, high=np.pi/6)
+        theta = np.arctan2(delta_obs[1], delta_obs[0])
+        aug_theta = (guide_theta - theta) #+ np.random.uniform(low=-np.pi/6, high=np.pi/6)
 
         return aug_theta
 
@@ -305,9 +318,9 @@ class AntMazeGuidedTrajAugmentationFunction(AntMazeAugmentationFunction):
         aug_next_obs = next_obs.copy()
         #
         # new_pos = self._sample_umaze(obs[0], aug_next_obs[-1, :2])
-        new_pos = self._sample_medium(obs[0], aug_next_obs[-1, :2])
+        # new_pos = self._sample_medium(obs[0], aug_next_obs[-1, :2])
 
-        # new_pos, new_location = self._sample_pos()
+        new_pos, new_location = self._sample_pos()
 
         if new_pos is None:
             return None, None, None, None, None
@@ -315,44 +328,46 @@ class AntMazeGuidedTrajAugmentationFunction(AntMazeAugmentationFunction):
         offset = new_pos - obs[0,:2]
         aug_obs[:,:2] += offset
         aug_next_obs[:,:2] += offset
-        # aug_location = self._xy_to_rowcol(aug_obs[0,:2])
+        aug_location = self._xy_to_rowcol(aug_obs[0,:2])
         #
         # rotate_alpha = self._sample_theta(aug_obs[0,:2], aug_next_obs[-1,:2], new_pos, aug_location)
-        #
-        # M = np.array([
-        #     [np.cos(-rotate_alpha), -np.sin(-rotate_alpha)],
-        #     [np.sin(-rotate_alpha), np.cos(-rotate_alpha)]
-        # ])
-        #
-        # # translate initial position to 0,0 before rotation
-        # origin = aug_obs[0, :2].copy()
-        # aug_obs[:,:2] -= origin
-        # aug_next_obs[:,:2] -= origin
-        #
-        # aug_obs[:,:2] = M.dot(aug_obs[:,:2].T).T
-        # aug_next_obs[:,:2] = M.dot(aug_next_obs[:,:2].T).T
-        #
-        # # translate back to initial position after rotation
-        # aug_obs[:,:2] += origin
-        # aug_next_obs[:,:2] += origin
-        # # delta_pos = next_obs[:,:2] - obs[:,:2]
-        # # rotated_delta_obs = M.dot(delta_pos[:,:2].T).T
-        # # aug_next_obs[:,:2] = aug_obs[:,:2] + rotated_delta_obs
-        #
-        #
-        #
-        # # mujoco stores quats as (qw, qx, qy, qz) internally but uses (qx, qy, qz, qw) in the observation
-        # for i in range(len(obs)):
-        #     sin = np.sin(rotate_alpha / 2)
-        #     cos = np.cos(rotate_alpha / 2)
-        #     quat_rotate_by = np.array([sin, 0, 0, cos])
-        #     self._rotate_torso(aug_obs[i], quat_rotate_by)
-        #     self._rotate_torso(aug_next_obs[i], quat_rotate_by)
-        #
-        #     sin = np.sin(-rotate_alpha)
-        #     cos = np.cos(-rotate_alpha)
-        #     self._rotate_vel(aug_obs[i], sin, cos)
-        #     self._rotate_vel(aug_next_obs[i], sin, cos)
+        rotate_alpha = self._get_aug_theta_umaze(new_pos)
+        if rotate_alpha is None:
+            return None, None, None, None, None
+        M = np.array([
+            [np.cos(-rotate_alpha), -np.sin(-rotate_alpha)],
+            [np.sin(-rotate_alpha), np.cos(-rotate_alpha)]
+        ])
+
+        # translate initial position to 0,0 before rotation
+        origin = aug_obs[0, :2].copy()
+        aug_obs[:,:2] -= origin
+        aug_next_obs[:,:2] -= origin
+
+        aug_obs[:,:2] = M.dot(aug_obs[:,:2].T).T
+        aug_next_obs[:,:2] = M.dot(aug_next_obs[:,:2].T).T
+
+        # translate back to initial position after rotation
+        aug_obs[:,:2] += origin
+        aug_next_obs[:,:2] += origin
+        # delta_pos = next_obs[:,:2] - obs[:,:2]
+        # rotated_delta_obs = M.dot(delta_pos[:,:2].T).T
+        # aug_next_obs[:,:2] = aug_obs[:,:2] + rotated_delta_obs
+
+
+
+        # mujoco stores quats as (qw, qx, qy, qz) internally but uses (qx, qy, qz, qw) in the observation
+        for i in range(len(obs)):
+            sin = np.sin(rotate_alpha / 2)
+            cos = np.cos(rotate_alpha / 2)
+            quat_rotate_by = np.array([sin, 0, 0, cos])
+            self._rotate_torso(aug_obs[i], quat_rotate_by)
+            self._rotate_torso(aug_next_obs[i], quat_rotate_by)
+
+            sin = np.sin(-rotate_alpha)
+            cos = np.cos(-rotate_alpha)
+            self._rotate_vel(aug_obs[i], sin, cos)
+            self._rotate_vel(aug_next_obs[i], sin, cos)
 
         aug_action = action.copy()
         # aug_reward = reward
@@ -360,7 +375,7 @@ class AntMazeGuidedTrajAugmentationFunction(AntMazeAugmentationFunction):
         aug_reward = self._reward(aug_next_obs)
         aug_done = self._is_done(aug_next_obs, aug_reward)
         # mask = self._is_valid_umaze(aug_obs)
-        mask = self._is_valid_medium(aug_obs)
+        mask = self._is_valid_umaze(aug_obs)
 
         # mask = np.ones_like(reward).astype(bool)
 
