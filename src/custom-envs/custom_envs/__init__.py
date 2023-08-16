@@ -21,13 +21,29 @@ register(
     entry_point="custom_envs.push_ball_to_goal:PushBallToGoalEnv",
     max_episode_steps=800,
     kwargs={
-        'sparse': True,
+        'sparse': False,
         'stochastic': False,
         'realistic': False,
         'clip_out_of_bounds': False,
         'displacement_coef': 0.20,
         # "init_ball_x_range": [-3000, 3000],
         # "init_ball_y_range": [-3000, 3000],
+    }
+)
+
+register(
+    id="PushBallToGoalEasy-v0",
+    entry_point="custom_envs.push_ball_to_goal:PushBallToGoalEnv",
+    max_episode_steps=1000,
+    kwargs={
+        'sparse': True,
+        'stochastic': False,
+        'realistic': False,
+        'displacement_coef': 0.06,
+        "init_robot_x_range": [-200, 0],
+        "init_robot_y_range": [-500, 0],
+        "init_ball_x_range": [100, 500],
+        "init_ball_y_range": [-500, 500],
     }
 )
 

@@ -3,8 +3,8 @@ import os
 if __name__ == "__main__":
 
 
-    for env_id in ['PushBallToGoal-v2']:
-        for aug_size in [300e3]:
+    for env_id in ['PushBallToGoalEasy-v0']:
+        for aug_size in [200e3]:
             for aug in ['guided_traj', 'random_traj']:
                 os.system(
                     f'python ./aug_traj.py --seed {0} --aug-size {int(aug_size)} --validate 0'

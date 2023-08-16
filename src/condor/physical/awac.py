@@ -27,13 +27,13 @@ if __name__ == "__main__":
                                       f' --n_layers {n_layers}' \
                                       f' --hidden_dim {hidden_dims} '\
                                       f' --tau {5e-3}' \
-                                      f' --gamma 0.99 --save-policy 1'
+                                      f' --gamma 0.99 --save_policy 1'
 
                             if dataset_name:
                                 command += f' --dataset_name {dataset_name}'
 
                             mem, disk = MEMDISK[1][env_id]
-                            command = f'{mem},{disk},' + command.replace(' ', '*')
+                            # command = f'{mem},{disk},' + command.replace(' ', '*')
                             print(command)
                             # print(command + f' --device cuda')
                             all_commands += command + '\n'
