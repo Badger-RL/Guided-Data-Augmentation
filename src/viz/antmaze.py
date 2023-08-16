@@ -12,7 +12,7 @@ import h5py
 import numpy as np
 from matplotlib import pyplot as plt
 
-from algorithms.utils import load_dataset
+from src.algorithms.utils import load_dataset
 
 
 for env_id in ['antmaze-umaze-diverse-v2']:
