@@ -13,7 +13,7 @@ dataset_path = "../datasets/antmaze-umaze-diverse-v1/no_aug_no_collisions_relabe
 env_id = 'antmaze-umaze-diverse-v1'
 select_trajectories_save_path = "original.hdf5"
 generate_trajectories_save_path = "generated.hdf5"
-generate_num_of_transitions = 1000000
+generate_num_of_transitions = 10000
 start_timestamps = [560, 1135, 1570, 3185]
 end_timestamps = [600, 1240, 1650, 3290]
 # add 500 more subtrajectories. I think most of these show the ant walk around randomly near the goal.

@@ -98,7 +98,7 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
     def __init__(self, env, **kwargs):
         super().__init__(env=env, **kwargs)
         self.agent_offset = 4 # the agent and target coordinate systems are different for some reason.
-        self.effective_wall_width = 1.5
+        self.effective_wall_width = 1
         self.maze_scale = 4
 
         # precompute rotation matrices
@@ -114,7 +114,7 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
         # store target goal
         l = len(self.env.maze_arr)
         if l == 5:
-            self.target = np.array([0.5, 8])
+            self.target = np.array([0.75, 8.5])
             self.env.maze_arr = U_MAZE
         elif l == 8:
             self.target = np.array([20.5, 20.5])
@@ -429,7 +429,7 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
                 boundary = self._get_valid_boundaries(r, c)
                 new_origin = self._sample_from_box(*boundary)
                 # add 0.5 offset for better alignment with original dataset. Might not be needed.
-                delta_pos = new_origin[:2] - observation[:2]
+                delta_pos = new_origin[:2] - observation[:2] + 0.5
 
             augmented_obs = observation.copy()
             augmented_next_obs = next_observation.copy()

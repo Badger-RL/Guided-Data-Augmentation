@@ -36,7 +36,7 @@ def main():
     dataset_reward = dataset['rewards']
     dataset_done = dataset['terminals']
 
-    goal = np.array([0.5, 8])
+    goal = np.array([0.75, 8.5])
     # goal = np.array([20.5, 20.5])
     # goal = np.array([32.5, 24.5])
 
@@ -67,27 +67,27 @@ def main():
             dataset['truncateds'].append(True)
             traj_len = 0
 
-        elif (not bottom and x > 8):
-            bottom = True
-            dataset['truncateds'].append(True)
-            traj_len = 0
-
-        elif (not side and y > 8):
-            side = True
-            dataset['truncateds'].append(True)
-            traj_len = 0
+        # elif (not bottom and x > 8):
+        #     bottom = True
+        #     dataset['truncateds'].append(True)
+        #     traj_len = 0
+        #
+        # elif (not side and y > 8):
+        #     side = True
+        #     dataset['truncateds'].append(True)
+        #     traj_len = 0
 
 
             # if not(next_obs[2] >= 0.2 and next_obs[2] <= 1.0):
             #     done = True
             # else:
             #     done = False
-        else:
-            dataset['truncateds'].append(False)
-            traj_len += 1
-            if traj_len > 50:
-                traj_len = 0
-                dataset['truncateds'].append(True)
+        # else:
+        #     dataset['truncateds'].append(False)
+        #     traj_len += 1
+        #     if traj_len > 50:
+        #         traj_len = 0
+        #         dataset['truncateds'].append(True)
 
         dataset['rewards'][t] = reward
         dataset['terminals'][t] = done
