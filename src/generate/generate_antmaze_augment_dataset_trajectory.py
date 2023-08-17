@@ -3,19 +3,23 @@ import pandas as pd
 from src.generate.utils import reset_data, append_data, load_dataset, npify
 # import gym
 # from src.augment.maze.point_maze_aug_function import PointMazeTrajectoryAugmentationFunction, PointMazeGuidedTrajectoryAugmentationFunction
-from src.augment.antmaze.antmaze_aug_function import AntMazeTrajectoryAugmentationFunction
+from src.augment.antmaze.antmaze_aug_function import AntMazeTrajectoryGuidedAugmentationFunction
 import gym
 import h5py
 import gzip
 from src.generate.utils import npify
 
-dataset_path = "/Users/yxqu/Desktop/Research/GuDA/Antmaze_Dataset/antmaze-umaze-diverse-v1/no_aug_no_collisions_relabeled.hdf5"
+dataset_path = "../datasets/antmaze-umaze-diverse-v1/no_aug_no_collisions_relabeled.hdf5"
 env_id = 'antmaze-umaze-diverse-v1'
 select_trajectories_save_path = "original.hdf5"
 generate_trajectories_save_path = "generated.hdf5"
-generate_num_of_transitions = 1000
+generate_num_of_transitions = 1000000
 start_timestamps = [560, 1135, 1570, 3185]
 end_timestamps = [600, 1240, 1650, 3290]
+# add 500 more subtrajectories. I think most of these show the ant walk around randomly near the goal.
+# I didn't render these, so I don't know for sure what they look like.
+start_timestamps += [5000 + 100*i for i in range(5)]
+end_timestamps += [5100 + 100*i for i in range(5)]
 
 observed_dataset = load_dataset(dataset_path)
 num_of_trajectories = len(start_timestamps)
@@ -54,7 +58,8 @@ select_trajectory_dataset.close()
 
 ## save generated dataset
 env = gym.make(env_id)
-f = AntMazeTrajectoryAugmentationFunction(env=env)
+# f = AntMazeTrajectoryRandomAugmentationFunction(env=env)
+f = AntMazeTrajectoryGuidedAugmentationFunction(env=env)
 env.reset()
 
 augmented_trajectories = {
@@ -86,6 +91,7 @@ while True:
 
     if size > generate_num_of_transitions:
         break
+    print(size)
 
 augmented_trajectory_dataset = h5py.File(generate_trajectories_save_path, 'w')
 

@@ -133,26 +133,55 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
                 box_location = np.array((w, h))
                 if location_type in ['1']:
                     self.wall_locations.append(box_location)
-                elif location_type in ['0', RESET]:
+                elif location_type in ['0', RESET, GOAL]:
                     self.valid_locations.append(box_location)
 
         self.wall_locations = np.array(self.wall_locations)
         self.valid_locations = np.array(self.valid_locations)
+
+
+    # def _sample_umaze(self, obs, last_obs):
+    #     x, y = obs[0], obs[1]
+    #
+    #     # bottom
+    #     if x > 0 and x < 8.5 and y > -2 and y < 2:
+    #         new_pos = np.random.uniform(
+    #             low=np.array([0, -1]),
+    #             high=np.array([8, 1])
+    #         )
+    #
+    #     # right side
+    #     elif x > 7 and x < 10 and y > 0 and y < 8:
+    #         new_pos = np.random.uniform(
+    #             low=np.array([7, -1]),
+    #             high=np.array([9, 8])
+    #         )
+    #     elif x > 2 and x < 9 and y > 8 and y < 8.5:
+    #         new_pos = np.random.uniform(
+    #             low=np.array([0, 7]),
+    #             high=np.array([9, 9])
+    #         )
+    #     else:
+    #         new_pos = None
+    #
+    #     return new_pos
+
 
     def _sample_umaze(self):
         idx = np.random.choice(len(self.valid_locations))
         location = np.array(self.valid_locations[idx]).astype(self.env.observation_space.dtype)
 
         # bottom
-        if location in [(2,3), (1,3)]:
-            xy = self._sample_from_box(0, 8.5, 0, 0.5)
+        location = tuple(location)
+        if location in [(1,3), (2,3)]:
+            xy = self._sample_from_box(0, -0.5, 8.5, 0.5)
 
         # right side
-        elif location in [(3,1), (3,1)]:
+        elif location in [(3,1), (3,2)]:
 
-            xy = self._sample_from_box(8.5, 9, 0, 8)
+            xy = self._sample_from_box(8, 0, 9, 8)
 
-        elif location in [(1,2), (2,1)]:
+        elif location in [(1,2), (2,1), (3,1)]:
             # top
             xy = self._sample_from_box(2, 9, 8, 8.5)
         else:
@@ -367,7 +396,7 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
         return aug_obs, aug_action, aug_reward, aug_next_obs, aug_done
 
 
-class AntMazeTrajectoryAugmentationFunction(AntMazeAugmentationFunction):
+class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
     def _get_location(self, obs):
         #location = (int(np.round(obs[0]+self.agent_offset)), int(np.round(obs[1]+self.agent_offset)))
         for i in range(len(self.valid_locations)):
@@ -392,26 +421,26 @@ class AntMazeTrajectoryAugmentationFunction(AntMazeAugmentationFunction):
             observation = trajectory['observations'][i]
             action = trajectory['actions'][i]
             next_observation = trajectory['next_observations'][i]
-            reward = trajectory['rewards'][i]
-            done = trajectory['terminals'][i]
+            # reward = trajectory['rewards'][i]
+            # done = trajectory['terminals'][i]
 
             if is_new_trajectory:
                 r, c = self._xy_to_rowcol(observation[:2])
                 boundary = self._get_valid_boundaries(r, c)
                 new_origin = self._sample_from_box(*boundary)
+                # add 0.5 offset for better alignment with original dataset. Might not be needed.
                 delta_pos = new_origin[:2] - observation[:2]
 
             augmented_obs = observation.copy()
             augmented_next_obs = next_observation.copy()
             augmented_action = action.copy()
-            augmented_reward = reward.copy()
-            augmented_done = done.copy()
+            # augmented_reward = reward.copy()
+            # augmented_done = done.copy()
 
             augmented_obs[:2] = observation[:2].copy() + delta_pos
             augmented_next_obs[:2] = next_observation[:2].copy() + delta_pos
             augmented_reward = self._reward(augmented_next_obs)
-            augmented_obs[:2] += 0.5
-            augmented_next_obs[:2] += 0.5
+            augmented_done = augmented_reward > 0 # recompute reward *after* making all changes to observations.
 
             aug_location = self._get_location(augmented_obs)
             if aug_location is None:

@@ -15,7 +15,7 @@ from matplotlib import pyplot as plt
 from src.algorithms.utils import load_dataset
 
 
-for env_id in ['antmaze-umaze-diverse-v2']:
+for env_id in ['antmaze-umaze-diverse-v1']:
     for aug in ['guided_traj']:
         plt.figure(figsize=(12, 12))
 
@@ -25,8 +25,10 @@ for env_id in ['antmaze-umaze-diverse-v2']:
         # dataset_name = f'../datasets/{env_id}/no_aug_no_collisions_1k.hdf5'
         # dataset_name = f'../datasets/{env_id}/no_aug_no_collisions_relabeled_1k.hdf5'
         # dataset_name = f'../datasets/{env_id}/no_aug_relabeled.hdf5'
+        dataset_name = f'../generate/generated.hdf5'
+        # dataset_name = f'../generate/original.hdf5'
 
-        # dataset_name = None 327271
+        # dataset_name = None
         # local dataset
         dataset = {}
         if dataset_name:
@@ -37,7 +39,7 @@ for env_id in ['antmaze-umaze-diverse-v2']:
             env = gym.make(env_id)
             dataset = d4rl.qlearning_dataset(env)
 
-        n = int(1e3)
+        n = int(10e3)
 
         # plot no_aug
         start = int(0e3)
