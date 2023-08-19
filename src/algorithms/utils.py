@@ -287,6 +287,8 @@ def eval_actor(
             state, reward, done, info = env.step(action)
             episode_reward += reward
             # env.render()
+        # print(state[:2])
+
         episode_rewards.append(episode_reward)
         if 'is_success' in info:
             successes.append(info['is_success'])
@@ -308,7 +310,7 @@ def train_base(config, env, trainer):
     # wrap env
     env = wrap_env(env, state_mean=state_mean, state_std=state_std)
     if 'antmaze-umaze' in config.env:
-        target_location = np.array([0.5, 8])
+        target_location = np.array([0.75, 8.5])
         env.set_target_goal(target_location)
 
     # create replay buffer
