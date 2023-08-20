@@ -429,7 +429,7 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
                 boundary = self._get_valid_boundaries(r, c)
                 new_origin = self._sample_from_box(*boundary)
                 # add 0.5 offset for better alignment with original dataset. Might not be needed.
-                delta_pos = new_origin[:2] - observation[:2] + 0.5
+                delta_pos = new_origin[:2] - observation[:2]
 
             augmented_obs = observation.copy()
             augmented_next_obs = next_observation.copy()
