@@ -7,8 +7,12 @@ def reset_data():
             'terminals': [],
             'rewards': [],
             'next_observations': [],
-            'truncateds': [],
+            # 'truncateds': [],
             }
+
+def append_trajectory(data, trajectory):
+    for k in data:
+        data[k].extend(trajectory[k])
 
 def append_data(data, s, a, r, ns, done):
     data['observations'].append(s)
