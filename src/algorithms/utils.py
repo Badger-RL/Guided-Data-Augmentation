@@ -312,7 +312,12 @@ def train_base(config, env, trainer):
     if 'antmaze-umaze' in config.env:
         target_location = np.array([0.75, 8.5])
         env.set_target_goal(target_location)
-
+    if 'antmaze-medium' in config.env:
+        target_location = np.array([20.5, 20.5])
+        env.set_target_goal(target_location)
+    if 'antmaze-large' in config.env:
+        target_location = np.array([32.5, 24.5])
+        env.set_target_goal(target_location)
     # create replay buffer
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
