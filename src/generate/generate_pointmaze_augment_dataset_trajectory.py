@@ -2,40 +2,20 @@ import numpy as np
 import pandas as pd
 from src.generate.utils import reset_data, append_data, load_dataset, npify
 # import gym
-# from src.augment.maze.point_maze_aug_function import PointMazeTrajectoryAugmentationFunction, PointMazeGuidedTrajectoryAugmentationFunction
-from src.augment.antmaze.antmaze_aug_function import AntMazeTrajectoryGuidedAugmentationFunction
+from src.augment.maze.point_maze_aug_function import PointMazeGuidedTrajectoryAugmentationFunction
+# from src.augment.antmaze.antmaze_aug_function import AntMazeTrajectoryAugmentationFunction, AntMazeGuidedTrajectoryAugmentationFunction
 import gym
 import h5py
 import gzip
 from src.generate.utils import npify
 
-timestamps = {
-    'antmaze-umaze-diverse-v1': {
-        'start': [560, 1135, 1570, 3185],
-        'end': [600, 1240, 1650, 3290],
-    },
-    'antmaze-medium-diverse-v1': {
-        "start": [0, 350, 710, 2085, 2360, 4500, 10620, 15460, 23450, 23740, 25100, 26080, 27000, 27770, 28750, 29610],
-        "end": [50, 600, 810, 2250, 2500, 4900, 10820, 15520, 23600, 23850, 25350, 26300, 27200, 27850, 29000, 29780]
-    },
-}
-env_id = 'antmaze-medium-diverse-v1'
-dataset_path = "/Users/yxqu/Desktop/Research/GuDA/Antmaze_Dataset/antmaze-medium-diverse-v1/no_aug_no_collisions_relabeled.hdf5"
-select_trajectories_save_path = f"{env_id}_original.hdf5"
-generate_trajectories_save_path = f"{env_id}_generated.hdf5"
-generate_num_of_transitions = 0
-
-start_timestamps = timestamps[env_id]['start']
-end_timestamps = timestamps[env_id]['end']
-
-if len(start_timestamps) != len(end_timestamps):
-    print("Error: start_timestamps and end_timestamps must have the same length")
-    exit()
-
-for i in range(len(start_timestamps)):
-    if start_timestamps[i] >= end_timestamps[i]:
-        print("Error: start_timestamps must be less than end_timestamps")
-        exit()
+dataset_path = "/Users/yxqu/Desktop/Research/GuDA/D4RL/scripts/generation/pointmaze_small/maze2d-umaze-v1-sparse.hdf5"
+env_id = 'maze2d-umaze-v1'
+select_trajectories_save_path = "/Users/yxqu/Desktop/Research/GuDA/GuidedDataAugmentationForRobotics_new/src/datasets/maze2d/original.hdf5"
+generate_trajectories_save_path = "/Users/yxqu/Desktop/Research/GuDA/GuidedDataAugmentationForRobotics_new/src/datasets/maze2d/generated.hdf5"
+generate_num_of_transitions = 1000000
+start_timestamps = [490, 2870, 6100, 9750]
+end_timestamps = [670, 3050, 6280, 9930]
 
 observed_dataset = load_dataset(dataset_path)
 num_of_trajectories = len(start_timestamps)
@@ -71,13 +51,10 @@ for k in select_trajectories:
     select_trajectory_dataset.create_dataset(k, data=select_trajectories[k], compression='gzip')
 select_trajectory_dataset.close()
 
-if generate_num_of_transitions == 0:
-    exit()
 
 ## save generated dataset
 env = gym.make(env_id)
-# f = AntMazeTrajectoryRandomAugmentationFunction(env=env)
-f = AntMazeTrajectoryGuidedAugmentationFunction(env=env)
+f = PointMazeGuidedTrajectoryAugmentationFunction(env=env)
 env.reset()
 
 augmented_trajectories = {
@@ -101,7 +78,7 @@ while True:
             'terminals': observed_dataset['terminals'][start_timestamp:end_timestamp]
         }
 
-        augmented_trajectory = f.augment_trajectory(trajectory)
+        augmented_trajectory = f.augment_trajectory1(trajectory)
         for key in augmented_trajectory:
             for j in range(len(augmented_trajectory[key])):
                 augmented_trajectories[key].append(augmented_trajectory[key][j])
@@ -109,7 +86,6 @@ while True:
 
     if size > generate_num_of_transitions:
         break
-    print(size)
 
 augmented_trajectory_dataset = h5py.File(generate_trajectories_save_path, 'w')
 
