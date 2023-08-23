@@ -396,6 +396,19 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
         return aug_obs, aug_action, aug_reward, aug_next_obs, aug_done
 
 
+guide_thetas = {
+    (1, 1): [0],
+    (2, 1): [0],
+    (3, 1): [np.pi / 2],
+
+    (3, 2): [np.pi / 2],
+
+    (1, 3): [0, np.pi / 2, np.pi, np.pi * 3 / 2],
+    (2, 3): [np.pi],
+    (3, 3): [np.pi]
+}
+
+
 class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
     def _get_location(self, obs):
         #location = (int(np.round(obs[0]+self.agent_offset)), int(np.round(obs[1]+self.agent_offset)))
@@ -406,63 +419,127 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
                 return location
         return None
 
+    def _sample_theta(self, obs, next_obs, new_pos, new_location, **kwargs):
+
+        # delta_obs = next_obs[:2] - obs[:2]
+        # theta = np.arctan2(delta_obs[1], delta_obs[0])
+
+        # guide_thetas = self.guide_thetas[(int(new_location[0]), int(new_location[1]))]
+        # guide_theta = np.random.choice(guide_thetas)
+
+        # aug_theta = -(guide_theta - theta) #+ np.random.uniform(low=-np.pi/6, high=np.pi/6)
+
+        if new_pos[0] < 7.5 and new_pos[1] > -2 and new_pos[1] < 2:
+            guide_theta = 0
+        elif new_pos[0] > 7.5 and new_pos[0] < 9 and new_pos[1] < 7.5:
+            guide_theta = np.pi / 2
+        else:
+            guide_theta = np.pi
+
+        # print(guide_theta)
+        # guide_theta = 0
+
+        delta_obs = next_obs - obs
+        theta = np.arctan2(delta_obs[1], delta_obs[0])
+        # theta = 2 * np.arctan2(delta_obs[3], delta_obs[6])
+
+        aug_theta = -(guide_theta - theta)  # + np.random.uniform(low=-np.pi/6, high=np.pi/6)
+
+        do_reflect = np.abs(theta-guide_theta) > np.pi*2/3
+
+        return aug_theta, do_reflect
+
+
     def augment_trajectory(self, trajectory: dict):
         length = len(trajectory['observations'])
-    
-        augmented_trajectory = {
-            'observations': [],
-            'actions': [],
-            'rewards': [],
-            'next_observations': [],
-            'terminals': [],
-        }
-        is_new_trajectory = True
-        for i in range(length):
-            observation = trajectory['observations'][i]
-            action = trajectory['actions'][i]
-            next_observation = trajectory['next_observations'][i]
-            # reward = trajectory['rewards'][i]
-            # done = trajectory['terminals'][i]
 
-            if is_new_trajectory:
-                r, c = self._xy_to_rowcol(observation[:2])
+        disp = trajectory['next_observations'][-1, :2] - trajectory['observations'][0, :2]
+        disp_x, disp_y = disp[0], disp[1]
+
+        valid_locations = []
+        if disp_x > 2 and np.abs(disp_y) < 2:
+            valid_locations = [(1, 1), (2, 1)]
+            right = 0
+        elif disp_x < -2 and np.abs(disp_y) < 2:
+            valid_locations = [(2, 3), (3, 3)]
+            left = 0
+        elif np.abs(disp_x) < 2 and disp_y > 2:
+            valid_locations = [(3, 1), (3, 2)]
+            up = 0
+        elif np.abs(disp_x) < 2 and disp_y > 2:
+            # print('here')
+            down = 0
+        else:
+            valid_locations = [(1,3)]
+        # print(disp)
+        print(valid_locations)
+
+
+        while True:
+            augmented_trajectory = {
+                'observations': [],
+                'actions': [],
+                'rewards': [],
+                'next_observations': [],
+                'terminals': [],
+            }
+            # new_pos, aug_location = self._sample_pos()
+
+            # print(valid_locations)
+            idx = np.random.choice(len(valid_locations))
+            location = np.array(valid_locations[idx]).astype(self.env.observation_space.dtype)
+            boundary = self._get_valid_boundaries(*location)
+            new_pos = self._sample_from_box(*boundary)
+            # print(new_pos)
+            # if at goal, keep at goal cell.
+            r, c = self._xy_to_rowcol(trajectory['observations'][0,:2])
+            if (r,c) == (1,3):
+                # idx = np.random.choice(len(self.valid_locations))
+                # r,c = self.valid_locations[idx]
                 boundary = self._get_valid_boundaries(r, c)
-                new_origin = self._sample_from_box(*boundary)
-                # add 0.5 offset for better alignment with original dataset. Might not be needed.
-                delta_pos = new_origin[:2] - observation[:2]
+                new_pos = self._sample_from_box(*boundary)
 
-            augmented_obs = observation.copy()
-            augmented_next_obs = next_observation.copy()
-            augmented_action = action.copy()
-            # augmented_reward = reward.copy()
-            # augmented_done = done.copy()
+            delta_pos = new_pos[:2] - trajectory['observations'][0, :2]
+            print(new_pos)
 
-            augmented_obs[:2] = observation[:2].copy() + delta_pos
-            augmented_next_obs[:2] = next_observation[:2].copy() + delta_pos
-            augmented_reward = self._reward(augmented_next_obs)
-            augmented_done = augmented_reward > 0 # recompute reward *after* making all changes to observations.
+            for i in range(length):
+                # print(i, length)
+                observation = trajectory['observations'][i]
+                action = trajectory['actions'][i]
+                next_observation = trajectory['next_observations'][i]
+                # reward = trajectory['rewards'][i]
+                # done = trajectory['terminals'][i]
 
-            aug_location = self._get_location(augmented_obs)
-            if aug_location is None:
-                is_new_trajectory = True
-                i -= 1
-                continue
-            pos_is_valid = self._check_corners(augmented_obs[:2], aug_location)
-            next_pos_is_valid = self._check_corners(augmented_next_obs[:2], aug_location)
 
-            if not (pos_is_valid and next_pos_is_valid):
-                is_new_trajectory = True
-                i -= 1
-                continue
+                augmented_obs = observation.copy()
+                augmented_next_obs = next_observation.copy()
+                augmented_action = action.copy()
+                # augmented_reward = reward.copy()
+                # augmented_done = done.copy()
 
-            if self.is_valid_input(augmented_obs, augmented_next_obs):
-                is_new_trajectory = False
-                augmented_trajectory['observations'].append(augmented_obs)
-                augmented_trajectory['actions'].append(augmented_action)
-                augmented_trajectory['rewards'].append(augmented_reward)
-                augmented_trajectory['next_observations'].append(augmented_next_obs)
-                augmented_trajectory['terminals'].append(augmented_done)
-            else:
-                is_new_trajectory = True
-                i -= 1
+                augmented_obs[:2] = observation[:2].copy() + delta_pos
+                augmented_next_obs[:2] = next_observation[:2].copy() + delta_pos
+
+                augmented_reward = self._reward(augmented_next_obs)
+                augmented_done = augmented_reward > 0 # recompute reward *after* making all changes to observations.
+                # if augmented_done:
+                #     stop = 0
+                aug_location = self._get_location(augmented_obs)
+                if aug_location is None:
+                    break
+                pos_is_valid = self._check_corners(augmented_obs[:2], aug_location)
+                next_pos_is_valid = self._check_corners(augmented_next_obs[:2], aug_location)
+
+                if not (pos_is_valid and next_pos_is_valid):
+                    break
+                if self.is_valid_input(augmented_obs, augmented_next_obs):
+                    is_new_trajectory = False
+                    augmented_trajectory['observations'].append(augmented_obs)
+                    augmented_trajectory['actions'].append(augmented_action)
+                    augmented_trajectory['rewards'].append(augmented_reward)
+                    augmented_trajectory['next_observations'].append(augmented_next_obs)
+                    augmented_trajectory['terminals'].append(augmented_done)
+                else:
+                    break
+            if i == length-1: break
         return augmented_trajectory

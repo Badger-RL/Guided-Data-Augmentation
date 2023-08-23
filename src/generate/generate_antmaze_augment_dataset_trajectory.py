@@ -10,24 +10,33 @@ import gzip
 from src.generate.utils import npify
 
 timestamps = {
+    # 'antmaze-umaze-diverse-v1': {
+    #     'start': [560, 1135, 1570, 3185] + [5000 + 100*i for i in range(5)],
+    #     'end': [600, 1240, 1650, 3290] + [5100 + 100*i for i in range(5)],
+    #     'n': int(10e3)
+    # },
     'antmaze-umaze-diverse-v1': {
-        'start': [560, 1135, 1570, 3185],
-        'end': [600, 1240, 1650, 3290],
+        'start': [560, 1135, 1570, 3185] + [5000 + 100 * i for i in range(5)],
+        'end': [600, 1240, 1650, 3290] + [5100 + 100 * i for i in range(5)],
+        'n': int(100e3)
     },
     'antmaze-medium-diverse-v1': {
         "start": [0, 350, 710, 2085, 2360, 4500, 10620, 15460, 23450, 23740, 25100, 26080, 27000, 27770, 28750, 29610],
-        "end": [50, 600, 810, 2250, 2500, 4900, 10820, 15520, 23600, 23850, 25350, 26300, 27200, 27850, 29000, 29780]
+        "end": [50, 600, 810, 2250, 2500, 4900, 10820, 15520, 23600, 23850, 25350, 26300, 27200, 27850, 29000, 29780],
+        'n': int(400e3)
     },
     'antmaze-large-diverse-v1': {
         "start": [3000, 4000, 4990, 5305, 6320, 7310, 8310, 9305, 9720, 10720, 11110, 13100, 14110, 15110, 18100, 19100, 20150, 21180, 24300, 38050, 39040],
-        "end": [3050, 4050, 5100, 5500, 6500, 7710, 8450, 9450, 10000, 10870, 11300, 13500, 14350, 15450, 18250, 19700, 20400, 21340, 24470, 38250, 39180]
+        "end": [3050, 4050, 5100, 5500, 6500, 7710, 8450, 9450, 10000, 10870, 11300, 13500, 14350, 15450, 18250, 19700, 20400, 21340, 24470, 38250, 39180],
+        'n': int(800e3)
     }
 }
-env_id = 'antmaze-large-diverse-v1'
-dataset_path = "/Users/yxqu/Desktop/Research/GuDA/Antmaze_Dataset/antmaze-large-diverse-v1/no_aug_no_collisions_relabeled.hdf5"
-select_trajectories_save_path = f"{env_id}_original.hdf5"
-generate_trajectories_save_path = f"{env_id}_generated.hdf5"
-generate_num_of_transitions = 0
+maze = 'umaze'
+env_id = f'antmaze-{maze}-diverse-v1'
+dataset_path = f"../datasets/antmaze-{maze}-diverse-v1/no_aug_no_collisions_relabeled.hdf5"
+select_trajectories_save_path = f"../datasets/{env_id}/no_aug.hdf5"
+generate_trajectories_save_path = f"../datasets/{env_id}/guided.hdf5"
+generate_num_of_transitions = timestamps[env_id]["n"]
 
 start_timestamps = timestamps[env_id]['start']
 end_timestamps = timestamps[env_id]['end']
