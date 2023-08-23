@@ -22,22 +22,27 @@ def rotate_reflect_traj(obs, action, next_obs, reward, done, check_goal_post, gu
         ball_at_goal_y = absolute_obs[-1, 3]
         new_ball_final_pos_x = np.random.uniform(4501,4501)
         new_ball_final_pos_y = np.random.uniform(-750, 750)
+        # if np.random.random() < 0.1:
+        #     if np.random.random() < 0.5:
+        #         new_ball_final_pos_y = np.random.uniform(750, 800)
+        #     else:
+        #         new_ball_final_pos_y = np.random.uniform(-800, -750)
 
         traj_delta_x = new_ball_final_pos_x - ball_at_goal_x
         traj_delta_y = new_ball_final_pos_y - ball_at_goal_y
 
-        absolute_obs[:, 0] += traj_delta_x
-        absolute_obs[:, 1] += traj_delta_y
-        absolute_obs[:, 2] += traj_delta_x
-        absolute_obs[:, 3] += traj_delta_y
+        aug_absolute_obs[:, 0] += traj_delta_x
+        aug_absolute_obs[:, 1] += traj_delta_y
+        aug_absolute_obs[:, 2] += traj_delta_x
+        aug_absolute_obs[:, 3] += traj_delta_y
 
         absolute_next_obs[:, 0] += traj_delta_x
         absolute_next_obs[:, 1] += traj_delta_y
         absolute_next_obs[:, 2] += traj_delta_x
         absolute_next_obs[:, 3] += traj_delta_y
 
-        ball_at_goal_x = absolute_obs[-1, 2]
-        ball_at_goal_y = absolute_obs[-1, 3]
+        ball_at_goal_x = aug_absolute_obs[-1, 2]
+        ball_at_goal_y = aug_absolute_obs[-1, 3]
 
         # Translate origin to the final ball position
         aug_absolute_obs[:, 0] -= ball_at_goal_x
@@ -89,7 +94,7 @@ def rotate_reflect_traj(obs, action, next_obs, reward, done, check_goal_post, gu
             aug_absolute_obs = copy.deepcopy(absolute_obs)
             aug_absolute_next_obs = copy.deepcopy(absolute_next_obs)
         # print('theta', is_valid_theta)
-    if attempts >= 100:
+    if attempts >= 10:
         print(f'Skipping trajectory after {attempts} augmentation attempts.')
         return None, None, None, None, None
 
