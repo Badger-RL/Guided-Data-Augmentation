@@ -18,9 +18,13 @@ timestamps = {
         "start": [0, 350, 710, 2085, 2360, 4500, 10620, 15460, 23450, 23740, 25100, 26080, 27000, 27770, 28750, 29610],
         "end": [50, 600, 810, 2250, 2500, 4900, 10820, 15520, 23600, 23850, 25350, 26300, 27200, 27850, 29000, 29780]
     },
+    'antmaze-large-diverse-v1': {
+        "start": [3000, 4000, 4990, 5305, 6320, 7310, 8310, 9305, 9720, 10720, 11110, 13100, 14110, 15110, 18100, 19100, 20150, 21180, 24300, 38050, 39040],
+        "end": [3050, 4050, 5100, 5500, 6500, 7710, 8450, 9450, 10000, 10870, 11300, 13500, 14350, 15450, 18250, 19700, 20400, 21340, 24470, 38250, 39180]
+    }
 }
-env_id = 'antmaze-medium-diverse-v1'
-dataset_path = "/Users/yxqu/Desktop/Research/GuDA/Antmaze_Dataset/antmaze-medium-diverse-v1/no_aug_no_collisions_relabeled.hdf5"
+env_id = 'antmaze-large-diverse-v1'
+dataset_path = "/Users/yxqu/Desktop/Research/GuDA/Antmaze_Dataset/antmaze-large-diverse-v1/no_aug_no_collisions_relabeled.hdf5"
 select_trajectories_save_path = f"{env_id}_original.hdf5"
 generate_trajectories_save_path = f"{env_id}_generated.hdf5"
 generate_num_of_transitions = 0
@@ -63,16 +67,16 @@ for i in range(num_of_trajectories):
     for key in trajectory:
         for j in range(len(trajectory[key])):
             select_trajectories[key].append(trajectory[key][j])
-
+print("number of transitions: ", len(select_trajectories['observations']))
 select_trajectory_dataset = h5py.File(select_trajectories_save_path, 'w')
 
 npify(select_trajectories)
 for k in select_trajectories:
     select_trajectory_dataset.create_dataset(k, data=select_trajectories[k], compression='gzip')
 select_trajectory_dataset.close()
-
 if generate_num_of_transitions == 0:
     exit()
+
 
 ## save generated dataset
 env = gym.make(env_id)
