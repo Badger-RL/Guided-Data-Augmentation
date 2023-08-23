@@ -3,9 +3,9 @@ import os
 if __name__ == "__main__":
 
     for expert_success_rate in [50]:
-        for aug in ['random', 'guided']:
+        for aug in ['guided', 'guided_neg']:
             os.system(
-                f'python ./aug_guided.py --seed {0} --guided {int(aug == "guided")} --aug-size {int(200e3)} --validate 0'
+                f'python ./aug_guided.py --seed {0} --aug {aug} --aug-size {int(200e3)} --validate 0'
                 f' --observed-dataset-path ../../datasets/PushBallToGoal-v0/no_aug_{expert_success_rate}.hdf5'
                 f' --save-dir ../../datasets/PushBallToGoal-v0'
                 f' --save-name {aug}.hdf5')

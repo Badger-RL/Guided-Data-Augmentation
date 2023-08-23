@@ -30,7 +30,7 @@ def load_observed_data(dataset_path):
 
     return observed_dataset
 
-def gen_aug_dataset(env, observed_dataset, guided, check_goal_post, validate=True, aug_size=100000,):
+def gen_aug_dataset(env, observed_dataset, aug, check_goal_post, validate=True, aug_size=100000,):
 
     obs = observed_dataset['observations']
     action = observed_dataset['actions']
@@ -57,17 +57,21 @@ def gen_aug_dataset(env, observed_dataset, guided, check_goal_post, validate=Tru
     aug_count = 0
     invalid_count = 0
 
-    if guided:
+    if 'guided' in aug:
         aug_function = rotate_reflect_traj
+        guided = True
     else:
         aug_function = random_traj
+        guided = False
+    neg = 'neg' in aug
 
     while aug_count < aug_size:
 
         for episode_i in range(num_episodes):
             print(episode_i)
             aug_obs, aug_action, aug_reward, aug_next_obs, aug_done = aug_function(
-                obs[episode_i], action[episode_i], next_obs[episode_i], reward[episode_i], done[episode_i], check_goal_post, guided=guided)
+                obs[episode_i], action[episode_i], next_obs[episode_i], reward[episode_i], done[episode_i], check_goal_post,
+                guided=guided, neg=neg)
             # episode_obs, episode_action, episode_next_obs, episode_reward, episode_done, check_goal_post)
             if aug_obs is None:
                 continue
@@ -114,7 +118,8 @@ def gen_aug_dataset(env, observed_dataset, guided, check_goal_post, validate=Tru
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--guided', type=int, default=0)
+    parser.add_argument('--aug', type=str, default='guided')
+    parser.add_argument('--neg', type=int, default=0)
     parser.add_argument('--aug-size', type=int, default=int(100e3), help='Number of augmented trajectories to generate')
     parser.add_argument('--observed-dataset-path', type=str, default=f'../datasets/expert/no_aug/50k.hdf5', help='path to observed trajectory dataset')
     parser.add_argument('--save-dir', type=str, default='../datasets/physical/aug_guided', help='Directory to save augmented dataset')
@@ -131,7 +136,7 @@ if __name__ == '__main__':
     env = gym.make('PushBallToGoal-v0')
 
     observed_dataset = load_observed_data(dataset_path=args.observed_dataset_path)
-    aug_dataset = gen_aug_dataset(env, observed_dataset, aug_size=args.aug_size, guided=args.guided, validate=args.validate, check_goal_post=args.check_goal_post)
+    aug_dataset = gen_aug_dataset(env, observed_dataset, aug_size=args.aug_size, aug=args.aug, validate=args.validate, check_goal_post=args.check_goal_post)
 
     os.makedirs(args.save_dir, exist_ok=True)
     fname = f'{args.save_dir}/{args.save_name}'

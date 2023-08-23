@@ -115,7 +115,7 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset-path', type=str, default='../datasets/PushBallToGoal-v0/random_50.hdf5')
+    parser.add_argument('--dataset-path', type=str, default='../datasets/PushBallToGoal-v0/guided_neg.hdf5')
     parser.add_argument('--save-dir', type=str, default='.')
     parser.add_argument('--save-name', type=str, default='tmp')
     parser.add_argument('--single-episode', type=bool, default=False)
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     dataset = {}
     data_hdf5 = h5py.File(args.dataset_path, "r")
     for key in data_hdf5.keys():
-        dataset[key] = np.array(data_hdf5[key])[2500:5000]
+        dataset[key] = np.array(data_hdf5[key])[10000:20000]
 
     """
     print(len(dataset["terminals"]))

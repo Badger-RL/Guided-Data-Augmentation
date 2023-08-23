@@ -5,7 +5,7 @@ from src.augment.utils import convert_to_absolute_obs, calculate_reward, convert
     check_in_bounds
 
 
-def rotate_reflect_traj(obs, action, next_obs, reward, done, check_goal_post, guided=False):
+def rotate_reflect_traj(obs, action, next_obs, reward, done, check_goal_post, guided=False, neg=False):
     absolute_obs = convert_to_absolute_obs(obs)
     absolute_next_obs = convert_to_absolute_obs(next_obs)
 
@@ -22,11 +22,8 @@ def rotate_reflect_traj(obs, action, next_obs, reward, done, check_goal_post, gu
         ball_at_goal_y = absolute_obs[-1, 3]
         new_ball_final_pos_x = np.random.uniform(4501,4501)
         new_ball_final_pos_y = np.random.uniform(-750, 750)
-        # if np.random.random() < 0.1:
-        #     if np.random.random() < 0.5:
-        #         new_ball_final_pos_y = np.random.uniform(750, 800)
-        #     else:
-        #         new_ball_final_pos_y = np.random.uniform(-800, -750)
+        if neg:
+            new_ball_final_pos_y = np.random.uniform(-850, 850)
 
         traj_delta_x = new_ball_final_pos_x - ball_at_goal_x
         traj_delta_y = new_ball_final_pos_y - ball_at_goal_y
