@@ -37,7 +37,7 @@ def main():
     dataset_done = dataset['terminals']
 
     goal = np.array([0.75, 8.5])
-    # goal = np.array([20.5, 20.5])
+    goal = np.array([20.5, 20.5])
     # goal = np.array([32.5, 24.5])
 
     bottom = False

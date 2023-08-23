@@ -24,7 +24,7 @@ def main():
 
 
     # env = gym.make('maze2d-umaze-v0')
-    env = gym.make('antmaze-umaze-diverse-v2')
+    env = gym.make('antmaze-medium-play-v1')
     dataset = d4rl.qlearning_dataset(env)
     # dataset = load_dataset('../../datasets/antmaze-umaze-diverse-v1/no_aug_no_collisions_relabeled_1k.hdf5')
     # dataset = load_dataset('tmp/tmp.hdf5')
