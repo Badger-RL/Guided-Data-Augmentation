@@ -92,8 +92,8 @@ class AntMazeGuided2AugmentationFunction(AntMazeGuidedAugmentationFunction):
 
             break
 
-        aug_obs[:2] += 0.5
-        aug_next_obs[:2] += 0.5
+        # aug_obs[:2] += 0.5
+        # aug_next_obs[:2] += 0.5
         aug_action = action.copy()
         aug_reward = self._reward(aug_next_obs)
         aug_done = aug_reward > 0
@@ -119,9 +119,9 @@ class AntMazeGuided2AugmentationFunction(AntMazeGuidedAugmentationFunction):
 
         # aug_theta = -(guide_theta - theta) #+ np.random.uniform(low=-np.pi/6, high=np.pi/6)
 
-        if new_pos[0] < 7.5 and new_pos[1] > -2 and new_pos[1] < 2:
+        if new_pos[0] < 7 and new_pos[1] > -2 and new_pos[1] < 2:
             guide_theta = 0
-        elif new_pos[0] > 7.5 and new_pos[0] < 9 and new_pos[1] < 7.5:
+        elif new_pos[0] > 7 and new_pos[1] < 7.5:
             guide_theta = np.pi / 2
         else:
             guide_theta = np.pi
@@ -133,35 +133,9 @@ class AntMazeGuided2AugmentationFunction(AntMazeGuidedAugmentationFunction):
         theta = np.arctan2(delta_obs[1], delta_obs[0])
         # theta = 2 * np.arctan2(delta_obs[3], delta_obs[6])
 
-        aug_theta = -(guide_theta - theta)  # + np.random.uniform(low=-np.pi/6, high=np.pi/6)
+        aug_theta = -(guide_theta - theta) + np.random.uniform(low=-np.pi/6, high=np.pi/6)
 
         return aug_theta
-
-    def _sample_umaze(self, obs):
-        x, y = obs[0], obs[1]
-
-        # bottom
-        if x > 0 and x < 8.5 and y > 0 and y < 0.5:
-            new_pos = np.random.uniform(
-                low=np.array([0, 0]),
-                high=np.array([8.5, 0.5])
-            )
-
-        # right side
-        elif x > 8.5 and x < 9 and y > 0 and y < 8:
-            new_pos = np.random.uniform(
-                low=np.array([8.5, 0]),
-                high=np.array([9, 8])
-            )
-        elif x > 0 and x < 9 and y > 8 and y < 8.5:
-            new_pos = np.random.uniform(
-                low=np.array([0, 8]),
-                high=np.array([9, 8.5])
-            )
-        else:
-            new_pos = None
-
-        return new_pos
 
     def _sample_medium(self, obs):
 
