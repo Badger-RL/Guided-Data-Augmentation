@@ -6,7 +6,7 @@ if __name__ == "__main__":
 
     i = 0
     for env_id in ['PushBallToGoal-v0']:
-        for aug in ['no_aug', 'random', 'guided']:
+        for aug in ['guided', 'guided_neg']:
             # for expert in [50, 85]:
             #     aug = f'{aug}_{expert}'
                 aug = f'{aug}'
