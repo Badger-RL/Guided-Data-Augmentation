@@ -72,12 +72,14 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
         col = LineCollection(lines)
         ax.add_collection(col)
 
-    # plt.xlim(-6000, 6000)
-    # plt.ylim(-4500, 4500)
+    plt.xlim(-6000, 6000)
+    plt.ylim(-4500, 4500)
     plt.xlabel('x position')
     plt.ylabel('y position')
     plt.show()
 
+
+    print(dataset['rewards'].sum())
     # plt.savefig(save_path)
 
 
@@ -89,8 +91,8 @@ if __name__ == "__main__":
     # parser.add_argument('--dataset-path', type=str,
     #                     default='/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/datasets/PushBallToGoal-v1/physical/guided_traj.hdf5')
     parser.add_argument('--dataset-path', type=str,
-                        default='../datasets/PushBallToGoal-v0/physical/guided_traj.hdf5')
-    parser.add_argument('--save-dir', type=str, default='./figures/PushBallToGoal-v0/')
+                        default='../datasets/PushBallToGoalEasy-v0/physical/guided.hdf5')
+    parser.add_argument('--save-dir', type=str, default='./figures/PushBallToGoalEasy-v0/')
     parser.add_argument('--save-name', type=str, default='tmp1.png')
     parser.add_argument('--single-episode', type=bool, default=False)
     parser.add_argument('--show-actions', type=bool, default=False)
