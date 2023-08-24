@@ -50,6 +50,7 @@ def main():
     parser.add_argument('--norm-path', type=str, help='file_name')
     parser.add_argument('--save-dir', type=str, help='file_name')
     parser.add_argument('--save-name', type=str, help='file_name')
+    parser.add_argument('--env-id', default='PushBallToGoal-v0', type=str, help='file_name')
 
     # 37 = no success
     parser.add_argument('--seed', type=int, default=1)
@@ -61,7 +62,7 @@ def main():
     args = parser.parse_args()
 
     env = VecNormalize.load(
-        args.norm_path, make_vec_env('PushBallToGoal-v0', n_envs=1)
+        args.norm_path, make_vec_env(args.env_id, n_envs=1)
     )
     env.norm_obs = True
     env.norm_reward = False
