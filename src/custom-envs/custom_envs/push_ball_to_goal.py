@@ -156,7 +156,7 @@ class PushBallToGoalEnv(BaseEnv):
         for agent in self.agents:
             obs[agent] = self.get_obs(self.robots[0], self.ball, self.angles[0])
             rew[agent], is_goal, is_out_of_bounds = self.calculate_reward(absolute_next_obs)
-            terminated[agent] = is_goal or is_out_of_bounds
+            terminated[agent] = is_out_of_bounds
             if self.sparse:
                 terminated[agent] = is_out_of_bounds
 
@@ -209,16 +209,16 @@ class PushBallToGoalEnv(BaseEnv):
         is_out_of_bounds = False
 
         if self.ball_is_at_goal(ball_pos):
-            reward += 10
+            reward += 1
             is_goal = True
 
         # ball to goal
         dist_ball_to_goal = self.get_distance(ball_pos, [4800, 0])
-        reward += 10*1/dist_ball_to_goal
+        reward += 0.9*1/dist_ball_to_goal
 
         # robot to ball
         dist_robot_to_ball = self.get_distance(robot_pos, ball_pos)
-        reward += 1*1/dist_robot_to_ball
+        reward += 0.1*1/dist_robot_to_ball
 
         if self.check_facing_ball(robot_pos, ball_pos, robot_angle):
             reward += 0.001
