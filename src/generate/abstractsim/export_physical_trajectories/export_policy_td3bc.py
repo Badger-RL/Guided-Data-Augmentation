@@ -48,7 +48,7 @@ def wrap_env(
 # checkpoint = torch.load(Path(sys.argv[2]))
 
 dataset = {}
-data_hdf5 = h5py.File('../../../datasets/PushBallToGoal-v0/simrobot/guided_traj.hdf5', "r")
+data_hdf5 = h5py.File('../../../datasets/PushBallToGoalEasy-v0/physical/guided.hdf5', "r")
 for key in data_hdf5.keys():
     dataset[key] = np.array(data_hdf5[key])
 
@@ -57,7 +57,7 @@ eps = 1e-3
 state_mean, state_std = compute_mean_std(dataset["observations"], eps=eps)
 
 # env = gym.make("maze2d-umaze-v1" )
-env = gym.make("PushBallToGoal-v0")
+env = gym.make("PushBallToGoalEasy-v0")
 
 state_dim = env.observation_space.shape[0]
 action_dim = env.action_space.shape[0]
@@ -82,7 +82,8 @@ actor = algorithms.td3_bc.Actor(
     state_dim, action_dim, max_action, hidden_dims=128, n_layers=1,
 ).to("cpu")
 
-checkpoint = torch.load('/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/results/run_410/best_model.pt')
+path = '/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/results/PushBallToGoalEasy-v0/no_aug/awac/nl_1/hd_128/lr_3e-05/l_2/run_22/model.pt'
+checkpoint = torch.load(path)
 actor.load_state_dict(state_dict = checkpoint["actor"])
 
 

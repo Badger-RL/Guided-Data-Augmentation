@@ -12,7 +12,7 @@ def main():
 
 
     for i in range(0,50):
-        log_file = f'curated_kicks/trajectories_3_{i}.log'
+        log_file = f'physical_data_clean/scoring_clean_2/trajectories_3_{i}.log'
 
         try:
             with open(log_file, 'r') as f:
