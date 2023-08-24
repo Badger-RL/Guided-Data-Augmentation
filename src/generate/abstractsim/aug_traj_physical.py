@@ -5,7 +5,7 @@ if __name__ == "__main__":
 
     for env_id in ['PushBallToGoalEasy-v0']:
         for aug_size in [200e3]:
-            for aug in ['guided_traj', 'random_traj']:
+            for aug in ['guided', 'random']:
                 os.system(
                     f'python ./aug_traj.py --seed {0} --aug-size {int(aug_size)} --validate 0'
                     f' --observed-dataset-path ../../datasets/{env_id}/physical/no_aug.hdf5'
