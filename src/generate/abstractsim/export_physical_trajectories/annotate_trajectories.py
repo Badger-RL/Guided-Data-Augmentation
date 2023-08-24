@@ -45,7 +45,7 @@ def annotate_trajectories(paths):
         trajectories["absolute_observations"].extend(obs)
         trajectories["absolute_next_observations"].extend(next_obs)
         actions = np.array(dataset["actions"])[:-1]
-        actions[:, -1] = 0
+        actions[:, -1] = np.random.uniform(-1, 1, size=(len(actions),))
         actions = np.clip(actions, -1, 1)
         # norms = np.linalg.norm(actions, axis=-1)
         # actions /= norms.reshape(-1, 1)
