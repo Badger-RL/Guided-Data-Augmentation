@@ -3,16 +3,16 @@ from condor.utils import MEMDISK
 if __name__ == "__main__":
     all_commands = ""
 
-    for env_id in ['PushBallToGoal-v2']:
-        for aug in ['no_aug', 'random_traj', 'guided_traj']:
+    for env_id in ['PushBallToGoalEasy-v0']:
+        for aug in ['no_aug', 'random', 'guided']:
             aug = f'{aug}'
             # for aug in ['guided_transition']:
             for lr in [3e-4, 3e-5]:
                 for lmbda in [0.5, 1, 2]:
                     for n_layers in [1,2]:
-                        for hidden_dims in [128, 256]:
+                        for hidden_dims in [256]:
 
-                            if n_layers == 1 and hidden_dims == 256: continue
+                            # if n_layers == 1 and hidden_dims == 256: continue
 
                             dataset_name = f'/staging/ncorrado/datasets/{env_id}/physical/{aug}.hdf5'
                             save_dir = f'results/{env_id}/{aug}/awac/nl_{n_layers}/hd_{hidden_dims}/lr_{lr}/l_{lmbda}'
@@ -33,7 +33,7 @@ if __name__ == "__main__":
                                 command += f' --dataset_name {dataset_name}'
 
                             mem, disk = MEMDISK[1][env_id]
-                            # command = f'{mem},{disk},' + command.replace(' ', '*')
+                            command = f'{mem},{disk},' + command.replace(' ', '*')
                             print(command)
                             # print(command + f' --device cuda')
                             all_commands += command + '\n'

@@ -12,6 +12,7 @@ MEMDISK = {
         'PushBallToGoal-v0': (1.4, 9),
         'PushBallToGoal-v1': (1.4, 9),
         'PushBallToGoal-v2': (1.4, 9),
+        'PushBallToGoalEasy-v0': (1.4, 9),
 
     },
     2: {
