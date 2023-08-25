@@ -36,39 +36,40 @@ def annotate_trajectories(paths):
         with open(path, 'r') as input_file:
             dataset = json.load(input_file)
 
+        npify(dataset)
+
         # reorder obs to match what I use in abstractim
-        observations = np.array(dataset["observations"])
+        observations = dataset["observations"]
         observations = np.concatenate([observations[:, :2], observations[:, 3:5], observations[:, [2]]], axis=-1)
         # chop off last obs; we use it as the last next_obs
         obs = observations[:-1]
         next_obs = observations[1:]
-        trajectories["absolute_observations"].extend(obs)
-        trajectories["absolute_next_observations"].extend(next_obs)
-        actions = np.array(dataset["actions"])[:-1]
-        actions[:, -1] = np.random.uniform(-1, 1, size=(len(actions),))
-        actions = np.clip(actions, -1, 1)
-        # norms = np.linalg.norm(actions, axis=-1)
-        # actions /= norms.reshape(-1, 1)
-        trajectories["actions"].extend(actions)
 
-        displacement = np.linalg.norm(next_obs[:,:2] - obs[:,:2], axis=-1)
-        mask = displacement > 500
-        trajectories["terminals"].extend(mask)
-        trajectories["dones"].extend(mask)
+        actions = dataset["actions"]
+        actions[:, -1] = 0 #np.random.uniform(-1, 1, size=len(actions))
+        actions = np.clip(actions, -1, 1)
+
+        robot_displacement = np.linalg.norm(next_obs[:,:2] - obs[:,:2], axis=-1)
+        ball_displacement = np.linalg.norm(next_obs[:,2:4] - obs[:,2:4], axis=-1)
+
+        mask = (ball_displacement > 500) | (robot_displacement > 500)
+        # trajectories["terminals"].extend(mask)
+        # trajectories["dones"].extend(mask)
 
         env.reset()
         i = 0
         for obs, next_obs in zip(obs, next_obs):
             env.set_state(obs[:2], obs[2:4], obs[-1])
             if mask[i]:
-                next_obs = obs
+                continue
+                # next_obs = obs
             reward, ball_is_at_goal, ball_is_out_of_bounds = env.calculate_reward(next_obs)
             trajectories["rewards"].append(reward)
-            if reward >= 1:
+            if ball_is_at_goal:
                 print('goal')
-            if reward < 0:
-                print('out of bounds')
-                print(obs[:2])
+            # if reward < 0:
+            #     print('out of bounds')
+            #     print(obs[:2])
 
             # displacement = np.linalg.norm(next_obs[:2] - obs[:2])
             # trajectories["terminals"].append(False)
@@ -77,6 +78,12 @@ def annotate_trajectories(paths):
 
             trajectories["observations"].append(env.get_obs(obs[:2], obs[2:4], obs[-1]))
             trajectories["next_observations"].append(env.get_obs(next_obs[:2], next_obs[2:4], next_obs[-1]))
+            trajectories["absolute_observations"].append(np.concatenate([obs[:2], obs[2:4], [obs[-1]]]))
+            trajectories["absolute_next_observations"].append(np.concatenate([next_obs[:2], next_obs[2:4], [next_obs[-1]]]))
+            trajectories["actions"].append(actions[i])
+            trajectories["dones"].append(False)
+            trajectories["terminals"].append(False)
+
 
             # env.render()
             i += 1
@@ -110,9 +117,8 @@ def annotate_trajectories(paths):
         #         trajectories["absolute_observations"].append(obs)
         #         trajectories["absolute_next_observations"].append(next_obs)
 
-
-        # trajectories["dones"][-1] = True
-        # trajectories["terminals"][-1] = True
+    trajectories["dones"][-1] = True
+    trajectories["terminals"][-1] = True
 
     return trajectories
 
@@ -159,7 +165,7 @@ if __name__ == "__main__":
     print(len(dataset["observations"]))
     for i in range(len(dataset["observations"])):
         if dataset["terminals"][i]:
-            print(i)
+            print('terminal', i)
 
     npify(dataset)
     obs = dataset['observations']
@@ -167,12 +173,18 @@ if __name__ == "__main__":
     displacement = np.linalg.norm(next_obs[:,:2] - obs[:,:2], axis=-1)
     mask = displacement > 500
 
+    for k, v in dataset.items():
+        dataset[k] = v[:2913]
+
+    dataset["dones"][-1] = True
+    dataset["terminals"][-1] = True
+
     if "--json" in argv:
         with open(argv[2], 'w') as output_file:
             json.dump(dataset, output_file)
     else:
         out_file = h5py.File(argv[2], 'w')
         for k in dataset:
-            out_file.create_dataset(k, data=dataset[k][:2913], compression='gzip')
+            out_file.create_dataset(k, data=dataset[k], compression='gzip')
 
 
