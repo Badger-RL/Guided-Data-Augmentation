@@ -36,7 +36,7 @@ register(
     entry_point="custom_envs.push_ball_to_goal:PushBallToGoalEnv",
     max_episode_steps=1000,
     kwargs={
-        'sparse': False,
+        'sparse': True,
         'stochastic': True,
         'realistic': True,
         'displacement_coef': 0.06,
