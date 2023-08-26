@@ -15,8 +15,8 @@ from matplotlib import pyplot as plt
 from src.algorithms.utils import load_dataset
 
 
-for env_id in ['antmaze-umaze-diverse-v1']:
-    for aug in ['guided_traj']:
+for env_id in ['antmaze-large-diverse-v1']:
+    for aug in ['guided']:
         plt.figure(figsize=(12, 12))
 
         dataset_name = f'../datasets/{env_id}/{aug}/m_1000.hdf5'
@@ -25,8 +25,9 @@ for env_id in ['antmaze-umaze-diverse-v1']:
         # dataset_name = f'../datasets/{env_id}/no_aug_no_collisions_1k.hdf5'
         # dataset_name = f'../datasets/{env_id}/no_aug_no_collisions_relabeled_1k.hdf5'
         # dataset_name = f'../datasets/{env_id}/no_aug_relabeled.hdf5'
-        dataset_name = f'../generate/generated.hdf5'
+        # dataset_name = f'../generate/generated.hdf5'
         # dataset_name = f'../generate/original.hdf5'
+        dataset_name = f'../datasets/{env_id}/{aug}_10k.hdf5'
 
         # dataset_name = None
         # local dataset
