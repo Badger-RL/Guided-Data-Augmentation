@@ -37,103 +37,108 @@ timestamps = {
         'n': int(400e3)
     }
 }
-maze = 'large'
-env_id = f'antmaze-{maze}-diverse-v1'
-generate_num_of_transitions = timestamps[env_id]["n"]
-dataset_path = f"../datasets/antmaze-{maze}-diverse-v1/no_aug_no_collisions_relabeled.hdf5"
-select_trajectories_save_path = f"../datasets/{env_id}/no_aug.hdf5"
-generate_trajectories_save_path = f"../datasets/{env_id}/random.hdf5"
 
-start_timestamps = timestamps[env_id]['start']
-end_timestamps = timestamps[env_id]['end']
-directions = timestamps[env_id]['direction']
+for maze in ['medium', 'large']:
+    for aug in ['guided']:
 
-if len(start_timestamps) != len(end_timestamps):
-    print("Error: start_timestamps and end_timestamps must have the same length")
-    exit()
+        env_id = f'antmaze-{maze}-diverse-v1'
+        generate_num_of_transitions = timestamps[env_id]["n"]
+        dataset_path = f"../datasets/antmaze-{maze}-diverse-v1/no_aug_no_collisions_relabeled.hdf5"
+        select_trajectories_save_path = f"../datasets/{env_id}/no_aug.hdf5"
+        generate_trajectories_save_path = f"../datasets/{env_id}/{aug}.hdf5"
 
-for i in range(len(start_timestamps)):
-    if start_timestamps[i] >= end_timestamps[i]:
-        print("Error: start_timestamps must be less than end_timestamps")
-        exit()
+        start_timestamps = timestamps[env_id]['start']
+        end_timestamps = timestamps[env_id]['end']
+        directions = timestamps[env_id]['direction']
 
-observed_dataset = load_dataset(dataset_path)
-num_of_trajectories = len(start_timestamps)
+        if len(start_timestamps) != len(end_timestamps):
+            print("Error: start_timestamps and end_timestamps must have the same length")
+            exit()
 
-## save original trajectories
-select_trajectories = {
-    'observations': [],
-    'actions': [],
-    'next_observations': [],
-    'rewards': [],
-    'terminals': []
-}
+        for i in range(len(start_timestamps)):
+            if start_timestamps[i] >= end_timestamps[i]:
+                print("Error: start_timestamps must be less than end_timestamps")
+                exit()
 
-for i in range(num_of_trajectories):
-    start_timestamp = start_timestamps[i]
-    end_timestamp = end_timestamps[i]
-    trajectory = {
-        'observations': observed_dataset['observations'][start_timestamp:end_timestamp],
-        'actions': observed_dataset['actions'][start_timestamp:end_timestamp],
-        'next_observations': observed_dataset['next_observations'][start_timestamp:end_timestamp],
-        'rewards': observed_dataset['rewards'][start_timestamp:end_timestamp],
-        'terminals': observed_dataset['terminals'][start_timestamp:end_timestamp]
-    }
+        observed_dataset = load_dataset(dataset_path)
+        num_of_trajectories = len(start_timestamps)
 
-    for key in trajectory:
-        for j in range(len(trajectory[key])):
-            select_trajectories[key].append(trajectory[key][j])
-print("number of transitions: ", len(select_trajectories['observations']))
-select_trajectory_dataset = h5py.File(select_trajectories_save_path, 'w')
-
-npify(select_trajectories)
-for k in select_trajectories:
-    select_trajectory_dataset.create_dataset(k, data=select_trajectories[k], compression='gzip')
-select_trajectory_dataset.close()
-if generate_num_of_transitions == 0:
-    exit()
-
-
-## save generated dataset
-env = gym.make(env_id)
-f = AntMazeTrajectoryRandomAugmentationFunction(env=env)
-# f = AntMazeTrajectoryGuidedAugmentationFunction(env=env)
-env.reset()
-
-augmented_trajectories = {
-    'observations': [],
-    'actions': [],
-    'next_observations': [],
-    'rewards': [],
-    'terminals': []
-}
-
-size = 0
-while True:
-    for i in range(num_of_trajectories):
-        start_timestamp = start_timestamps[i]
-        end_timestamp = end_timestamps[i]
-        trajectory = {
-            'observations': observed_dataset['observations'][start_timestamp:end_timestamp],
-            'actions': observed_dataset['actions'][start_timestamp:end_timestamp],
-            'next_observations': observed_dataset['next_observations'][start_timestamp:end_timestamp],
-            'rewards': observed_dataset['rewards'][start_timestamp:end_timestamp],
-            'terminals': observed_dataset['terminals'][start_timestamp:end_timestamp]
+        ## save original trajectories
+        select_trajectories = {
+            'observations': [],
+            'actions': [],
+            'next_observations': [],
+            'rewards': [],
+            'terminals': []
         }
-        augmented_trajectory = f.augment_trajectory(trajectory, directions[i])
-        for key in augmented_trajectory:
-            for j in range(len(augmented_trajectory[key])):
-                augmented_trajectories[key].append(augmented_trajectory[key][j])
-        size += len(augmented_trajectory['observations'])
 
-    if size > generate_num_of_transitions:
-        break
-    print(size)
+        for i in range(num_of_trajectories):
+            start_timestamp = start_timestamps[i]
+            end_timestamp = end_timestamps[i]
+            trajectory = {
+                'observations': observed_dataset['observations'][start_timestamp:end_timestamp],
+                'actions': observed_dataset['actions'][start_timestamp:end_timestamp],
+                'next_observations': observed_dataset['next_observations'][start_timestamp:end_timestamp],
+                'rewards': observed_dataset['rewards'][start_timestamp:end_timestamp],
+                'terminals': observed_dataset['terminals'][start_timestamp:end_timestamp]
+            }
 
-augmented_trajectory_dataset = h5py.File(generate_trajectories_save_path, 'w')
+            for key in trajectory:
+                for j in range(len(trajectory[key])):
+                    select_trajectories[key].append(trajectory[key][j])
+        print("number of transitions: ", len(select_trajectories['observations']))
+        select_trajectory_dataset = h5py.File(select_trajectories_save_path, 'w')
 
-npify(augmented_trajectories)
-for k in augmented_trajectories:
-    data = np.concatenate([select_trajectories[k], augmented_trajectories[k]])
-    augmented_trajectory_dataset.create_dataset(k, data=data, compression='gzip')
-augmented_trajectory_dataset.close()
+        npify(select_trajectories)
+        for k in select_trajectories:
+            select_trajectory_dataset.create_dataset(k, data=select_trajectories[k], compression='gzip')
+        select_trajectory_dataset.close()
+        if generate_num_of_transitions == 0:
+            exit()
+
+
+        ## save generated dataset
+        env = gym.make(env_id)
+        if aug == 'guided':
+            f = AntMazeTrajectoryGuidedAugmentationFunction(env=env)
+        if aug == 'random':
+            f = AntMazeTrajectoryRandomAugmentationFunction(env=env)
+        env.reset()
+
+        augmented_trajectories = {
+            'observations': [],
+            'actions': [],
+            'next_observations': [],
+            'rewards': [],
+            'terminals': []
+        }
+
+        size = 0
+        while True:
+            for i in range(num_of_trajectories):
+                start_timestamp = start_timestamps[i]
+                end_timestamp = end_timestamps[i]
+                trajectory = {
+                    'observations': observed_dataset['observations'][start_timestamp:end_timestamp],
+                    'actions': observed_dataset['actions'][start_timestamp:end_timestamp],
+                    'next_observations': observed_dataset['next_observations'][start_timestamp:end_timestamp],
+                    'rewards': observed_dataset['rewards'][start_timestamp:end_timestamp],
+                    'terminals': observed_dataset['terminals'][start_timestamp:end_timestamp]
+                }
+                augmented_trajectory = f.augment_trajectory(trajectory, directions[i])
+                for key in augmented_trajectory:
+                    for j in range(len(augmented_trajectory[key])):
+                        augmented_trajectories[key].append(augmented_trajectory[key][j])
+                size += len(augmented_trajectory['observations'])
+
+            if size > generate_num_of_transitions:
+                break
+            print(size)
+
+        augmented_trajectory_dataset = h5py.File(generate_trajectories_save_path, 'w')
+
+        npify(augmented_trajectories)
+        for k in augmented_trajectories:
+            data = np.concatenate([select_trajectories[k], augmented_trajectories[k]])
+            augmented_trajectory_dataset.create_dataset(k, data=data, compression='gzip')
+        augmented_trajectory_dataset.close()
