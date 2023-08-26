@@ -3,7 +3,8 @@ import pandas as pd
 from src.generate.utils import reset_data, append_data, load_dataset, npify
 # import gym
 # from src.augment.maze.point_maze_aug_function import PointMazeTrajectoryAugmentationFunction, PointMazeGuidedTrajectoryAugmentationFunction
-from src.augment.antmaze.antmaze_aug_function import AntMazeTrajectoryGuidedAugmentationFunction
+from src.augment.antmaze.antmaze_aug_function import AntMazeTrajectoryGuidedAugmentationFunction, \
+    AntMazeTrajectoryRandomAugmentationFunction
 import gym
 import h5py
 import gzip
@@ -36,12 +37,12 @@ timestamps = {
         'n': int(400e3)
     }
 }
-maze = 'medium'
+maze = 'large'
 env_id = f'antmaze-{maze}-diverse-v1'
 generate_num_of_transitions = timestamps[env_id]["n"]
 dataset_path = f"../datasets/antmaze-{maze}-diverse-v1/no_aug_no_collisions_relabeled.hdf5"
 select_trajectories_save_path = f"../datasets/{env_id}/no_aug.hdf5"
-generate_trajectories_save_path = f"../datasets/{env_id}/guided.hdf5"
+generate_trajectories_save_path = f"../datasets/{env_id}/random.hdf5"
 
 start_timestamps = timestamps[env_id]['start']
 end_timestamps = timestamps[env_id]['end']
@@ -95,8 +96,8 @@ if generate_num_of_transitions == 0:
 
 ## save generated dataset
 env = gym.make(env_id)
-# f = AntMazeTrajectoryRandomAugmentationFunction(env=env)
-f = AntMazeTrajectoryGuidedAugmentationFunction(env=env)
+f = AntMazeTrajectoryRandomAugmentationFunction(env=env)
+# f = AntMazeTrajectoryGuidedAugmentationFunction(env=env)
 env.reset()
 
 augmented_trajectories = {
