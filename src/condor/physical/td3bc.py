@@ -6,18 +6,17 @@ if __name__ == "__main__":
 
     i = 0
     for env_id in ['PushBallToGoalEasy-v0']:
-        for aug in ['no_aug', 'random', 'guided']:
+        for aug in ['guided', 'no_aug', 'random', ]:
             # for expert in [50, 85]:
             #     aug = f'{aug}_{expert}'
                 aug = f'{aug}'
                 for alpha in [2.5, 5, 7.5, 10]:
                     for lr in [3e-5]:
-                        for nl in [1,2]:
-                            for hd in [256]:
+                        for nl in [2]:
+                            for hd in [64]:
                                 dataset_name = f'/staging/ncorrado/datasets/{env_id}/physical/{aug}.hdf5'
 
                                 save_dir = f'results/{env_id}/{aug}/td3bc/nl_{nl}/hd_{hd}/lr_{lr}/a_{alpha}'
-                                hidden_dims = 256
                                 tau = 1e-3
                                 actor_lr = lr
                                 critic_lr = lr
@@ -34,8 +33,10 @@ if __name__ == "__main__":
                                     critic_lr=critic_lr,
                                     alpha=alpha,
                                     tau=tau,
+                                    batch_size=256,
                                     n_layers=nl,
-                                    hidden_dims=hidden_dims,
+                                    hidden_dims=hd,
+                                    save_policy=True
                                 )
                                 mem, disk = MEMDISK[1][env_id]
                                 memdisk = f'{mem},{disk},'

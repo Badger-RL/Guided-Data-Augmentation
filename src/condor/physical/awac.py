@@ -7,10 +7,10 @@ if __name__ == "__main__":
         for aug in ['no_aug', 'random', 'guided']:
             aug = f'{aug}'
             # for aug in ['guided_transition']:
-            for lr in [3e-4, 3e-5]:
+            for lr in [3e-5]:
                 for lmbda in [0.5, 1, 2]:
-                    for n_layers in [1,2]:
-                        for hidden_dims in [256]:
+                    for n_layers in [2]:
+                        for hidden_dims in [64]:
 
                             # if n_layers == 1 and hidden_dims == 256: continue
 
@@ -26,7 +26,7 @@ if __name__ == "__main__":
                                       f' --awac_lambda {lmbda}' \
                                       f' --n_layers {n_layers}' \
                                       f' --hidden_dim {hidden_dims} '\
-                                      f' --tau {5e-3}' \
+                                      f' --tau {5e-3} --batch_size 256' \
                                       f' --gamma 0.99 --save_policy 1'
 
                             if dataset_name:
