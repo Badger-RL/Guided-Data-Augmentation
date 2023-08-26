@@ -515,20 +515,6 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
             idx = np.random.choice(len(valid_locations))
             location = np.array(valid_locations[idx]).astype(self.env.observation_space.dtype)
             boundary = self._get_valid_boundaries(*location)
-
-            xmin = np.min(
-                [aug_absolute_obs[0], aug_absolute_next_obs[0], aug_absolute_obs[2], aug_absolute_next_obs[2]])
-            ymin = np.min(
-                [aug_absolute_obs[1], aug_absolute_next_obs[1], aug_absolute_obs[3], aug_absolute_next_obs[3]])
-            xmax = np.max(
-                [aug_absolute_obs[0], aug_absolute_next_obs[0], aug_absolute_obs[2], aug_absolute_next_obs[2]])
-            ymax = np.max(
-                [aug_absolute_obs[1], aug_absolute_next_obs[1], aug_absolute_obs[3], aug_absolute_next_obs[3]])
-
-            # Translate bottom left corner of the righter bounding box containing the robot and ball
-            new_x = np.random.uniform(-4500, 4500 - (xmax - xmin))
-            new_y = np.random.uniform(-3000, 3000 - (ymax - ymin))
-
             new_pos = self._sample_from_box(*boundary)
 
             delta_pos = new_pos[:2] - trajectory['observations'][0, :2]
