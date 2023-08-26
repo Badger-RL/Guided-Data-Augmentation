@@ -31,7 +31,7 @@ def annotate_trajectories(paths):
 
     }
 
-    for path in paths:
+    for path_i, path in enumerate(paths):
         dataset = None
         with open(path, 'r') as input_file:
             dataset = json.load(input_file)
@@ -60,15 +60,18 @@ def annotate_trajectories(paths):
         i = 0
         for obs, next_obs in zip(obs, next_obs):
             env.set_state(obs[:2], obs[2:4], obs[-1])
-            if mask[i]:
+
+            if mask[i] or (path_i == 2 and (i >= 0 and i <= 600)):
+                print('i' ,i)
+                i += 1
                 continue
                 # next_obs = obs
             reward, ball_is_at_goal, ball_is_out_of_bounds = env.calculate_reward(next_obs)
             trajectories["rewards"].append(reward)
             if ball_is_at_goal:
                 print('goal')
-            # if reward < 0:
-            #     print('out of bounds')
+            if ball_is_out_of_bounds:
+                print('out of bounds')
             #     print(obs[:2])
 
             # displacement = np.linalg.norm(next_obs[:2] - obs[:2])
@@ -82,7 +85,8 @@ def annotate_trajectories(paths):
             trajectories["absolute_next_observations"].append(np.concatenate([next_obs[:2], next_obs[2:4], [next_obs[-1]]]))
             trajectories["actions"].append(actions[i])
             trajectories["dones"].append(False)
-            trajectories["terminals"].append(False)
+            # trajectories["terminals"].append(False)
+            trajectories["terminals"].append(ball_is_at_goal)
 
 
             # env.render()
@@ -116,9 +120,6 @@ def annotate_trajectories(paths):
         #         trajectories["next_observations"].append(env.get_obs(next_obs[:2], next_obs[2:4], next_obs[-1]))
         #         trajectories["absolute_observations"].append(obs)
         #         trajectories["absolute_next_observations"].append(next_obs)
-
-    trajectories["dones"][-1] = True
-    trajectories["terminals"][-1] = True
 
     return trajectories
 
@@ -174,7 +175,7 @@ if __name__ == "__main__":
     mask = displacement > 500
 
     for k, v in dataset.items():
-        dataset[k] = v[:2913]
+        dataset[k] = v[:2311]
 
     dataset["dones"][-1] = True
     dataset["terminals"][-1] = True

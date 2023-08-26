@@ -18,7 +18,7 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
     observations = dataset["absolute_observations"]
     next_observations = dataset["absolute_next_observations"]
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(20,20))
 
     robot_pos = observations[:, :2]
     next_robot_pos = next_observations[:, :2]
@@ -44,18 +44,25 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
     u = u[mask]
     v = v[mask]
 
-    plt.quiver(x,y, u,v, color='r')
+    # plt.quiver(x,y, u,v, color='r')
 
     delta = next_robot_pos - robot_pos
     u = delta[:, 0]
     v = delta[:, 1]
     mask = (np.abs(u)>0) | (np.abs(v)>0)
     x = robot_pos[:, 0]
-    x = x[mask]
+    # x = x[mask]
     y = robot_pos[:, 1]
-    y = y[mask]
-    u = u[mask]
-    v = v[mask]
+    # y = y[mask]
+    # u = u[mask]
+    # v = v[mask]
+
+    robot_angle = observations[:,4]
+    next_robot_angle = next_observations[4]
+
+    u = np.cos(robot_angle)
+    v = np.sin(robot_angle)
+
     plt.quiver(x,y, u,v, color='g')
 
     # plt.scatter(
@@ -72,8 +79,8 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
         col = LineCollection(lines)
         ax.add_collection(col)
 
-    plt.xlim(-6000, 6000)
-    plt.ylim(-4500, 4500)
+    # plt.xlim(-6000, 6000)
+    # plt.ylim(-4500, 4500)
     plt.xlabel('x position')
     plt.ylabel('y position')
     plt.show()
@@ -91,7 +98,7 @@ if __name__ == "__main__":
     # parser.add_argument('--dataset-path', type=str,
     #                     default='/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/datasets/PushBallToGoal-v1/physical/guided_traj.hdf5')
     parser.add_argument('--dataset-path', type=str,
-                        default='../datasets/PushBallToGoalEasy-v0/physical/guided.hdf5')
+                        default='../datasets/PushBallToGoalEasy-v0/physical/guided_9.hdf5')
     parser.add_argument('--save-dir', type=str, default='./figures/PushBallToGoalEasy-v0/')
     parser.add_argument('--save-name', type=str, default='tmp1.png')
     parser.add_argument('--single-episode', type=bool, default=False)
@@ -104,8 +111,8 @@ if __name__ == "__main__":
     dataset = {}
     data_hdf5 = h5py.File(args.dataset_path, "r")
     for key in data_hdf5.keys():
-        start = 5000
-        end = 10000
+        start = 000
+        end = 60000
         dataset[key] = np.array(data_hdf5[key][start:end])
 
     visualize_recorded_rollout(dataset, save_path, show_actions=args.show_actions, single_episode=args.single_episode)

@@ -123,8 +123,8 @@ def gen_aug_dataset(env, observed_dataset, check_goal_post, validate=True, aug_s
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--observed-dataset-path', type=str, default=f'../../datasets/PushBallToGoal-v2/no_aug.hdf5', help='path to observed trajectory dataset')
-    parser.add_argument('--aug-func', type=str, default=f'random_traj')
+    parser.add_argument('--observed-dataset-path', type=str, default=f'../../datasets/PushBallToGoalEasy-v0/physical/no_aug.hdf5', help='path to observed trajectory dataset')
+    parser.add_argument('--aug-func', type=str, default=f'guided')
     parser.add_argument('--aug-size', type=int, default=int(10e3), help='Number of augmented trajectories to generate')
     parser.add_argument('--save-dir', type=str, default='.', help='Directory to save augmented dataset')
     parser.add_argument('--save-name', type=str, default='tmp.hdf5', help='Name of augmented dataset')

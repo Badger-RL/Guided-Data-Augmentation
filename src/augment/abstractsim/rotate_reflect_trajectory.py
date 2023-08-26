@@ -8,16 +8,20 @@ from src.augment.utils import convert_to_absolute_obs, calculate_reward, convert
 BEHAVIORS = {
     # 'straight_1': {
     #     'indices': (700, 900),
-    #     'max_len': 3,
+    #     'max_len': 1,
     # },
     # 'straight_2': {
     #     'indices': (2700, 2912,),
     #     'max_len': 10,
     # },
-    'left_to_right': {
-        'indices': (900, 1800),
+    'straight_3': {
+        'indices': (200, 900),
         'max_len': 1,
     },
+    # 'left_to_right': {
+    #     'indices': (1200, 1700),
+    #     'max_len': 1,
+    # },
     # 'right_to_left': {
     #     'indices': (700, 900),
     #     'max_len': 1,
@@ -36,7 +40,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
 
     behavior = None
 
-    if np.random.random() < 0.5:
+    if np.random.random() < 1:
         idx = np.random.randint(num_behaviors)
         behavior = keys[idx]
         behavior_dict = BEHAVIORS[behavior]
@@ -85,12 +89,12 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
     ball_at_goal_y = aug_abs_obs[-1, 3].copy()
 
     attempts = 0
-    while attempts < 100:
+    while attempts < 1000:
         attempts += 1
 
         if guided:
             new_ball_final_pos_x = np.random.uniform(4500, 4700)
-            new_ball_final_pos_y = np.random.uniform(-200, 200)
+            new_ball_final_pos_y = np.random.uniform(-10, 10)
 
             if behavior == 'left_to_right':
                 new_ball_final_pos_x = np.random.uniform(2500, 4000)
@@ -116,40 +120,44 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
         aug_abs_next_obs[:, 3] += traj_delta_y
 
 
-        if behavior is None:
-            # Translate origin to the final ball position
-            aug_abs_obs[:, 0] -= new_ball_final_pos_x
-            aug_abs_obs[:, 1] -= new_ball_final_pos_y
-            aug_abs_obs[:, 2] -= new_ball_final_pos_x
-            aug_abs_obs[:, 3] -= new_ball_final_pos_y
-            aug_abs_next_obs[:, 0] -= new_ball_final_pos_x
-            aug_abs_next_obs[:, 1] -= new_ball_final_pos_y
-            aug_abs_next_obs[:, 2] -= new_ball_final_pos_x
-            aug_abs_next_obs[:, 3] -= new_ball_final_pos_y
+        # if behavior is None:
+        # Translate origin to the final ball position
+        aug_abs_obs[:, 0] -= new_ball_final_pos_x
+        aug_abs_obs[:, 1] -= new_ball_final_pos_y
+        aug_abs_obs[:, 2] -= new_ball_final_pos_x
+        aug_abs_obs[:, 3] -= new_ball_final_pos_y
+        aug_abs_next_obs[:, 0] -= new_ball_final_pos_x
+        aug_abs_next_obs[:, 1] -= new_ball_final_pos_y
+        aug_abs_next_obs[:, 2] -= new_ball_final_pos_x
+        aug_abs_next_obs[:, 3] -= new_ball_final_pos_y
 
-            # rotate robot and ball position about ball's final position
+        # rotate robot and ball position about ball's final position
+        if behavior:
+            theta = np.random.uniform(-30, 30) * np.pi / 180
+        else:
             theta = np.random.uniform(-180, 180) * np.pi / 180
-            M = np.array([
-                [np.cos(theta), -np.sin(theta)],
-                [np.sin(theta), np.cos(theta)]
-            ])
-            aug_abs_obs[:, :2] = M.dot(aug_abs_obs[:, :2].T).T
-            aug_abs_obs[:, 2:4] = M.dot(aug_abs_obs[:, 2:4].T).T
-            aug_abs_obs[:, 4] += theta
 
-            aug_abs_next_obs[:, :2] = M.dot(aug_abs_next_obs[:, :2].T).T
-            aug_abs_next_obs[:, 2:4] = M.dot(aug_abs_next_obs[:, 2:4].T).T
-            aug_abs_next_obs[:, 4] += theta
+        M = np.array([
+            [np.cos(theta), -np.sin(theta)],
+            [np.sin(theta), np.cos(theta)]
+        ])
+        aug_abs_obs[:, :2] = M.dot(aug_abs_obs[:, :2].T).T
+        aug_abs_obs[:, 2:4] = M.dot(aug_abs_obs[:, 2:4].T).T
+        aug_abs_obs[:, 4] += theta
+
+        aug_abs_next_obs[:, :2] = M.dot(aug_abs_next_obs[:, :2].T).T
+        aug_abs_next_obs[:, 2:4] = M.dot(aug_abs_next_obs[:, 2:4].T).T
+        aug_abs_next_obs[:, 4] += theta
 
 
-            aug_abs_obs[:, 0] += new_ball_final_pos_x
-            aug_abs_obs[:, 1] += new_ball_final_pos_y
-            aug_abs_obs[:, 2] += new_ball_final_pos_x
-            aug_abs_obs[:, 3] += new_ball_final_pos_y
-            aug_abs_next_obs[:, 0] += new_ball_final_pos_x
-            aug_abs_next_obs[:, 1] += new_ball_final_pos_y
-            aug_abs_next_obs[:, 2] += new_ball_final_pos_x
-            aug_abs_next_obs[:, 3] += new_ball_final_pos_y
+        aug_abs_obs[:, 0] += new_ball_final_pos_x
+        aug_abs_obs[:, 1] += new_ball_final_pos_y
+        aug_abs_obs[:, 2] += new_ball_final_pos_x
+        aug_abs_obs[:, 3] += new_ball_final_pos_y
+        aug_abs_next_obs[:, 0] += new_ball_final_pos_x
+        aug_abs_next_obs[:, 1] += new_ball_final_pos_y
+        aug_abs_next_obs[:, 2] += new_ball_final_pos_x
+        aug_abs_next_obs[:, 3] += new_ball_final_pos_y
 
         # Verify that translation doesn't move the agent out of bounds.
         # Only need to check y since we only translate vertically.
@@ -162,7 +170,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             aug_abs_obs = copy.deepcopy(aug_abs_obs_original)
             aug_abs_next_obs = copy.deepcopy(aug_abs_next_obs_original)
         # print('theta', is_valid_theta)
-    if attempts >= 100:
+    if attempts >= 1000:
         print(f'Skipping trajectory after {attempts} augmentation attempts.')
         return None, None, None, None, None, None, None
 
