@@ -449,33 +449,59 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
 
         return aug_theta, do_reflect
 
-
-    def augment_trajectory(self, trajectory: dict):
-        length = len(trajectory['observations'])
-
-        disp = trajectory['next_observations'][-1, :2] - trajectory['observations'][0, :2]
-        disp_x, disp_y = disp[0], disp[1]
+    def valid_locations_umaze(self, direction):
 
         valid_locations = []
-        if disp_x > 2 and np.abs(disp_y) < 2:
+        if direction == 0: # random
+            valid_locations = [(1, 3)]
+        elif direction == 1: # right
             valid_locations = [(1, 1), (2, 1)]
-            right = 0
-        elif disp_x < -2 and np.abs(disp_y) < 2:
-            valid_locations = [(2, 3), (3, 3)]
-            left = 0
-        elif np.abs(disp_x) < 2 and disp_y > 2:
+        elif direction == 2: # up
             valid_locations = [(3, 1), (3, 2)]
-            up = 0
-        elif np.abs(disp_x) < 2 and disp_y > 2:
-            # print('here')
-            down = 0
-        else:
-            valid_locations = [(1,3)]
-        # print(disp)
-        print(valid_locations)
+        elif direction == 3: # left
+            valid_locations = [(2, 3), (3, 3)]
+        elif direction == 4:
+            valid_locations = []
 
+        return valid_locations
 
-        while True:
+    def valid_locations_medium(self, direction):
+
+        valid_locations = []
+        if direction == 0:  # random
+            valid_locations = [(6, 6)]
+        elif direction == 1:  # right
+            valid_locations = [(1, 1), (1, 2), (1, 4), (1, 6),
+                               (2, 3), (2, 6),
+                               (3, 3), (3, 5),
+                               (4, 4),
+                               (5, 4),]
+        elif direction == 2:  # up
+            valid_locations = [(2, 1), (2, 2), (2, 3),
+                               (4, 2), (4, 3),
+                               (5, 1),
+                               (6, 1), (6, 4), (6, 5),]
+        elif direction == 3:  # left
+            valid_locations = [(2, 4),
+                               (5, 2),
+                               (6, 2),]
+        elif direction == 4: # down
+            valid_locations = [(1, 5),
+                               (3, 6),
+                               (4, 5),]
+
+        return valid_locations
+
+    def augment_trajectory(self, trajectory: dict, direction):
+        length = len(trajectory['observations'])
+
+        valid_locations = self.valid_locations_medium(direction)
+        # print(valid_locations)
+        max_attempts = 100
+        attempts = 0
+        success = False
+        while attempts < max_attempts:
+            attempts += 1
             augmented_trajectory = {
                 'observations': [],
                 'actions': [],
@@ -489,18 +515,23 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
             idx = np.random.choice(len(valid_locations))
             location = np.array(valid_locations[idx]).astype(self.env.observation_space.dtype)
             boundary = self._get_valid_boundaries(*location)
+
+            xmin = np.min(
+                [aug_absolute_obs[0], aug_absolute_next_obs[0], aug_absolute_obs[2], aug_absolute_next_obs[2]])
+            ymin = np.min(
+                [aug_absolute_obs[1], aug_absolute_next_obs[1], aug_absolute_obs[3], aug_absolute_next_obs[3]])
+            xmax = np.max(
+                [aug_absolute_obs[0], aug_absolute_next_obs[0], aug_absolute_obs[2], aug_absolute_next_obs[2]])
+            ymax = np.max(
+                [aug_absolute_obs[1], aug_absolute_next_obs[1], aug_absolute_obs[3], aug_absolute_next_obs[3]])
+
+            # Translate bottom left corner of the righter bounding box containing the robot and ball
+            new_x = np.random.uniform(-4500, 4500 - (xmax - xmin))
+            new_y = np.random.uniform(-3000, 3000 - (ymax - ymin))
+
             new_pos = self._sample_from_box(*boundary)
-            # print(new_pos)
-            # if at goal, keep at goal cell.
-            r, c = self._xy_to_rowcol(trajectory['observations'][0,:2])
-            if (r,c) == (1,3):
-                # idx = np.random.choice(len(self.valid_locations))
-                # r,c = self.valid_locations[idx]
-                boundary = self._get_valid_boundaries(r, c)
-                new_pos = self._sample_from_box(*boundary)
 
             delta_pos = new_pos[:2] - trajectory['observations'][0, :2]
-            print(new_pos)
 
             for i in range(length):
                 # print(i, length)
@@ -539,7 +570,17 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
                     augmented_trajectory['rewards'].append(augmented_reward)
                     augmented_trajectory['next_observations'].append(augmented_next_obs)
                     augmented_trajectory['terminals'].append(augmented_done)
+                    success = True
                 else:
                     break
-            if i == length-1: break
+        if not success:
+            print('f')
+            augmented_trajectory = {
+                'observations': [],
+                'actions': [],
+                'rewards': [],
+                'next_observations': [],
+                'terminals': [],
+            }
+            return augmented_trajectory
         return augmented_trajectory
