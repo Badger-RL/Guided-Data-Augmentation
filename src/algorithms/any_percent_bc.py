@@ -25,6 +25,7 @@ class TrainConfig(TrainConfigBase):
     buffer_size: int = 2_000_000  # Replay buffer size
     frac: float = 1  # Best data fraction to use
     max_traj_len: int = 1000  # Max trajectory length
+    learning_rate: float = 3e-5
     normalize: bool = True  # Normalize states
 
 
@@ -147,7 +148,7 @@ def train(config: TrainConfig):
     action_dim = env.action_space.shape[0]
     max_action = float(env.action_space.high[0])
     actor = Actor(state_dim, action_dim, max_action).to(config.device)
-    actor_optimizer = torch.optim.Adam(actor.parameters(), lr=3e-4)
+    actor_optimizer = torch.optim.Adam(actor.parameters(), lr=config.learning_rate)
 
     kwargs = {
         "max_action": max_action,
