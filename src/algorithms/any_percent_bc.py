@@ -23,7 +23,7 @@ class TrainConfig(TrainConfigBase):
     discount: float = 0.99  # Discount factor
     # BC
     buffer_size: int = 2_000_000  # Replay buffer size
-    frac: float = 0.1  # Best data fraction to use
+    frac: float = 1  # Best data fraction to use
     max_traj_len: int = 1000  # Max trajectory length
     normalize: bool = True  # Normalize states
 
@@ -39,11 +39,11 @@ class Actor(nn.Module):
         super(Actor, self).__init__()
 
         self.net = nn.Sequential(
-            nn.Linear(state_dim, 256),
+            nn.Linear(state_dim, 64),
             nn.ReLU(),
-            nn.Linear(256, 256),
+            nn.Linear(64, 64),
             nn.ReLU(),
-            nn.Linear(256, action_dim),
+            nn.Linear(64, action_dim),
             nn.Tanh(),
         )
 
