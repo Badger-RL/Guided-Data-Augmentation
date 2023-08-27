@@ -2,6 +2,7 @@ import argparse
 import os.path
 
 import gymnasium as gym
+import highway_env
 import h5py
 import numpy as np
 from stable_baselines3 import SAC, DDPG, DQN, PPO
@@ -43,8 +44,8 @@ def simulate(env, model, num_samples, num_episodes=None,  seed=0, render=False, 
             done = terminated or truncated
 
 
-            action_dict = env.controlled_vehicles[0].action
-            action = np.array([action_dict['steering'], action_dict['acceleration']])
+            # action_dict = env.controlled_vehicles[0].action
+            # action = np.array([action_dict['steering'], action_dict['acceleration']])
             # action[0] += np.random.uniform(-0.05, +0.05)
             # action[1] += np.random.uniform(-0.05, +0.05)
 
@@ -95,9 +96,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--algo", help="RL Algorithm", default='dqn', type=str)
-    parser.add_argument("--env_id", type=str, default="intersection-v0", help="environment ID")
+    parser.add_argument("--env_id", type=str, default="merge-v0", help="environment ID")
     parser.add_argument("--seed", help="Random generator seed", type=int, default=0)
-    parser.add_argument('--num_samples', type=int, default=int(300), help='Num samples to collect')
+    parser.add_argument('--num_samples', type=int, default=int(3e3), help='Num samples to collect')
     parser.add_argument('--policy_path', type=str, default='file_name')
     parser.add_argument('--save_dir', type=str, default='tmp_dir')
     parser.add_argument('--save_name', type=str, default='tmp_name')
@@ -111,7 +112,7 @@ if __name__ == "__main__":
     env = gym.make(args.env_id, **env_kwargs)
 
 
-    args.policy_path = f'../../results/{args.env_id}/{args.algo}/rl_model_10000_steps.zip'
+    args.policy_path = f'../../policies/{args.env_id}/{args.algo}/best_model.zip'
     model = DQN.load(args.policy_path)
 
     # args.policy_path = f'../../results/{args.env_id}/rl_model_3000_steps.zip'
