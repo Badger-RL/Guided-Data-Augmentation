@@ -5,9 +5,9 @@ MEMDISK = {
         'maze2d-medium-v1': (1.6, 9),
         'maze2d-large-v1': (2.9, 9),
 
-        'antmaze-umaze-diverse-v1': (2.2, 9),
-        'antmaze-medium-diverse-v1': (2.2, 9),
-        'antmaze-large-diverse-v1': (3.3, 9),
+        'antmaze-umaze-diverse-v1': (1.5, 9),
+        'antmaze-medium-diverse-v1': (1.5, 9),
+        'antmaze-large-diverse-v1': (1.5, 9),
     },
     2: {
         'maze2d-umaze-v1': (1.9, 9),

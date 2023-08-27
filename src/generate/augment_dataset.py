@@ -71,6 +71,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--aug-func', type=str, default='guided')
     parser.add_argument('--aug-ratio', '-m', type=int, default=99, help='Number of augmentations per observed transition')
+    parser.add_argument('--aug-size', type=int, default=int(1e6))
     parser.add_argument('--save-dir', '-fd', type=str, default=None)
     parser.add_argument('--save-name', '-fn', type=str, default=None)
 
@@ -118,7 +119,7 @@ if __name__ == '__main__':
     aug_dataset = reset_data()
     aug_count = 0 # number of valid augmentations produced
     i = 0
-    while aug_count < n*m:
+    while aug_count < args.aug_size:
         if args.aug_func == 'mixed' and aug_count == n//5:
             print('Switching to guided aug')
             f = AUG_FUNCTIONS[args.env_id]['guided'](env=env)
@@ -137,8 +138,8 @@ if __name__ == '__main__':
             aug_count += 1
             if aug_count % 10000 == 0: print('aug_count:', aug_count)
             append_data(aug_dataset, obs, action, reward, next_obs, done)
-        if aug_count >= n * m:
-            break
+        # if aug_count >= n * m:
+        #     break
 
     os.makedirs(args.save_dir, exist_ok=True)
     save_path = f'{args.save_dir}/{args.save_name}'

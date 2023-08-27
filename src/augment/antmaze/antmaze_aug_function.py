@@ -526,9 +526,9 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
         elif direction == 3:  # left
             valid_locations = [
                                (9, 5),
-                               (10, 5), (10, 7)]
+                               (10, 7)]
         elif direction == 4: # down
-            valid_locations = [(1, 4), (1, 5),
+            valid_locations = [(1, 4),
                                (6, 6), (6, 7),]
 
         return valid_locations

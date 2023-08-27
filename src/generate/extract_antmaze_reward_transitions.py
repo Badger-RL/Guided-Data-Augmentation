@@ -9,9 +9,10 @@ import h5py
 import gzip
 from src.generate.utils import npify
 
-env_id = 'antmaze-large-diverse-v1'
-dataset_path = "/Users/yxqu/Desktop/Research/GuDA/Antmaze_Dataset/antmaze-large-diverse-v1/no_aug_no_collisions_relabeled.hdf5"
-select_trajectories_save_path = f"{env_id}_reward.hdf5"
+maze = 'medium'
+env_id = f'antmaze-{maze}-diverse-v1'
+dataset_path = f"../datasets/{env_id}/no_aug_no_collisions_relabeled.hdf5"
+select_trajectories_save_path = f"../datasets/{env_id}/random/no_aug.hdf5"
 observed_dataset = load_dataset(dataset_path)
 
 ## save original trajectories
