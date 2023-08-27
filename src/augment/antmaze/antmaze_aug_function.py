@@ -484,23 +484,20 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
         if direction == 0:  # random
             valid_locations = [(6, 6)]
         elif direction == 1:  # right
-            valid_locations = [(1, 1), (1, 2), (1, 4), (1, 6),
-                               (2, 3), (2, 6),
-                               (3, 3), (3, 5),
+            valid_locations = [(1, 1), (1, 2),
+                               (2, 3),
+                               (3, 3),
                                (4, 4),
-                               (5, 4),]
+                               (5, 4),
+                               (5, 6)]
         elif direction == 2:  # up
-            valid_locations = [(2, 1), (2, 2), (2, 3),
+            valid_locations = [(2, 1), (2, 2),
                                (4, 2), (4, 3),
-                               (5, 1),
-                               (6, 1), (6, 4), (6, 5),]
+                               (6, 4), (6, 5),]
         elif direction == 3:  # left
-            valid_locations = [(2, 4),
-                               (5, 2),
-                               (6, 2),]
+            valid_locations = []
         elif direction == 4: # down
-            valid_locations = [(1, 5),
-                               (3, 6),
+            valid_locations = [(2, 4),
                                (4, 5),]
 
         return valid_locations
@@ -511,30 +508,27 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
         if direction == 0:  # random
             valid_locations = [(9, 7)]
         elif direction == 1:  # right
-            valid_locations = [(1, 1), (1, 3), (1, 7),
+            valid_locations = [(1, 1), (1, 3),
                                (2, 1), (2, 3),
                                (3, 1), (3, 3),
-                               (4, 3), (4, 7),
-                               (5, 3), (5, 7),
+                               (4, 3),
+                               (5, 3),
                                (6, 5),
                                (7, 5),
                                (8, 7),
-                               (9, 1), (9, 3)]
+                               ]
         elif direction == 2:  # up
             valid_locations = [(1, 1),
-                               (4, 1), (4, 1), (4, 5), (4, 6),
+                               (4, 1), (4, 2),
                                (6, 1), (6, 2), (6, 3), (6, 4),
-                               (8, 1), (8, 2), (8, 5), (8, 6),
-                               (10, 1), (10, 2), (10, 3), (10, 4),
+                               (8, 5), (8, 6),
                                ]
         elif direction == 3:  # left
-            valid_locations = [(2, 5),
-                               (7, 1),
+            valid_locations = [
                                (9, 5),
                                (10, 5), (10, 7)]
         elif direction == 4: # down
             valid_locations = [(1, 4), (1, 5),
-                               (2, 6), (2, 7),
                                (6, 6), (6, 7),]
 
         return valid_locations
@@ -543,8 +537,6 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
     def augment_trajectory(self, trajectory: dict, direction):
         length = len(trajectory['observations'])
 
-        valid_locations = self.get_valid_locations(direction)
-
         augmented_trajectory = {
             'observations': [],
             'actions': [],
@@ -552,6 +544,10 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
             'next_observations': [],
             'terminals': [],
         }
+
+        valid_locations = self.get_valid_locations(direction)
+        if len(valid_locations) == 0:
+            return augmented_trajectory
         is_new_trajectory = True
         for i in range(length):
             observation = trajectory['observations'][i]
