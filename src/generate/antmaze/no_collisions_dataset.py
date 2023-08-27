@@ -16,8 +16,8 @@ from generate.utils import reset_data, append_data, npify, append_data2
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--env-id', type=str, default='antmaze-medium-diverse-v1')
-    parser.add_argument('--save-dir', '-fd', type=str, default='../../datasets/antmaze-medium-diverse-v1')
+    parser.add_argument('--env-id', type=str, default='antmaze-large-diverse-v1')
+    parser.add_argument('--save-dir', '-fd', type=str, default='../../datasets/antmaze-large-diverse-v1')
     parser.add_argument('--save-name', '-fn', type=str, default='no_aug_no_collisions.hdf5')
     args = parser.parse_args()
 
@@ -25,8 +25,8 @@ def main():
 
 
     # env = gym.make('maze2d-medium-v0')
-    env = gym.make('antmaze-umaze-diverse-v1')
-    env_empty = gym.make('antmaze-open-umaze-diverse-v1')
+    env = gym.make('antmaze-large-diverse-v1')
+    env_empty = gym.make('antmaze-open-large-diverse-v1')
 
     dataset = d4rl.qlearning_dataset(env)
 

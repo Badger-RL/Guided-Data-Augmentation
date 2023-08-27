@@ -298,22 +298,22 @@ class AntMazeGuidedAugmentationFunction(AntMazeAugmentationFunction):
         x, y = obs[0], obs[1]
 
         # bottom
-        if x > 0 and x < 8.5 and y > 0 and y < 0.5:
+        if x < 8.5 and y > -1 and y < 1:
             new_pos = np.random.uniform(
-                low=np.array([0, 0]),
-                high=np.array([8.5, 0.5])
+                low=np.array([-1, -1]),
+                high=np.array([8.5, 1])
             )
 
         # right side
-        elif x > 8.5 and x < 9 and y > 0 and y < 8:
+        elif x > 7 and x < 9 and y > -1 and y < 8:
             new_pos = np.random.uniform(
-                low=np.array([8.5, 0]),
+                low=np.array([7, -1]),
                 high=np.array([9, 8])
             )
-        elif x > 0 and x < 9 and y > 8 and y < 8.5:
+        elif x > -1 and x < 9 and y > 7 and y < 9:
             new_pos = np.random.uniform(
-                low=np.array([0, 8]),
-                high=np.array([9, 8.5])
+                low=np.array([-1, 7]),
+                high=np.array([9, 9])
             )
         else:
             new_pos = None
@@ -372,7 +372,7 @@ class AntMazeGuidedAugmentationFunction(AntMazeAugmentationFunction):
 
         aug_action = action.copy()
         aug_reward = self._reward(aug_next_obs)
-        aug_done = self._is_done(aug_next_obs, aug_reward)
-        self.num_aug = 0
+        aug_done = aug_reward > 0
+        # self.num_aug = 0
 
         return aug_obs, aug_action, aug_reward, aug_next_obs, aug_done
