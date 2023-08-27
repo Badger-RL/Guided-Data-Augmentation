@@ -124,13 +124,13 @@ class TanhGaussianPolicy(nn.Module):
         self.no_tanh = no_tanh
 
         self.base_network = nn.Sequential(
-            nn.Linear(state_dim, 256),
+            nn.Linear(state_dim, 64),
             nn.ReLU(),
-            nn.Linear(256, 256),
+            nn.Linear(64, 64),
             nn.ReLU(),
-            nn.Linear(256, 256),
+            nn.Linear(64, 64),
             nn.ReLU(),
-            nn.Linear(256, 2 * action_dim),
+            nn.Linear(64, 2 * action_dim),
         )
 
         if orthogonal_init:
@@ -187,13 +187,13 @@ class FullyConnectedQFunction(nn.Module):
         self.orthogonal_init = orthogonal_init
 
         self.network = nn.Sequential(
-            nn.Linear(observation_dim + action_dim, 256),
+            nn.Linear(observation_dim + action_dim, 64),
             nn.ReLU(),
-            nn.Linear(256,256),
+            nn.Linear(64,64),
             nn.ReLU(),
-            nn.Linear(256, 256),
+            nn.Linear(64, 64),
             nn.ReLU(),
-            nn.Linear(256, 1),
+            nn.Linear(64, 1),
         )
         if orthogonal_init:
             self.network.apply(lambda m: init_module_weights(m, True))
