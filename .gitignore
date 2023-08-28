@@ -157,3 +157,12 @@ bundle.zip
 
 src/logdata/*
 src/plotting/*
+src/generate/*.hdf5
+
+src/algorithms/discrete_BCQ/__pycache__/
+src/algorithms/discrete_BCQ/__init__.py
+src/algorithms/discrete_BCQ/README.md
+src/algorithms/discrete_BCQ/buffers/
+src/algorithms/discrete_BCQ/models/
+src/algorithms/discrete_BCQ/results/
+
