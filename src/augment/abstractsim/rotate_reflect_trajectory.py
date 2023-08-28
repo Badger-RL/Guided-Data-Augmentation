@@ -6,10 +6,10 @@ from src.augment.utils import convert_to_absolute_obs, calculate_reward, convert
 
 
 BEHAVIORS = {
-    # 'straight_1': {
-    #     'indices': (700, 900),
-    #     'max_len': 1,
-    # },
+    'straight_1': {
+        'indices': (700, 900),
+        'max_len': 5,
+    },
     # 'straight_2': {
     #     'indices': (2700, 2912,),
     #     'max_len': 10,
@@ -40,7 +40,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
 
     behavior = None
 
-    if np.random.random() < 1:
+    if np.random.random() < 0.5:
         idx = np.random.randint(num_behaviors)
         behavior = keys[idx]
         behavior_dict = BEHAVIORS[behavior]
@@ -89,7 +89,8 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
     ball_at_goal_y = aug_abs_obs[-1, 3].copy()
 
     attempts = 0
-    while attempts < 1000:
+    max_attempts = 100
+    while attempts < max_attempts:
         attempts += 1
 
         if guided:
@@ -170,7 +171,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             aug_abs_obs = copy.deepcopy(aug_abs_obs_original)
             aug_abs_next_obs = copy.deepcopy(aug_abs_next_obs_original)
         # print('theta', is_valid_theta)
-    if attempts >= 1000:
+    if attempts >= max_attempts:
         print(f'Skipping trajectory after {attempts} augmentation attempts.')
         return None, None, None, None, None, None, None
 

@@ -61,7 +61,8 @@ def annotate_trajectories(paths):
         for obs, next_obs in zip(obs, next_obs):
             env.set_state(obs[:2], obs[2:4], obs[-1])
 
-            if mask[i] or (path_i == 2 and (i >= 0 and i <= 600)):
+            # if mask[i] or (path_i == 2 and (i >= 0 and i <= 600)):
+            if mask[i]:
                 print('i' ,i)
                 i += 1
                 continue
@@ -175,7 +176,8 @@ if __name__ == "__main__":
     mask = displacement > 500
 
     for k, v in dataset.items():
-        dataset[k] = v[:2311]
+        # dataset[k] = v[:2311]
+        dataset[k] = v[:2911]
 
     dataset["dones"][-1] = True
     dataset["terminals"][-1] = True

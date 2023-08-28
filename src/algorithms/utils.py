@@ -401,8 +401,37 @@ def train_base(config, env, trainer):
 
             if config.save_policy:
                 # save current model
+                try:
+                    test = config.cql_n_actions
+                    torch.save(
+                        trainer.actor.state_dict(),
+                        os.path.join(config.save_dir, f"model.pt"),
+                    )
+
+                    # save best model
+                    if eval_score > best_eval_score:
+                        best_eval_score = eval_score
+                        torch.save(
+                            trainer.actor.state_dict(),
+                            os.path.join(config.save_dir, f"best_model.pt"),
+                        )
+                except:
+                    is_cql = False
+                    torch.save(
+                        trainer.state_dict(),
+                        os.path.join(config.save_dir, f"model.pt"),
+                    )
+
+                    # save best model
+                    if eval_score > best_eval_score:
+                        best_eval_score = eval_score
+                        torch.save(
+                            trainer.state_dict(),
+                            os.path.join(config.save_dir, f"best_model.pt"),
+                        )
+
                 torch.save(
-                    trainer.state_dict(),
+                    trainer.actor.state_dict(),
                     os.path.join(config.save_dir, f"model.pt"),
                 )
 
@@ -410,7 +439,7 @@ def train_base(config, env, trainer):
                 if eval_score > best_eval_score:
                     best_eval_score = eval_score
                     torch.save(
-                        trainer.state_dict(),
+                        trainer.actor.state_dict(),
                         os.path.join(config.save_dir, f"best_model.pt"),
                     )
 

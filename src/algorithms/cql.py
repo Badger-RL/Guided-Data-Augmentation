@@ -31,10 +31,10 @@ class TrainConfig(TrainConfigBase):
     soft_target_update_rate: float = 0.005  # Target network update rate
     bc_steps: int = int(0)  # Number of BC steps at start
     target_update_period: int = 1  # Frequency of target nets updates
-    cql_n_actions: int = 10  # Number of sampled actions
+    cql_n_actions: int = 5  # Number of sampled actions
     cql_importance_sample: bool = True  # Use importance sampling
     cql_lagrange: bool = True  # Use Lagrange version of CQL
-    cql_target_action_gap: float = 5  # Action gap
+    cql_target_action_gap: float = -1  # Action gap
     cql_temp: float = 1.0  # CQL temperature
     cql_min_q_weight: float = 10.0  # Minimal Q weight
     cql_max_target_backup: bool = False  # Use max target backup
