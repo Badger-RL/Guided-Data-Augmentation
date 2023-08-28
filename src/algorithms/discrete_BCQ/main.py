@@ -38,10 +38,7 @@ def interact_with_environment(env, replay_buffer, is_atari, num_actions, state_d
 	if args.generate_buffer: policy.load(f"./models/behavioral_{setting}")
 	
 	evaluations = []
-	if args.env == 'intersection-v0':
-		state, _ = env.reset()
-	else:
-		state = env.reset()
+	state, _ = env.reset()
 	episode_start = True
 	episode_reward = 0
 	episode_timesteps = 0
@@ -70,21 +67,13 @@ def interact_with_environment(env, replay_buffer, is_atari, num_actions, state_d
 
 		# next_state, reward, done, info = env.step(action)
 
-		if args.env == 'intersection-v0':
-			# print("intersection")
-			next_state, reward, done, truncated, info = env.step(action)
-		else:
-			# print("not intersection")
-			next_state, reward, done, info = env.step(action)
+		next_state, reward, terminated, truncated, info = env.step(action)
+		done = terminated
 
 		episode_reward += reward
 
 		# Only consider "done" if episode terminates due to failure condition
-
-		if args.env == 'intersection-v0':
-			done_float = float(done) if truncated else 0
-		else:
-			done_float = float(done) if episode_timesteps < env._max_episode_steps else 0
+		done_float = float(terminated)
 
 		# For atari, info[0] = clipped reward, info[1] = done_float
 		if is_atari:
@@ -105,10 +94,7 @@ def interact_with_environment(env, replay_buffer, is_atari, num_actions, state_d
 			# +1 to account for 0 indexing. +0 on ep_timesteps since it will increment +1 even if done=True
 			print(f"Total T: {t+1} Episode Num: {episode_num+1} Episode T: {episode_timesteps} Reward: {episode_reward:.3f}")
 			# Reset environment
-			if args.env == 'intersection-v0':
-				state, _ = env.reset()
-			else:
-				state = env.reset()
+			state, _ = env.reset()
 			episode_start = True
 			episode_reward = 0
 			episode_timesteps = 0
@@ -179,24 +165,21 @@ def train_BCQ(env, replay_buffer, is_atari, num_actions, state_dim, device, args
 
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environment
-def eval_policy(policy, env_name, seed, eval_episodes=10):
+def eval_policy(policy, env_name, seed, eval_episodes=50):
 	eval_env, _, _, _ = utils.make_env(env_name, atari_preprocessing)
 
 	# eval_env.seed(seed + 100)
 
 	avg_reward = 0.
 	for _ in range(eval_episodes):
-		if args.env == 'intersection-v0':
-			state, _ = env.reset()
-		else:
-			state = env.reset()
-		# state, done = eval_env.reset(), False
+		state, _ = env.reset()
 		state, _ = eval_env.reset()
 		done = False
 		while not done:
 			action = policy.select_action(np.array(state), eval=True)
-			if args.env == 'intersection-v0':
-				state, reward, done, truncated, info = env.step(action)
+			if args.env == 'roundabout-v0':
+				state, reward, terminated, truncated, info = env.step(action)
+				done = terminated or truncated
 			else:
 				state, reward, done, _ = eval_env.step(action)
 			avg_reward += reward
@@ -271,11 +254,11 @@ if __name__ == "__main__":
 
 	# Load parameters
 	parser = argparse.ArgumentParser()
-	parser.add_argument("--env", default='intersection-v0')     # OpenAI gym environment name
+	parser.add_argument("--env", default='roundabout-v0')     # OpenAI gym environment name
 	# parser.add_argument("--env", default='CartPole-v1')
 	parser.add_argument("--seed", default=0, type=int)             # Sets Gym, PyTorch and Numpy seeds
 	parser.add_argument("--buffer_name", default="Default")        # Prepends name to filename
-	parser.add_argument("--max_timesteps", default=1e6, type=int)  # Max time steps to run environment or train for
+	parser.add_argument("--max_timesteps", default=100, type=int)  # Max time steps to run environment or train for
 	parser.add_argument("--BCQ_threshold", default=0.3, type=float)# Threshold hyper-parameter for BCQ
 	parser.add_argument("--low_noise_p", default=0.2, type=float)  # Probability of a low noise episode when generating buffer
 	parser.add_argument("--rand_action_p", default=0.2, type=float)# Probability of taking a random action when generating buffer, during non-low noise episode
