@@ -73,13 +73,17 @@ register(
 )
 
 register(
-    id="PushBallToGoalCorner-v0",
+    id="PushBallToGoalHard-v0",
     entry_point="custom_envs.push_ball_to_goal:PushBallToGoalEnv",
     max_episode_steps=2000,
     kwargs={
-        "init_robot_x_range": [1000, 4500],
-        "init_robot_y_range": [-3500, 3500],
-        "init_ball_x_range": [4000, 4500],
-        "init_ball_y_range": [-3300, -2800],
+        'sparse': True,
+        'stochastic': True,
+        'realistic': True,
+        'displacement_coef': 0.06,
+        "init_robot_x_range": [-200, 0],
+        "init_robot_y_range": [-500, 0],
+        "init_ball_x_range": [3700, 3700],
+        "init_ball_y_range": [2100, 2100],
     }
 )
