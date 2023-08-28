@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
+num_of_nodes = 64
 # Used for Atari
 class Conv_Q(nn.Module):
 	def __init__(self, frames, num_actions):
@@ -21,7 +21,7 @@ class Conv_Q(nn.Module):
 		q = F.relu(self.c2(q))
 		q = F.relu(self.c3(q))
 		q = F.relu(self.l1(q.reshape(-1, 3136)))
-		return self.l2(q)
+		return self.l2(q) 
 
 
 # Used for Box2D / Toy problems
@@ -112,6 +112,10 @@ class DQN(object):
 		current_Q = self.Q(state).gather(1, action)
 
 		# Compute Q loss
+		# print("action", action[0])
+		# print("current_Q", current_Q[0])
+		# print("target_Q", target_Q[0])
+
 		Q_loss = F.smooth_l1_loss(current_Q, target_Q)
 
 		# Optimize the Q

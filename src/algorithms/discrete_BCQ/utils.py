@@ -1,4 +1,5 @@
-import gym
+# import gym
+import gymnasium as gym
 import numpy as np
 import torch
 
@@ -24,6 +25,7 @@ class StandardBuffer(object):
 
 
 	def add(self, state, action, next_state, reward, done, episode_done, episode_start):
+		# print(state[0])
 		self.state[self.ptr] = state
 		self.action[self.ptr] = action
 		self.next_state[self.ptr] = next_state
@@ -74,14 +76,14 @@ class StandardBuffer(object):
 def make_env(env_name, atari_preprocessing):
 	env = gym.make(env_name)
 	
-	is_atari = gym.envs.registry.spec(env_name).entry_point == 'gym.envs.atari:AtariEnv'
-
+	# is_atari = gym.envs.registry.spec(env_name).entry_point == 'gym.envs.atari:AtariEnv'
+	is_atari = False
 	state_dim = (
 		atari_preprocessing["state_history"], 
 		atari_preprocessing["frame_size"], 
 		atari_preprocessing["frame_size"]
 	) if is_atari else env.observation_space.shape[0]
-
+	# print("actions: ", env.action_space.n)
 	return (
 		env,
 		is_atari,
