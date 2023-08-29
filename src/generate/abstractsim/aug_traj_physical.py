@@ -11,7 +11,7 @@ if __name__ == "__main__":
                     f' --observed-dataset-path ../../datasets/{env_id}/physical/no_aug.hdf5'
                     f' --aug-func {aug}'
                     f' --save-dir ../../datasets/{env_id}/physical'
-                    f' --save-name {aug}_9.hdf5')
+                    f' --save-name {aug}.hdf5')
 
     # for aug_size in [300e3]:
     #     for aug in ['guided_traj']:
