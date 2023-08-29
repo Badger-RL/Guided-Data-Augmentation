@@ -109,6 +109,7 @@ def modify_reward(dataset, env_name, max_episode_steps=1000):
         dataset["rewards"] *= max_episode_steps
     elif "antmaze" in env_name:
         dataset["rewards"] -= 1.0
+        # dataset["rewards"] = (dataset["rewards"] - 5)*10
 
 def compute_mean_std(states: np.ndarray, eps: float) -> Tuple[np.ndarray, np.ndarray]:
     mean = states.mean(0)
@@ -287,7 +288,7 @@ def eval_actor(
             state, reward, done, info = env.step(action)
             episode_reward += reward
             # env.render()
-        # print(state[:2])
+        # print(info['cell'], state[:2])
 
         episode_rewards.append(episode_reward)
         if 'is_success' in info:
@@ -306,6 +307,7 @@ def train_base(config, env, trainer):
 
     # load dataset
     dataset, state_mean, state_std = load_dataset(config=config, env=env)
+    # modify_reward(dataset, 'antmaze')
 
     # wrap env
     env = wrap_env(env, state_mean=state_mean, state_std=state_std)
