@@ -135,7 +135,7 @@ class TanhGaussianPolicy(nn.Module, ):
                 nn.ReLU(),
                 nn.Linear(hidden_dims, 2 * action_dim),
             )
-        elif n_layers == 2:
+        elif n_layers in [2, 5]:
             self.base_network = nn.Sequential(
                 nn.Linear(state_dim, hidden_dims),
                 nn.ReLU(),
@@ -214,6 +214,22 @@ class FullyConnectedQFunction(nn.Module):
                 nn.Linear(observation_dim + action_dim, hidden_dims),
                 nn.ReLU(),
                 nn.Linear(hidden_dims,hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, 1),
+            )
+        elif n_layers == 5:
+            self.network = nn.Sequential(
+                nn.Linear(observation_dim + action_dim, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims,hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, hidden_dims),
                 nn.ReLU(),
                 nn.Linear(hidden_dims, hidden_dims),
                 nn.ReLU(),
