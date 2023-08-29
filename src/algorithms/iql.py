@@ -15,12 +15,10 @@ import pyrallis
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import wandb
 from torch.distributions import Normal
 from torch.optim.lr_scheduler import CosineAnnealingLR
 
-from algorithms.utils import TrainConfigBase, soft_update, train_base
-from generate.utils import load_dataset
+from src.algorithms.utils import TrainConfigBase, soft_update, train_base
 
 TensorBatch = List[torch.Tensor]
 
@@ -46,6 +44,8 @@ class TrainConfig(TrainConfigBase):
     qf_lr: float = 3e-4  # Critic learning rate
     actor_lr: float = 3e-4  # Actor learning rate
     actor_dropout: Optional[float] = None  # Adroit uses dropout for policy network
+    n_layers = 2
+    hiddem_dims = 64
 
     def __post_init__(self):
         pass
@@ -342,15 +342,17 @@ def train(config: TrainConfig):
     action_dim = env.action_space.shape[0]
     max_action = float(env.action_space.high[0])
 
-    q_network = TwinQ(state_dim, action_dim).to(config.device)
-    v_network = ValueFunction(state_dim).to(config.device)
+    q_network = TwinQ(state_dim, action_dim, n_hidden=config.n_layers, hidden_dim=config.hiddem_dims).to(config.device)
+    v_network = ValueFunction(state_dim, n_hidden=config.n_layers, hidden_dim=config.hiddem_dims).to(config.device)
     actor = (
         DeterministicPolicy(
-            state_dim, action_dim, max_action, dropout=config.actor_dropout
+            state_dim, action_dim, max_action, dropout=config.actor_dropout,
+            n_hidden=config.n_layers, hidden_dim=config.hiddem_dims
         )
         if config.iql_deterministic
         else GaussianPolicy(
-            state_dim, action_dim, max_action, dropout=config.actor_dropout
+            state_dim, action_dim, max_action, dropout=config.actor_dropout,
+            n_hidden=config.n_layers, hidden_dim=config.hiddem_dims
         )
     ).to(config.device)
     v_optimizer = torch.optim.Adam(v_network.parameters(), lr=config.vf_lr)
