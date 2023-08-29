@@ -9,7 +9,7 @@ from stable_baselines3 import SAC, DDPG, DQN, PPO
 from stable_baselines3.common.utils import set_random_seed
 
 
-def simulate(env, model, num_samples, num_episodes=None,  seed=0, render=False, flatten=True, verbose=1, skip_terminated_episodes=False):
+def simulate(env, model, num_episodes,  seed=0, render=False, flatten=True, verbose=1, skip_terminated_episodes=False):
     set_random_seed(seed)
 
     observations = []
@@ -23,8 +23,8 @@ def simulate(env, model, num_samples, num_episodes=None,  seed=0, render=False, 
 
     episode_count = 0
     step_count = 0
-    # while episode_count < num_episodes:
-    while step_count < num_samples:
+    while episode_count < num_episodes:
+    # while step_count < num_samples:
         episode_count += 1
         ep_observations, ep_next_observations, ep_actions, ep_rewards, ep_dones, ep_infos,  = [], [], [], [], [], []
         ep_step_count = 0
@@ -59,6 +59,7 @@ def simulate(env, model, num_samples, num_episodes=None,  seed=0, render=False, 
             if render: env.render()
 
         if skip_terminated_episodes and info['crashed']:
+            print('crash')
             episode_count -= 1
             continue
 
@@ -98,7 +99,8 @@ if __name__ == "__main__":
     parser.add_argument("--algo", help="RL Algorithm", default='dqn', type=str)
     parser.add_argument("--env_id", type=str, default="roundabout-v0", help="environment ID")
     parser.add_argument("--seed", help="Random generator seed", type=int, default=0)
-    parser.add_argument('--num_samples', type=int, default=int(1000), help='Num samples to collect')
+    # parser.add_argument('--num_samples', type=int, default=int(), help='Num samples to collect')
+    parser.add_argument('--num_episodes', type=int, default=int(1000), help='Num samples to collect')
     parser.add_argument('--policy_path', type=str, default='file_name')
     parser.add_argument('--save_dir', type=str, default='tmp_dir')
     parser.add_argument('--save_name', type=str, default='tmp_name')
@@ -115,7 +117,7 @@ if __name__ == "__main__":
     args.policy_path = f'../../policies/{args.env_id}/{args.algo}/best_model.zip'
 
     model = DQN.load(args.policy_path)
-    data = simulate(env=env, model=model, num_samples=args.num_samples, render=False, skip_terminated_episodes=args.skip_terminated_episodes)
+    data = simulate(env=env, model=model, num_episodes=args.num_episodes, render=False, skip_terminated_episodes=args.skip_terminated_episodes)
 
 
     save_dir = args.save_dir
