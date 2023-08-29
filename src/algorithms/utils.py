@@ -307,7 +307,8 @@ def train_base(config, env, trainer):
 
     # load dataset
     dataset, state_mean, state_std = load_dataset(config=config, env=env)
-    # modify_reward(dataset, 'antmaze')
+    if config.normalize_reward:
+        modify_reward(dataset, 'antmaze')
 
     # wrap env
     env = wrap_env(env, state_mean=state_mean, state_std=state_std)
