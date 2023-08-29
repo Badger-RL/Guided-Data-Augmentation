@@ -102,14 +102,18 @@ def return_reward_range(dataset, max_episode_steps):
     assert sum(lengths) == len(dataset["rewards"])
     return min(returns), max(returns)
 
-def modify_reward(dataset, env_name, max_episode_steps=1000):
-    if any(s in env_name for s in ("halfcheetah", "hopper", "walker2d")):
-        min_ret, max_ret = return_reward_range(dataset, max_episode_steps)
-        dataset["rewards"] /= max_ret - min_ret
-        dataset["rewards"] *= max_episode_steps
-    elif "antmaze" in env_name:
-        dataset["rewards"] -= 1.0
-        # dataset["rewards"] = (dataset["rewards"] - 5)*10
+def modify_reward(dataset, reward_bias, reward_scale,  max_episode_steps=700):
+    # if any(s in env_name for s in ("halfcheetah", "hopper", "walker2d")):
+    #     min_ret, max_ret = return_reward_range(dataset, max_episode_steps)
+    #     dataset["rewards"] /= max_ret - min_ret
+    #     dataset["rewards"] *= max_episode_steps
+    # elif "antmaze" in env_name:
+    # dataset["rewards"] -= 1.0
+        # dataset["rewards"] = (dataset["rewards"] - 0.5)*4
+        # min_ret, max_ret = return_reward_range(dataset, max_episode_steps)
+        # dataset["rewards"] /= max_ret - min_ret
+        # dataset["rewards"] *= max_episode_steps
+    dataset["rewards"] = (dataset["rewards"] + reward_bias)*reward_scale
 
 def compute_mean_std(states: np.ndarray, eps: float) -> Tuple[np.ndarray, np.ndarray]:
     mean = states.mean(0)
@@ -256,6 +260,8 @@ class TrainConfigBase:
     # Normalization
     normalize: bool = True  # Normalize states
     normalize_reward: bool = False  # Normalize reward
+    reward_bias: float = 0
+    reward_scale: float = 1
     # Augmentation
     aug_ratio: int = 1
     # Wandb logging
@@ -307,8 +313,9 @@ def train_base(config, env, trainer):
 
     # load dataset
     dataset, state_mean, state_std = load_dataset(config=config, env=env)
-    if config.normalize_reward:
-        modify_reward(dataset, 'antmaze')
+    # if config.normalize_reward:
+    #     print('normalizing reward')
+    modify_reward(dataset, config.reward_bias, config.reward_scale)
 
     # wrap env
     env = wrap_env(env, state_mean=state_mean, state_std=state_std)
