@@ -25,8 +25,8 @@ class BaseAugmentationFunction:
         return copy_obs, copy_next_obs, copy_action, copy_reward, copy_done
 
     def augment(self,
-                 abs_obs: np.ndarray,
-                 abs_next_obs: np.ndarray,
+                 obs: np.ndarray,
+                 next_obs: np.ndarray,
                  action: np.ndarray,
                  reward: np.ndarray,
                  done: np.ndarray,
@@ -34,6 +34,21 @@ class BaseAugmentationFunction:
                  # truncated: np.ndarray,
                  **kwargs,):
 
+        # copy input transition
+        aug_obs, aug_next_obs, aug_action, aug_reward, aug_done = \
+            self._deepcopy_transition(obs, next_obs, action, reward, done)
+
+        # augment input copy of input transition in-place
+        return self._augment(aug_obs, aug_next_obs, aug_action, aug_reward, aug_done, **kwargs)
+
+    def _augment(self,
+                 obs: np.ndarray,
+                 next_obs: np.ndarray,
+                 action: np.ndarray,
+                 reward: np.ndarray,
+                 terminated: np.ndarray,
+                 truncated: np.ndarray,
+                 **kwargs,):
         raise NotImplementedError("Augmentation function not implemented.")
 
 
@@ -48,7 +63,7 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
         self.scale = np.array([self.x_scale, self.y_scale])
 
         self.goal_x = 4800
-        self.goal_y = 1
+        self.goal_y = 0
         self.goal = np.array([self.goal_x, self.goal_y])
         self.displacement_coef = 0.2
         self.max_dist = np.sqrt(self.x_scale**2 + self.y_scale**2)
@@ -91,45 +106,75 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
         ])
 
     def _convert_to_relative_obs(self, obs):
-        # Get origin position
-        relative_obs = []
-        agent_loc = np.concatenate([obs[:2], [obs[-1]]])
-        ball_loc = obs[2:4]
-        origin_obs = self.get_relative_observation(agent_loc, [0, 0])
-        relative_obs.extend(origin_obs)
 
-        # Get goal position
-        goal_obs = self.get_relative_observation(agent_loc, [4800, 0])
-        relative_obs.extend(goal_obs)
+        robot_pos = obs[:2]
+        target_pos = obs[2:4]
 
-        # Get ball position
-        ball_obs = self.get_relative_observation(agent_loc, ball_loc)
-        relative_obs.extend(ball_obs)
+        robot_x = obs[0]
+        robot_y = obs[1]
+        target_x = obs[2]
+        target_y = obs[3]
+        relative_x = target_x - robot_x
+        relative_y = target_y - robot_y
+        relative_angle = np.arctan2(relative_y, relative_x)
+        if relative_angle < 0:
+            relative_angle += 2*np.pi
 
-        return np.array(relative_obs, dtype=np.float32)
+        robot_angle = obs[4]
+        if robot_angle < 0:
+            robot_angle += 2*np.pi
 
-    def get_relative_observation(self, agent_loc, object_loc):
-        # Get relative position of object to agent, returns x, y, angle
-        # Agent loc is x, y, angle
-        # Object loc is x, y
+        goal_delta = self.goal - robot_pos
+        goal_relative_angle = np.arctan2(goal_delta[1], goal_delta[0])
+        if goal_relative_angle < 0:
+            goal_relative_angle += 2*np.pi
 
-        # Get relative position of object to agent
-        x = object_loc[0] - agent_loc[0]
-        y = object_loc[1] - agent_loc[1]
-        angle = np.arctan2(y, x) - agent_loc[2]
+        return np.concatenate([
+            (target_pos - robot_pos) / self.scale,
+            (self.goal - target_pos) / self.scale,
+            [np.sin(relative_angle - robot_angle),
+            np.cos(relative_angle - robot_angle),
+            np.sin(goal_relative_angle - robot_angle),
+            np.cos(goal_relative_angle - robot_angle),]
+        ])
 
-        # Rotate x, y by -agent angle
-        xprime = x * np.cos(-agent_loc[2]) - y * np.sin(-agent_loc[2])
-        yprime = x * np.sin(-agent_loc[2]) + y * np.cos(-agent_loc[2])
+    def calculate_reward(self, absolute_next_obs):
+        robot_x = absolute_next_obs[0]
+        robot_y = absolute_next_obs[1]
+        target_x = absolute_next_obs[2]
+        target_y = absolute_next_obs[3]
+        robot_angle = absolute_next_obs[4]
+        robot_angle = np.degrees(robot_angle) % 360
 
-        return [xprime / 10000, yprime / 10000, np.sin(angle), np.cos(angle)]
+        at_goal = self.at_goal(target_x, target_y)
+
+        angle_robot_ball = np.arctan2(target_y - robot_y, target_x - robot_x)
+        angle_robot_ball = np.degrees(angle_robot_ball) % 360
+        is_facing_ball = abs(angle_robot_ball - robot_angle) < 30
+
+        reward = 0
+
+        if is_facing_ball:
+            robot_location = np.array([robot_x, robot_y])
+            target_location = np.array([target_x, target_y])
+            goal_location = np.array([self.goal_x, self.goal_y])
+
+            distance_robot_target = np.linalg.norm(target_location - robot_location)
+            distance_target_goal = np.linalg.norm(goal_location - target_location)
+
+            reward_dist_to_ball = 1/distance_robot_target
+            reward_dist_to_goal = 1/distance_target_goal
+            reward = 0.9*reward_dist_to_goal + 0.1*reward_dist_to_ball
+
+        if at_goal:
+            reward += 1
+
+        return reward, at_goal
 
     def at_goal(self, target_x, target_y):
         at_goal = False
-        if target_x > 4400:
-            if target_y < 500 and target_y > -500:
+        if target_x > 4500:
+            if target_y < 750 and target_y > -750:
                 at_goal = True
 
         return at_goal
-
-
