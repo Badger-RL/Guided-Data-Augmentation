@@ -45,7 +45,6 @@ for env_id in ['antmaze-umaze-diverse-v1']:
         # plot no_aug
         start = int(0e3)
         end = start + n
-
         observations = dataset['observations'][start:end]
         next_observations = dataset['next_observations'][start:end]
         rewards = dataset['rewards'][start:end]

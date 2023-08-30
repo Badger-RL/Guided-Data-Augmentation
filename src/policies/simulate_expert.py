@@ -1,22 +1,9 @@
-#Derived from D4RL
-#https://github.com/Farama-Foundation/D4RL/blob/master/scripts/generation/generate_ant_maze_datasets.py
-#https://github.com/Farama-Foundation/D4RL/blob/master/LICENSE
-
+import torch
+import algorithms.td3_bc
 import numpy as np
-import h5py
 import argparse
 
-
-from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize, VecMonitor
-from stable_baselines3.common.env_util import make_vec_env
-
-# from src.envs.push_ball_to_goal import PushBallToGoalEnv
-
-# from custom_envs.push_ball_to_goal import PushBallToGoalEnv
-from custom_envs.push_ball_to_goal import PushBallToGoalEnv
-
-models = {"push_ball_to_goal": {"env": PushBallToGoalEnv}}
+import gym, custom_envs
 
 def reset_data():
     return {'observations': [],
@@ -47,30 +34,23 @@ def npify(data):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_samples', type=int, default=int(10e4), help='Num samples to collect')
-    parser.add_argument('--render', type=bool, default=False)
+    parser.add_argument('--render', type=bool, default=True)
 
     args = parser.parse_args()
 
-    policy_path = f"../expert_policies/push_ball_to_goal/policy"
-    normalization_path = f"../expert_policies/push_ball_to_goal/vector_normalize"
+    env = gym.make('PushBallToGoal-v2',
+                   # init_robot_x_range=(4400, 4400),
+                   # init_robot_y_range=(-3000, -3000),
+                   # init_ball_x_range=(-1000,+1000),
+                   # init_ball_y_range=(-1000,1000)
+                   )
 
-    env = VecNormalize.load(
-    normalization_path, make_vec_env('PushBallToGoal-v0', n_envs=1)
+    state_dict = torch.load('/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/results/run_307/model.pt')
+    policy = algorithms.td3_bc.Actor(
+        12, 4, 1, 128, 1
     )
-    # env = PushBallToGoalEnv()
-    env.norm_obs = True
-    env.norm_reward = False
-    env.clip_obs = 1.0
-    env.training = False
-
+    policy.load_state_dict(state_dict['actor'])
     s = env.reset()
-
-
-    custom_objects = {
-    "lr_schedule": lambda x: .003,
-    "clip_range": lambda x: .02
-    }
-    policy = PPO.load(policy_path, custom_objects = custom_objects, env= env)
 
     ts = 0
     num_episodes = 0
@@ -78,20 +58,18 @@ def main():
     succeses = []
     ret = 0
     for _ in range(args.num_samples):
-        act = policy.predict(s)[0]
+        act = policy(torch.tensor(s)).detach().numpy()
 
 
         ns, r, done, info = env.step(act)
         ret += r
-        if args.render:
-            env.render()
+        env.render()
         timeout = False
 
         ts += 1
 
         if done or timeout:
             print(ts)
-            succeses.append(info[0]['is_success'])
             ts = 0
             s = env.reset()
 

@@ -98,7 +98,7 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
     def __init__(self, env, **kwargs):
         super().__init__(env=env, **kwargs)
         self.agent_offset = 4 # the agent and target coordinate systems are different for some reason.
-        self.effective_wall_width = 1
+        self.effective_wall_width = 1.5
         self.maze_scale = 4
 
         # precompute rotation matrices
@@ -308,6 +308,14 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
         obs[2+13] = x * cos - y * sin
         obs[2+14] = x * sin + y * cos
 
+    # def _rotate_vel(self, obs, alpha):
+    #     x = obs[2+13].copy()
+    #     y = obs[2+14].copy()
+    #     norm = np.sqrt(x**2 + y**2)
+    #
+    #     obs[2+13] = norm * np.cos(alpha)
+    #     obs[2+14] = norm * np.sin(alpha)
+
     def _xy_to_rowcol(self, xy):
         size_scaling = self.maze_scale
         xy = (max(xy[0], 1e-4), max(xy[1], 1e-4))
@@ -334,6 +342,33 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
 
         return True
 
+    def is_valid_input(self, obs, next_obs):
+
+        # if not self.is_valid_input(obs, next_obs):
+        #     return None, None, None, None, None
+
+        r, c = self._xy_to_rowcol(obs[:2])
+        # print(r,c)
+        if self.env.maze_arr[r,c] == '1':
+            return False
+        x, y = obs[:2]
+        xlo, ylo, xhi, yhi = self._get_valid_boundaries(r, c)
+        if (x < xlo or x > xhi) or (y < ylo or y > yhi):
+            return False
+
+        r, c = self._xy_to_rowcol(next_obs[:2])
+        if self.env.maze_arr[r,c] == '1':
+            return False
+        x, y = next_obs[:2]
+        xlo, ylo, xhi, yhi = self._get_valid_boundaries(r, c)
+        if (x < xlo or x > xhi) or (y < ylo or y > yhi):
+            return False
+
+        return True
+
+    # def _check_valid_input(self, obs):
+
+
     def augment(self,
                 obs: np.ndarray,
                 action: np.ndarray,
@@ -353,7 +388,7 @@ class AntMazeAugmentationFunction(AugmentationFunctionBase):
             # aug_location = self._xy_to_rowcol(aug_obs[:2])
             # print(new_pos,aug_location)
             rotate_alpha = np.random.uniform(0, 2*np.pi)
-            rotate_alpha = 0
+
 
             M = np.array([
                 [np.cos(-rotate_alpha), -np.sin(-rotate_alpha)],

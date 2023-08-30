@@ -17,6 +17,7 @@ from src.augment.antmaze.antmaze_aug_function import AntMazeAugmentationFunction
 from src.augment.maze.point_maze_aug_function import PointMazeAugmentationFunction, PointMazeGuidedAugmentationFunction
 from src.generate.utils import reset_data, append_data, load_dataset, npify, extend_data
 
+
 AUG_FUNCTIONS = {
     'maze2d-umaze-v1': {
         'random': PointMazeAugmentationFunction,
@@ -144,7 +145,6 @@ if __name__ == '__main__':
             truncated = observed_dataset_truncated[end]
         end += 1
         length = end - start + 1
-
         obs, action, reward, next_obs, done = f.augment(
             obs=observed_dataset_obs[start:end],
             action=observed_dataset_action[start:end],
@@ -176,6 +176,5 @@ if __name__ == '__main__':
         new_dataset.create_dataset(k, data=data, compression='gzip')
     new_dataset.create_dataset('original_size', data=n)
     new_dataset.create_dataset('aug_size', data=aug_count)
-
     print(f"New dataset size: {len(new_dataset['observations'])}")
 

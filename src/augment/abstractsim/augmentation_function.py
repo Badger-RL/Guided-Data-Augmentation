@@ -178,5 +178,3 @@ class AbstractSimAugmentationFunction(BaseAugmentationFunction):
                 at_goal = True
 
         return at_goal
-
-

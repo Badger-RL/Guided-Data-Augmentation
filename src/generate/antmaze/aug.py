@@ -7,7 +7,6 @@ import os
 #         os.system(f'python ../augment_dataset.py --env-id {env_id} --aug-func {aug_func} --save-dir ../../datasets/{env_id}/{aug_func}') #--observed-dataset-path ../../datasets/{env_id}/no_aug-sparse.hdf5')
 #
 #     import os
-
 for maze in ['umaze']:
     for goal_type in ['diverse']:
         env_id = f'antmaze-{maze}-{goal_type}-v1'

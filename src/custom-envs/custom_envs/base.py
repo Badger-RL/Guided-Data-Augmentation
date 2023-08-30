@@ -1,149 +1,399 @@
+import copy
+import functools
 import math
+import time
 import gym
 import pygame
 import numpy as np
-import torch
-import time
 import sys
 
-from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import VecNormalize
-from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.evaluation import evaluate_policy
-
-import warnings
-from src.utils.utils import save_vec_normalize_data
-
-warnings.filterwarnings("ignore")
-
-LENGTH = 500
-TRAINING_STEPS = 1000000
+sys.path.append(sys.path[0] + "/..")
 
 '''
-Base abstractsim environment
+BaseEnv is a base class for all environments. It contains all the necessary
+functions for a PettingZoo environment, but does not implement any of the
+specifics of the environment. It is meant to be subclassed by other
+environments.
+
+Required:
+- get_obs(self, agent)
+- calculate_reward(self, agent)
+
+Optional:
+- reset(self, seed=None, return_info=False, options=None, **kwargs)
+- __init__(self, continuous_actions=False, render_mode=None)
+
+
 '''
+
+
 class BaseEnv(gym.Env):
+    metadata = {'render_modes': ['human', 'rgb_array']}
 
-    EPISODE_LENGTH = LENGTH
-
-    def __init__(self,robot_x_range = [-4500,4500], robot_y_range = [-3000,3000], ball_x_range = [-4500,4500], ball_y_range = [-3000,3000]):
+    def __init__(self, continuous_actions=True, render_mode='rgb_array', stochastic=False,
+                 ball_displacement=287,
+                 realistic=False,
+                 clip_out_of_bounds=False):
+        '''
+        Required:
+        - possible_agents
+        - action_spaces
+        - observation_spaces
+        '''
         self.rendering_init = False
+        self.render_mode = render_mode
 
-        """
-        ACTION SPACE:
-            - Angle to turn clockwise
-            - Translation along x-axis
-            - Translation along y-axis
-        """
-        action_space_low = np.array([-np.pi / 2, -1, -1])
-        action_space_high = np.array([np.pi / 2, 1, 1])
-        self.action_space = gym.spaces.Box(action_space_low, action_space_high)
-        """
-        OBSERVATION SPACE:
-            - x-cordinate of robot with respect to target
-            - y-cordinate of robot with respect to target
-            - sin(Angle between robot and target)
-            - cos(Angle between robot and target)
-        """
-        observation_space_size = 8
-        observation_space_low = -1 * np.ones(observation_space_size)
-        observation_space_high = np.ones(observation_space_size)
-        self.observation_space = gym.spaces.Box(
-            observation_space_low, observation_space_high
-        )
+        # agents
+        self.possible_agents = []
+        self.agents = self.possible_agents[:]
+        self.continous_actions = continuous_actions
 
-        self.robot_x_range = robot_x_range
-        self.robot_y_range = robot_y_range
-        self.ball_x_range = ball_x_range
-        self.ball_y_range = ball_y_range
-
-        self.target_radius = 10
-        self.robot_radius = 20
+        # action spaces
+        self.continous_actions = True
+        self.action_space = gym.spaces.Box(np.array([-1, -1, -1, -1]), np.array([1, 1, 1, 1]), dtype=np.float32)
 
 
-        
-       
+        # observation spaces
+        self.observation_space = gym.spaces.Box(low=-1, high=1, shape=(12,), dtype=np.float32)
 
-    def _observe_state(self):
+        # Other variables
+        self.stochastic = stochastic
+        self.realistic = realistic
+        self.clip_out_of_bounds = clip_out_of_bounds
+        self.ball_radius = 10
+        self.ball_acceleration = -0.2
+        self.ball_velocity_coef = 1
+        self.robot_radius = 25
 
-        self.update_target_value()
-        self.update_goal_value()
+        self.ball_displacement = ball_displacement
+        if self.continous_actions:
+            self.displacement_coef = 0.1
+            self.angle_displacement = 0.25
+        else:
+            self.displacement_coef = 10
+            self.angle_displacement = 0.05
 
-        return np.array(
-            [
-                (self.target_x - self.robot_x) / 9000,
-                (self.target_y - self.robot_y) / 6000,
-                (self.goal_x - self.target_x) / 9000,
-                (self.goal_y - self.target_y) / 6000,
-                np.sin(self.relative_angle - self.robot_angle),
-                np.cos(self.relative_angle - self.robot_angle),
-                np.sin(self.goal_relative_angle - self.robot_angle),
-                np.cos(self.goal_relative_angle - self.robot_angle),
-            ]
-        )
+        self.episode_length = 1000
 
-    def reset(self):
+        self.num_adversaries = 0
+        self.kicking_time = 0
+
+        self.kicking_agents = None
+        self.opponents = None
+
+        self.opponent_contacted_ball = False
+        self.goalie = None
+
+
+    def close(self):
+        pass
+
+    def reset(self, seed=None, return_info=False, options=None, **kwargs):
         self.time = 0
+        self.adversary_contacted_ball = False
 
-        self.displacement_coef = 0.2
+        self.ball_velocity = 0
+        self.ball_angle = 0
 
-        self.contacted_ball = False
+        self.agent_idx = {agent: i for i, agent in enumerate(self.agents)}
 
-        self.robot_x = np.random.uniform(-3500, 3500)
-        self.robot_y = np.random.uniform(-2500, 2500)
-        self.robot_angle = np.random.uniform(0, 2 * np.pi)
+        observations = {}
+        for agent in self.agents:
+            observations[agent] = self.get_obs(agent)
 
-        self.target_x = np.random.uniform(-2500, 2500)
-        self.target_y = np.random.uniform(-2000, 2000)
+        return observations
 
-        self.goal_x = 4500
-        self.goal_y = 0
+    def get_obs(self, agent):
+        """
+        get_obs(agent) returns the observation for agent
+        """
+        raise NotImplementedError
 
-        self.update_goal_value()
-        self.update_target_value()
+    def calculate_reward(self, agent):
+        """
+        calculate_reward(agent) returns the reward for agent
+        """
+        raise NotImplementedError
 
-        robot_location = np.array([self.robot_x, self.robot_y])
-        target_location = np.array([self.target_x, self.target_y])
-        self.initial_distance = np.linalg.norm(target_location - robot_location)
+    def step(self, actions):
+        """
+        step(action) takes in an action for each agent and should return the
+        - observations
+        - rewards
+        - terminations
+        - truncations
+        - infos
+        dicts where each dict looks like {agent_1: item_1, agent_2: item_2}
+        """
+        obs, rew, terminated, truncated, info = {}, {}, {}, {}, {}
+        self.time += 1
 
-        return self._observe_state()
+        for agent in self.agents:
+            action = actions[agent]
+            self.move_agent(agent, action)
+            obs[agent] = self.get_obs(agent)
+            rew[agent] = self.calculate_reward(agent)
+            terminated[agent] = self.time > self.episode_length
+            truncated[agent] = False
+            info[agent] = {}
 
-    def out_of_bounds(self):
-        # Top/Bottom -line out
-        if self.robot_y < -3000 or self.robot_y > 3000:
-            return True
+        for adversary in range(self.num_adversaries):
+            self.step_adversary(adversary)
 
-        # Right -line out
-        if self.robot_x > 4500:
-            return True
+        return obs, rew, terminated, truncated, info
 
-        # Left -line out(upper/goal area)
-        if self.robot_x < -4500 and self.robot_y < -750:
-            return True
+    #### STEP UTILS ####
+    def move_agent(self, agent, action):
+        i = self.agent_idx[agent]
 
-        # Left -line out(under/goal area)
-        if self.robot_x < -4500 and self.robot_y > 750:
-            return True
+        if self.kicking_time > 0:
+            self.kicking_time -= 1
 
-        return False
+        else:
+            if self.continous_actions:
+                if action[3] > 0.8:
+                    # Kick the ball
+                    self.kick_ball(agent)
+                    self.kicking_time = 10
+                else:
+                    old_x = self.robots[i][0]
+                    old_y = self.robots[i][1]
+                    old_angle = self.angles[i]
 
-    def get_distance_target_goal(self):
-        target_location = np.array([self.target_x, self.target_y])
-        goal_location = np.array([self.goal_x, self.goal_y])
-        return np.linalg.norm(goal_location - target_location)
-    
-    def check_facing_ball(self):
-        # Normalize angle to 0-360
-        robot_angle = math.degrees(self.robot_angle) % 360
+                    # scale action for better dynamics
+                    action = self.dynamics_action_scale(action)
+
+                    policy_goal_x = self.robots[i][0] + (
+                            (
+                                    (np.cos(self.angles[i]) * np.clip(action[1], -1, 1))
+                                    + (np.cos(self.angles[i] + np.pi / 2) * np.clip(action[2], -1, 1))
+                            )
+                            * 200
+                    )  # the x component of the location targeted by the high level action
+                    policy_goal_y = self.robots[i][1] + (
+                            (
+                                    (np.sin(self.angles[i]) * np.clip(action[1], -1, 1))
+                                    + (np.sin(self.angles[i] + np.pi / 2) * np.clip(action[2], -1, 1))
+                            )
+                            * 200
+                    )  # the y component of the location targeted by the high level action
+
+                    # Update robot position
+                    self.robots[i][0] = (
+                            self.robots[i][0] * (1 - self.displacement_coef)
+                            + policy_goal_x * self.displacement_coef
+                    )  # weighted sums based on displacement coefficient
+                    self.robots[i][1] = (
+                            self.robots[i][1] * (1 - self.displacement_coef)
+                            + policy_goal_y * self.displacement_coef
+                    )  # the idea is we move towards the target position and angle
+
+                    # Update robot angle
+                    self.angles[i] = self.angles[i] + self.angle_displacement * action[0]
+
+                    # Check for collisions with other robots from current action
+                    self.check_collision(agent, old_angle, old_x, old_y)
+
+                    if self.kicking_agents:
+                        self.kicking_agents[i] = False
+            else:
+                # 3 angle options (-pi/4, 0, p/4), 8 xy pairs, 1, stop option, 1 kick option
+                angle = (action % 3 - 1) * np.pi / 4
+                x = (action // 3) // 3 - 1
+                y = (action // 3) % 3 - 1
+
+                # Moving left with no angle change is action =
+
+                if action == 24 or action == 25:
+                    angle = 0
+                    x = 0
+                    y = 0
+                if action == 25:
+                    self.kick_ball(agent)
+
+                # Update robot position
+                self.angles[i] += angle * self.angle_displacement
+                self.robots[i][0] += x * self.displacement_coef
+                self.robots[i][1] += y * self.displacement_coef
+
+                # Check for collisions with other robots from current action
+                self.check_collision(agent, angle, x, y)
+
+        # Make sure robot is within bounds
+        self.robots[i][0] = np.clip(self.robots[i][0], -5200, 5200)
+        self.robots[i][1] = np.clip(self.robots[i][1], -3700, 3700)
+
+        # Make sure ball is within bounds
+        self.ball[0] = np.clip(self.ball[0], -5200, 5200)
+        self.ball[1] = np.clip(self.ball[1], -3700, 3700)
+
+        if self.clip_out_of_bounds:
+            if np.abs(self.ball[1]) > 500:
+                self.ball[0] = np.clip(self.ball[0], -4500, 4500)
+            # self.ball[0] = np.clip(self.ball[0], -4500, 4500)
+            self.ball[1] = np.clip(self.ball[1], -3500, 3500)
+
+
+    def dynamics_action_scale(self, action):
+        # Action is a 4 dimensional vector, (angle, x, y, kick)
+        # Unable to move if turning faster than 0.5
+        # if abs(action[0]) > 0.4:
+        #     action[1] = 0
+        #     action[2] = 0
+
+        # Make moving backwards slower
+        if action[1] < 0:
+            action[1] *= 0.3
+
+        # Make moving left and right slower
+        action[2] *= 0.5
+
+        return action
+
+    def check_collision(self, agent, angle, x, y):
+        i = self.agent_idx[agent]
+        # Check for collisions
+        if self.continous_actions:
+            # If continuous actions, angle, x and y are old values
+            for j in range(len(self.agents)):
+                if i == j:
+                    continue
+
+                # Find distance between robots
+                robot_location = np.array([self.robots[i][0], self.robots[i][1]])
+                other_robot_location = np.array([self.robots[j][0], self.robots[j][1]])
+                distance_robots = np.linalg.norm(other_robot_location - robot_location)
+
+                # If collision, move back
+                if distance_robots < (self.robot_radius + self.robot_radius) * 7:
+                    self.robots[i][0] = x
+                    self.robots[i][1] = y
+                    self.angles[i] = angle
+
+        else:
+            for j in range(len(self.agents)):
+                if i == j:
+                    continue
+                # Find distance between robots
+                robot_location = np.array([self.robots[i][0], self.robots[i][1]])
+                other_robot_location = np.array([self.robots[j][0], self.robots[j][1]])
+                distance_robots = np.linalg.norm(other_robot_location - robot_location)
+
+                # If collision, move back
+                if distance_robots < (self.robot_radius + self.robot_radius) * 6:
+                    self.robots[i][0] -= x * self.displacement_coef
+                    self.robots[i][1] -= y * self.displacement_coef
+                    self.angles[i] -= angle * self.angle_displacement
+                    break
+
+    def update_ball(self):
+        # If ball touches robot, push ball away
+        for i in range(len(self.robots)):
+
+            robot = self.robots[i]
+            # Find distance between robot and ball
+            robot_location = np.array([robot[0], robot[1]])
+            ball_location = np.array([self.ball[0], self.ball[1]])
+            distance_robot_ball = np.linalg.norm(ball_location - robot_location)
+
+            # If collision, move ball away
+            if distance_robot_ball < (self.robot_radius + self.ball_radius) * 6 and not self.ball_is_at_goal(self.ball):
+                self.ball_angle = math.atan2(self.ball[1] - robot[1], self.ball[0] - robot[0])
+
+                # Angle needs to be adapted to be like real robots (do for both sides of 0 degrees)
+                # 1) If angle is 15 - 30, change to angle of robot
+                # 2) If angle < 15, change to -50
+                # 3) If angle > 30, add 50
+                # 1:
+                if self.ball_angle > np.radians(15) and self.ball_angle < np.radians(30):
+                    self.ball_angle = self.angles[i]
+                # 2:
+                elif self.ball_angle < np.radians(15) and self.ball_angle > np.radians(0):
+                    self.ball_angle = np.radians(-50)
+                # # 3:
+                # elif self.ball_angle > np.radians(30) and self.ball_angle < np.radians(45):
+                #     self.ball_angle += np.radians(50)
+                # Negative 1:
+                elif self.ball_angle < np.radians(-15) and self.ball_angle > np.radians(-30):
+                    self.ball_angle = self.angles[i]
+                # Negative 2:
+                elif self.ball_angle > np.radians(-15) and self.ball_angle < np.radians(0):
+                    self.ball_angle = np.radians(50)
+                # # Negative 3:
+                # elif self.ball_angle < np.radians(-30) and self.ball_angle > np.radians(-45):
+                #     self.ball_angle -= np.radians(50)
+                if not self.realistic:
+                    self.ball_angle = self.angles[i]
+
+                if self.stochastic:
+                    self.ball_angle += np.clip(np.random.normal(0, 1), -2, 2) * np.pi/12
+
+                self.ball[0] += self.ball_displacement * math.cos(self.ball_angle)
+                self.ball[1] += self.ball_displacement * math.sin(self.ball_angle)
+
+        # If ball is in goal, stop ball
+        # if self.ball[0] > 4400 and (self.ball[1] < 500 and self.ball[1] > -500):
+        #     # Set ball to center of goal
+        #     self.ball[0] = 4800
+        #     self.ball[1] = 1
+
+        # If ball goes out, send to opponent goal
+        # if self.ball[0] < -4400 or self.ball[1] > 3000 or self.ball[1] < -3000 or (self.ball[0] > 4400 and (self.ball[1] >= 700 or self.ball[1] <= -700)):
+        #     self.ball_velocity = 0
+        #     self.ball[0] = -4800
+        #     self.ball[1] = 1
+
+        if self.clip_out_of_bounds:
+            if np.abs(self.ball[1]) > 500:
+                self.ball[0] = np.clip(self.ball[0], -4500, 4500)
+            self.ball[1] = np.clip(self.ball[1], -3500, 3500)
+
+    def check_facing_ball(self, robot_pos, ball_pos, agent_angle):
+        # Convert from radians to degrees
+        robot_angle = math.degrees(agent_angle) % 360
 
         # Find the angle between the robot and the ball
         angle_to_ball = math.degrees(
-            math.atan2(self.target_y - self.robot_y, self.target_x - self.robot_x)
+            np.arctan2(ball_pos[1] - robot_pos[1], ball_pos[0] - robot_pos[0])
         )
-        if angle_to_ball < 0:
-            angle_to_ball += 360
         # Check if the robot is facing the ball
-        if abs(angle_to_ball - robot_angle) < 30:
+        req_angle = 10
+        angle = (robot_angle - angle_to_ball) % 360
+
+        if angle < req_angle or angle > 360 - req_angle:
+            return True
+        else:
+            return False
+    def check_facing_ball_vec(self, robot_pos, ball_pos, agent_angle):
+        # Convert from radians to degrees
+        robot_angle = np.degrees(agent_angle) % 360
+
+        # Find the angle between the robot and the ball
+        angle_to_ball = np.degrees(
+            np.arctan2(ball_pos[:, 1] - robot_pos[:, 1], ball_pos[:, 0] - robot_pos[:, 0])
+        )
+        # Check if the robot is facing the ball
+        req_angle = 10
+        angle = (robot_angle - angle_to_ball) % 360
+
+        return (angle < req_angle) | (angle > (360 - req_angle))
+
+    def ball_is_at_goal(self, ball_pos):
+        mask = (ball_pos[0] > 4400) & (np.abs(ball_pos[1]) < 500)
+        return mask
+
+    def ball_is_in_bounds(self, ball_pos):
+        if self.ball_is_at_goal(ball_pos):
+            return True
+        elif np.abs(ball_pos[0]) < 4500 and np.abs(ball_pos[1]) < 3500:
+            return True
+        else:
+            return False
+
+    def ball_is_in_bounds(self, ball_pos):
+        if self.at_goal():
+            return True
+        elif np.abs(self.target_x) < 4500 and np.abs(self.target_y) < 3500:
             return True
         else:
             return False
@@ -155,326 +405,136 @@ class BaseEnv(gym.Env):
         distance_robot_target = np.linalg.norm(target_location - robot_location)
         reward = 0
 
-        if self.check_facing_ball():
-            reward_dist_to_ball = 1/distance_robot_target
-            reward_dist_to_goal = 1/self.get_distance_target_goal()
-            reward = 0.9*reward_dist_to_goal + 0.1*reward_dist_to_ball
+    def ball_is_at_goal_vec(self, ball_pos):
+        mask = (ball_pos[:, 0] > 4400) & (np.abs(ball_pos[:, 1]) < 500)
+        return mask
 
-        if self.at_goal():
-            reward += 1
+    def ball_in_opp_goal(self):
+        if self.ball[0] < -4400 and self.ball[1] < 1000 and self.ball[1] > -1000:
+            return True
+        return False
+        # if not self.ball_is_in_bounds():
+        #     reward -= 100
 
         return reward
 
-    def at_goal(self):
-        at_goal = False
-        if self.target_x > 4500:
-            if self.target_y < 750 and self.target_y > -750:
-                at_goal = True
 
-        return at_goal
+    '''
+    Gets relative position of object to agent
+    '''
 
-    class Point:
-        def __init__(self, x, y):
-            self.x = x
-            self.y = y
+    def get_relative_observation(self, agent_loc, object_loc):
+        # Get relative position of object to agent, returns x, y, angle
+        # Agent loc is x, y, angle
+        # Object loc is x, y
 
-    # Return true if line segments AB and CD intersect, for goal line
-    def intersect(self, A, B, C, D):
-        def ccw(A,B,C):
-            return (C.y-A.y) * (B.x-A.x) > (B.y-A.y) * (C.x-A.x)
+        # Get relative position of object to agent
+        x = object_loc[0] - agent_loc[0]
+        y = object_loc[1] - agent_loc[1]
+        angle = np.arctan2(y, x) - agent_loc[2]
 
-        return ccw(A,C,D) != ccw(B,C,D) and ccw(A,B,C) != ccw(A,B,D)
+        # Rotate x, y by -agent angle
+        xprime = x * np.cos(-agent_loc[2]) - y * np.sin(-agent_loc[2])
+        yprime = x * np.sin(-agent_loc[2]) + y * np.cos(-agent_loc[2])
 
-    def kick_ball(self):
-        if self.check_facing_ball():
-            robot_location = np.array([self.robot_x, self.robot_y])
-            target_location = np.array([self.target_x, self.target_y])
+        return [xprime / 10000, yprime / 10000, np.sin(angle), np.cos(angle)]
 
-            # Find distance between robot and target
-            distance_robot_target = np.linalg.norm(target_location - robot_location)
+    def kick_ball(self, agent):
+        if self.check_facing_ball(agent):
+            i = self.agent_idx[agent]
+
+            # Find distance between robot and ball
+            robot_location = np.array([self.robots[i][0], self.robots[i][1]])
+            ball_location = np.array([self.ball[0], self.ball[1]])
+
+            distance_robot_ball = np.linalg.norm(ball_location - robot_location)
 
             # If robot is close enough to ball, kick ball
-            if distance_robot_target < (self.robot_radius + self.target_radius) * 10:
-                self.contacted_ball = True
+            if distance_robot_ball < (self.robot_radius + self.ball_radius) * 10:
+                self.ball_velocity = 30
 
-                # Update Relative Angle
-                self.delta_x = self.target_x - self.robot_x
-                self.delta_y = self.target_y - self.robot_y
-                self.theta_radians = np.arctan2(self.delta_y, self.delta_x)
+                # Find angle between robot and ball
+                self.ball_direction = math.degrees(
+                    math.atan2(self.ball[1] - self.robots[i][1], self.ball[0] - self.robots[i][0])
+                ) % 360
 
-                self.target_x = (
-                    self.target_x
-                    + np.cos(self.theta_radians)
-                    * (self.robot_radius + self.target_radius)
-                    * 80
-                )
-                self.target_y = (
-                    self.target_y
-                    + np.sin(self.theta_radians)
-                    * (self.robot_radius + self.target_radius)
-                    * 80
-                )
+                if self.kicking_agents:
+                    self.kicking_agents[i] = True
 
-                # Check if line of ball intersects goal line
-                A = self.Point(self.target_x, self.target_y)
-                B = self.Point(self.robot_x, self.robot_y)
-                C = self.Point(-4500, -750)
-                D = self.Point(-4500, 750)
+    ############ RENDERING UTILS ############
 
-                # Put ball at goal location (-4500, 0)
-                if self.intersect(A, B, C, D):
-                    self.target_x = -4501
-                    self.target_y = 0
-
-    def set_state_from_obs(self, obs):
-
-        target_x = (self.goal_x - obs[2]*9000)
-        target_y = (self.goal_y - obs[3]*6000)
-        robot_x = (target_x - obs[0]*9000)
-        robot_y = (target_y - obs[1]*6000)
-
-        relative_x = target_x - robot_x
-        relative_y = target_y - robot_y
-        relative_angle = np.arctan2(relative_y, relative_x)
-        if relative_angle < 0:
-            relative_angle += 2*np.pi
-
-        relative_angle_minus_robot_angle = np.arctan2(obs[4], obs[5])
-        if relative_angle_minus_robot_angle < 0:
-            relative_angle_minus_robot_angle += 2*np.pi
-
-        robot_angle = relative_angle - relative_angle_minus_robot_angle
-        if robot_angle < 0:
-            robot_angle += 2*np.pi
-
-        self.target_x = target_x
-        self.target_y = target_y
-        self.robot_x = robot_x
-        self.robot_y = robot_y
-        self.robot_angle = robot_angle        
-
-
-
-    def move_robot(self, action):
-        # Find location policy is trying to reach
-
-        r = np.linalg.norm(action[1:])
-        if r > 1:
-            action[1:] /= r
-        x = action[1]
-        y = action[2]
-
-        policy_target_x = self.robot_x + (
-                (
-                        (np.cos(self.robot_angle) * np.clip(x, -1, 1))
-                        + (np.cos(self.robot_angle + np.pi / 2) * np.clip(y, -1, 1))
-                )
-                * 200
-        )  # the x component of the location targeted by the high level action
-        policy_target_y = self.robot_y + (
-                (
-                        (np.sin(self.robot_angle) * np.clip(x, -1, 1))
-                        + (np.sin(self.robot_angle + np.pi / 2) * np.clip(y, -1, 1))
-                )
-                * 200
-        )  # the y component of the location targeted by the high level action
-
-        # Update robot position
-        self.robot_x = (
-            self.robot_x * (1 - self.displacement_coef)
-            + policy_target_x * self.displacement_coef
-        )  # weighted sums based on displacement coefficient
-        self.robot_y = (
-            self.robot_y * (1 - self.displacement_coef)
-            + policy_target_y * self.displacement_coef
-        )  # the idea is we move towards the target position and angle
-
-
-        self.position_rule()
-
-        # Find distance between robot and target
-        robot_location = np.array([self.robot_x, self.robot_y])
-        target_location = np.array([self.target_x, self.target_y])
-        distance_robot_target = np.linalg.norm(target_location - robot_location)
-
-        # push ball, if collision with robot
-        if distance_robot_target < (self.robot_radius + self.target_radius) * 5:
-            # changed to reached reward mode
-            self.contacted_ball = True
-
-            # Update Relative Angle
-            self.delta_x = self.target_x - self.robot_x
-            self.delta_y = self.target_y - self.robot_y
-            self.theta_radians = np.arctan2(self.delta_y, self.delta_x)
-
-            self.target_x = (
-                self.target_x
-                + np.cos(self.theta_radians)
-                * (self.robot_radius + self.target_radius)
-                * 5
-            )
-            self.target_y = (
-                self.target_y
-                + np.sin(self.theta_radians)
-                * (self.robot_radius + self.target_radius)
-                * 5
-            )
-
-            # Check if line of ball intersects goal line
-            A = self.Point(self.target_x, self.target_y)
-            B = self.Point(self.robot_x, self.robot_y)
-            C = self.Point(-4500, -750)
-            D = self.Point(-4500, 750)
-
-            # Put ball at goal location (-4500, 0)
-            if self.intersect(A, B, C, D):
-                self.target_x = -4501
-                self.target_y = 0
-
-        # Turn towards the target as suggested by the policy
-        self.robot_angle = self.robot_angle + self.displacement_coef * action[0]
-
-    def step(self, action):
-
-        self.time += 1
-
-        self.move_robot(action)
-
-        self.update_target_value()
-        self.update_goal_value()
-
-        done = False
-        reward = self.calculate_reward()
-
-        new_obs = self._observe_state()
-
-        return new_obs, reward, done, {'is_success': self.at_goal()}
-
-    # returns the state of the environment, with global angles and coordinates.
-
-    def _observe_global_state(self):
-        return [
-            self.robot_x / 9000,
-            self.robot_y / 6000,
-            np.sin(self.robot_angle),
-            np.cos(self.robot_angle),
-        ]
-
-    def get_abstract_state(self):
-        return np.array(self._observe_global_state())
-
-    def set_abstract_state(self, abstract_state):
-
-        self.robot_x = abstract_state[0] * 9000
-        self.robot_y = abstract_state[1] * 6000
-        self.target_x = abstract_state[2] * 9000
-        self.target_y = abstract_state[3] * 6000
-
-        self.robot_angle = np.arctan2(abstract_state[8], abstract_state[9])
-        if self.robot_angle < 0:
-            self.robot_angle += 2*np.pi
-
-    def render(self, mode="display"):
+    def render_robot(self, agent):
+        i = self.agent_idx[agent]
         Field_length = 1200
-        time.sleep(0.01)
+        render_robot_x = int((self.robots[i][0] / 5200 + 1) * (Field_length / 2))
+        render_robot_y = int((self.robots[i][1] / 3700 + 1) * (Field_length / 3))
 
-        if self.rendering_init == False:
-            pygame.init()
+        # Color = dark red
+        color = (140, 0, 0)
 
-            self.field = pygame.display.set_mode((Field_length, Field_length * (2 / 3)))
-
-            self.basic_field(Field_length)
-            pygame.display.set_caption("Point Targeting Environment")
-            self.clock = pygame.time.Clock()
-
-            self.rendering_init = True
-
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                exit()
-
-        self.basic_field(Field_length)
-
-        render_robot_x = (self.robot_x / 5200 + 1) * (Field_length / 2)
-        render_robot_y = (self.robot_y / 3700 + 1) * (Field_length / 3)
-
-        render_target_x = (self.target_x / 5200 + 1) * (Field_length / 2)
-        render_target_y = (self.target_y / 3700 + 1) * (Field_length / 3)
-
+        # Draw robot
         pygame.draw.circle(
             self.field,
-            pygame.Color(40, 40, 40),
-            (render_target_x, render_target_y),
-            self.target_radius,
-        )
-
-        pygame.draw.circle(
-            self.field,
-            pygame.Color(148, 17, 0),
+            pygame.Color(color[0], color[1], color[2]),
             (render_robot_x, render_robot_y),
             self.robot_radius,
             width=5,
         )
+
+        # Draw robot direction
         pygame.draw.line(
             self.field,
             pygame.Color(50, 50, 50),
             (render_robot_x, render_robot_y),
             (
-                render_robot_x + self.robot_radius * np.cos(self.robot_angle),
-                render_robot_y + self.robot_radius * np.sin(self.robot_angle),
+                render_robot_x + self.robot_radius * np.cos(self.angles[i]),
+                render_robot_y + self.robot_radius * np.sin(self.angles[i]),
             ),
             width=5,
         )
+        # Add robot number
+        font = pygame.font.SysFont("Arial", 20)
+        text = font.render(str(i), True, (0, 0, 0))
+        textRect = text.get_rect()
+        textRect.center = (render_robot_x, render_robot_y)
+        self.field.blit(text, textRect)
 
-        pygame.display.update()
-        self.clock.tick(60)
-    def position_rule(self):
+    def render_opponents(self):
+        # Pink = 255 51 255
+        # Blue = 63 154 246
 
-        # 3) ball out of bounds on top/bottom of field
-        if self.target_y > 3000:
-            self.target_y = 3000
-        if self.target_y < -3000:
-            self.target_y = -3000
+        color = (63, 154, 246)
 
-        # disallow robot pass through goal-net
-        if self.robot_x < -4500 or self.robot_x > 4500:
-            if self.robot_y < -750:
-                self.robot_y = -750
-            if self.robot_y > 750:
-                self.robot_y = 750
+        for i in range(len(self.opponents)):
+            Field_length = 1200
+            render_robot_x = (self.opponents[i][0] / 5200 + 1) * (Field_length / 2)
+            render_robot_y = (self.opponents[i][1] / 3700 + 1) * (Field_length / 3)
 
-        # out of bounds
-        if self.robot_x > 4500:
-            self.robot_x = 4500
-        if self.robot_x < -4500:
-            self.robot_x = -4500
-        if self.robot_y > 3000:
-            self.robot_y = 3000
-        if self.robot_y < -3000:
-            self.robot_y = -3000
+            pygame.draw.circle(
+                self.field,
+                pygame.Color(color[0], color[1], color[2]),
+                (render_robot_x, render_robot_y),
+                self.robot_radius,
+                width=5,
+            )
 
-    def update_target_value(self):
-        # Update Relative Angle
-        self.delta_x = self.target_x - self.robot_x
-        self.delta_y = self.target_y - self.robot_y
-        self.theta_radians = np.arctan2(self.delta_y, self.delta_x)
+    def render_goalie(self):
+        # Pink = 255 51 255
+        # Blue = 63 154 246
 
-        if self.theta_radians >= 0:
-            self.relative_angle = self.theta_radians
-        else:
-            self.relative_angle = self.theta_radians + 2 * np.pi
+        color = (63, 154, 246)
 
-    def update_goal_value(self):
-        # Update Relative Angle to goal
-        self.goal_delta_x = self.goal_x - self.robot_x
-        self.goal_delta_y = self.goal_y - self.robot_y
-        self.goal_theta_radians = np.arctan2(self.goal_delta_y, self.goal_delta_x)
+        Field_length = 1200
+        render_robot_x = (self.goalie[0] / 5200 + 1) * (Field_length / 2)
+        render_robot_y = (self.goalie[1] / 3700 + 1) * (Field_length / 3)
 
-        if self.goal_theta_radians >= 0:
-            self.goal_relative_angle = self.goal_theta_radians
-        else:
-            self.goal_relative_angle = self.goal_theta_radians + 2 * np.pi
+        pygame.draw.circle(
+            self.field,
+            pygame.Color(color[0], color[1], color[2]),
+            (render_robot_x, render_robot_y),
+            self.robot_radius,
+            width=5,
+        )
 
     def basic_field(self, _Field_length=1200):
         # you can change : (l_w = line width)
@@ -694,6 +754,67 @@ class BaseEnv(gym.Env):
             ],
             goal_post_size / 2,
         )
+
+    def render(self, mode="human"):
+        Field_length = 1200
+        # time.sleep(0.1)
+
+        if self.rendering_init == False:
+            pygame.init()
+
+            self.field = pygame.display.set_mode((Field_length, Field_length * (2 / 3)))
+
+            self.basic_field(Field_length)
+            pygame.display.set_caption("Point Targeting Environment")
+            self.clock = pygame.time.Clock()
+
+            self.rendering_init = True
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+
+        self.basic_field(Field_length)
+
+        # Render robots
+        for agent in self.agents:
+            self.render_robot(agent)
+
+        if self.opponents:
+            self.render_opponents()
+
+        if self.goalie:
+            self.render_goalie()
+
+        # Render ball
+        render_ball_x = (self.ball[0] / 5200 + 1) * (Field_length / 2)
+        render_ball_y = (self.ball[1] / 3700 + 1) * (Field_length / 3)
+
+        pygame.draw.circle(
+            self.field,
+            pygame.Color(40, 40, 40),
+            (render_ball_x, render_ball_y),
+            self.ball_radius,
+        )
+
+        pygame.display.update()
+        self.clock.tick(60)
+
+
+#########################################
+
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    # Return true if line segments AB and CD intersect, for goal line
+    def intersect(A, B, C, D):
+        def ccw(A, B, C):
+            return (C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x)
+
+        return ccw(A, C, D) != ccw(B, C, D) and ccw(A, B, C) != ccw(A, B, D)
 
     def get_normalized_score(self, eval_score):
         return eval_score/100

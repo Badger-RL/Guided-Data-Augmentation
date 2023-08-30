@@ -6,8 +6,6 @@ import h5py
 import numpy as np
 from matplotlib import pyplot as plt
 
-from algorithms.utils import load_dataset
-
 
 # for env_id in ['maze2d-large-v1']:
 for env_id in ['maze2d-umaze-v1', 'maze2d-medium-v1', 'maze2d-large-v1']:
@@ -65,5 +63,3 @@ for env_id in ['maze2d-umaze-v1', 'maze2d-medium-v1', 'maze2d-large-v1']:
         # plt.yticks(fontsize=20)
         # plt.tight_layout()
         plt.show()
-        # os.makedirs(f'figures/{env_id}', exist_ok=True)
-        # plt.savefig(f'figures/{env_id}/{aug}.png')
