@@ -1,4 +1,3 @@
-from condor.common import gen_td3_bc, gen_cql
 from condor.utils import MEMDISK
 
 if __name__ == "__main__":

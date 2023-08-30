@@ -57,6 +57,8 @@ def gen_td3_bc(
         n_layers=1,
         hidden_dims=2,
         batch_size=256,
+        gamma=0.99
+
 ):
     command = f'python -u algorithms/td3_bc.py --max_timesteps {max_timesteps} --eval_freq {eval_freq} --n_episodes {eval_episodes}' \
               f' --save_dir {save_dir} ' \
@@ -67,7 +69,8 @@ def gen_td3_bc(
               f' --alpha {alpha}' \
               f' --tau {tau}' \
               f' --n_layers {n_layers}' \
-              f' --hidden_dims {hidden_dims}'
+              f' --hidden_dims {hidden_dims} '\
+              f' --gamma {gamma}'
 
     if dataset_name:
         command += f' --dataset_name {dataset_name}'
