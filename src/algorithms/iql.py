@@ -23,9 +23,9 @@ from src.algorithms.utils import TrainConfigBase, soft_update, train_base
 TensorBatch = List[torch.Tensor]
 
 
-EXP_ADV_MAX = 100.0
-LOG_STD_MIN = -20.0
-LOG_STD_MAX = 2.0
+EXP_ADV_MAX = 1.0
+LOG_STD_MIN = -2
+LOG_STD_MAX = 1.0
 
 
 @dataclass
@@ -45,7 +45,7 @@ class TrainConfig(TrainConfigBase):
     actor_lr: float = 3e-4  # Actor learning rate
     actor_dropout: Optional[float] = None  # Adroit uses dropout for policy network
     n_layers: int = 2
-    hidden_dims: int = 64
+    hidden_dims: int = 256
 
     def __post_init__(self):
         pass
@@ -235,6 +235,10 @@ class ImplicitQLearning:
         adv = target_q - v
         v_loss = asymmetric_l2_loss(adv, self.iql_tau)
         log_dict["value_loss"] = v_loss.item()
+        log_dict["target_q"] = target_q.mean().item()
+        log_dict["value"] = v.mean().item()
+        log_dict["adv"] = adv.mean().item()
+        # v_loss = torch.clamp(v_loss, -0.01, 0.01)
         self.v_optimizer.zero_grad()
         v_loss.backward()
         self.v_optimizer.step()
@@ -252,6 +256,7 @@ class ImplicitQLearning:
         targets = rewards + (1.0 - terminals.float()) * self.discount * next_v.detach()
         qs = self.qf.both(observations, actions)
         q_loss = sum(F.mse_loss(q, targets) for q in qs) / len(qs)
+        # q_loss = torch.clamp(q_loss, -0.1, 0.1)
         log_dict["q_loss"] = q_loss.item()
         self.q_optimizer.zero_grad()
         q_loss.backward()
@@ -270,6 +275,7 @@ class ImplicitQLearning:
         exp_adv = torch.exp(self.beta * adv.detach()).clamp(max=EXP_ADV_MAX)
         policy_out = self.actor(observations)
         if isinstance(policy_out, torch.distributions.Distribution):
+            print('hert')
             bc_losses = -policy_out.log_prob(actions).sum(-1, keepdim=False)
         elif torch.is_tensor(policy_out):
             if policy_out.shape != actions.shape:
@@ -278,6 +284,8 @@ class ImplicitQLearning:
         else:
             raise NotImplementedError
         policy_loss = torch.mean(exp_adv * bc_losses)
+        log_dict["exp_adv"] = exp_adv.mean().item()
+        log_dict["bc_loss"] = bc_losses.mean().item()
         log_dict["actor_loss"] = policy_loss.item()
         self.actor_optimizer.zero_grad()
         policy_loss.backward()
