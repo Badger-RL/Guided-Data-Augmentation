@@ -1,3 +1,7 @@
+import os
+
+import d4rl
+import gym
 import h5py
 import numpy as np
 from matplotlib import pyplot as plt
@@ -5,7 +9,6 @@ from matplotlib import pyplot as plt
 
 # for env_id in ['maze2d-umaze-v1', 'maze2d-medium-v1', 'maze2d-large-v1']:
 for env_id in ['maze2d-umaze-v1']:
-
     for aug in ['random', 'guided']:
         plt.figure(figsize=(12, 12))
 

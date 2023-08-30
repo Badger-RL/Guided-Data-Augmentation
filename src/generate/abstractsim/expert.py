@@ -69,7 +69,11 @@ def main():
     parser.add_argument('--norm-path', type=str, default='')
     parser.add_argument('--save-dir', type=str, help='file_name')
     parser.add_argument('--save-name', type=str, help='file_name')
-    parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--env-id', default='PushBallToGoal-v0', type=str, help='file_name')
+
+    # 37 = no success
+    parser.add_argument('--seed', type=int, default=1)
+    parser.set_defaults(use_policy = False)
     parser.add_argument('--random_actions', type=int, default=0)
     parser.add_argument('--render', type=bool, default=0)
 

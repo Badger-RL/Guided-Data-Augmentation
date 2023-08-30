@@ -390,10 +390,20 @@ class BaseEnv(gym.Env):
         else:
             return False
 
-    def ball_is_in_bounds_vec(self, ball_pos):
-        mask = (np.abs(ball_pos[:, 0]) < 4500) & (np.abs(ball_pos[:, 1]) < 3500)
-        mask |= self.ball_is_at_goal(ball_pos)
-        return mask
+    def ball_is_in_bounds(self, ball_pos):
+        if self.at_goal():
+            return True
+        elif np.abs(self.target_x) < 4500 and np.abs(self.target_y) < 3500:
+            return True
+        else:
+            return False
+
+    def calculate_reward(self):
+        robot_location = np.array([self.robot_x, self.robot_y])
+        target_location = np.array([self.target_x, self.target_y])
+        # Find distance between robot and target
+        distance_robot_target = np.linalg.norm(target_location - robot_location)
+        reward = 0
 
     def ball_is_at_goal_vec(self, ball_pos):
         mask = (ball_pos[:, 0] > 4400) & (np.abs(ball_pos[:, 1]) < 500)
@@ -403,6 +413,10 @@ class BaseEnv(gym.Env):
         if self.ball[0] < -4400 and self.ball[1] < 1000 and self.ball[1] > -1000:
             return True
         return False
+        # if not self.ball_is_in_bounds():
+        #     reward -= 100
+
+        return reward
 
 
     '''

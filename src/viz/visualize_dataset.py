@@ -78,20 +78,13 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
     plt.ylabel('y position')
     plt.show()
 
-    # plt.savefig(save_path)
-
-
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    # parser.add_argument('--dataset-path', type=str, default='/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/generate/abstractsim/tmp.hdf5')
-    # parser.add_argument('--dataset-path', type=str,
-    #                     default='/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/datasets/PushBallToGoal-v1/physical/guided_traj.hdf5')
-    parser.add_argument('--dataset-path', type=str,
-                        default='/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/datasets/PushBallToGoal-v2/no_aug.hdf5')
-    parser.add_argument('--save-dir', type=str, default='./figures/PushBallToGoal-v0/')
-    parser.add_argument('--save-name', type=str, default='tmp1.png')
+    parser.add_argument('--dataset-path', type=str, default='../datasets/PushBallToGoal-v0/guided_neg.hdf5')
+    parser.add_argument('--save-dir', type=str, default='.')
+    parser.add_argument('--save-name', type=str, default='tmp')
     parser.add_argument('--single-episode', type=bool, default=False)
     parser.add_argument('--show-actions', type=bool, default=False)
     args = parser.parse_args()
