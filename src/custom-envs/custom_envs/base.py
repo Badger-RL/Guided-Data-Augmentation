@@ -818,4 +818,3 @@ class Point:
 
     def get_normalized_score(self, eval_score):
         return eval_score/100
-

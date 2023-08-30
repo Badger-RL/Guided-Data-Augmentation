@@ -12,15 +12,22 @@ import h5py
 import numpy as np
 from matplotlib import pyplot as plt
 
-from algorithms.utils import load_dataset
+from src.algorithms.utils import load_dataset
 
 
-for env_id in ['antmaze-medium-diverse-v1']:
+for env_id in ['antmaze-umaze-diverse-v1']:
     for aug in ['guided']:
         plt.figure(figsize=(12, 12))
 
-        dataset_name = f'../datasets/{env_id}/{aug}/m_1.hdf5'
-        dataset_name = f'../datasets/{env_id}/no_aug_clean.hdf5'
+        dataset_name = f'../datasets/{env_id}/{aug}/m_1000.hdf5'
+        # dataset_name = f'../datasets/{env_id}/no_aug_clean.hdf5'
+        # dataset_name = f'../augment/antmaze/tmp/tmp.hdf5'
+        # dataset_name = f'../datasets/{env_id}/no_aug_no_collisions_1k.hdf5'
+        # dataset_name = f'../datasets/{env_id}/no_aug_no_collisions_relabeled_1k.hdf5'
+        # dataset_name = f'../datasets/{env_id}/no_aug_relabeled.hdf5'
+        # dataset_name = f'../generate/generated.hdf5'
+        # dataset_name = f'../generate/original.hdf5'
+        dataset_name = f'../datasets/{env_id}/{aug}.hdf5'
 
         # dataset_name = None
         # local dataset
@@ -33,14 +40,16 @@ for env_id in ['antmaze-medium-diverse-v1']:
             env = gym.make(env_id)
             dataset = d4rl.qlearning_dataset(env)
 
-        # plot no_aug
-        start = int(0e6)
-        end = start + int(10e3)
+        n = int(3e3)
 
+        # plot no_aug
+        start = int(0e3)
+        end = start + n
         observations = dataset['observations'][start:end]
         next_observations = dataset['next_observations'][start:end]
         rewards = dataset['rewards'][start:end]
         at_goal = rewards > 0
+        print(at_goal.sum())
 
         x = observations[:, 0]
         y = observations[:, 1]
@@ -48,8 +57,9 @@ for env_id in ['antmaze-medium-diverse-v1']:
         plt.scatter(x[at_goal], y[at_goal], alpha=0.5, color='g')
 
         # plot aug
-        start = len(dataset['observations']) - int(3e3)
-        end = start + int(3e3)
+        n = int(10e3)
+        start = len(dataset['observations']) - n
+        end = start + n
         observations = dataset['observations'][start:end] #+ 0.5
         next_observations = dataset['next_observations'][start:end] #+ 0.5
         rewards = dataset['rewards'][start:end]

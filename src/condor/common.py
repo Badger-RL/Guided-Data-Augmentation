@@ -58,7 +58,6 @@ def gen_td3_bc(
         hidden_dims=2,
         batch_size=256,
         gamma=0.99
-
 ):
     command = f'python -u algorithms/td3_bc.py --max_timesteps {max_timesteps} --eval_freq {eval_freq} --n_episodes {eval_episodes}' \
               f' --save_dir {save_dir} ' \

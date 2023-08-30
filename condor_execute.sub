@@ -17,7 +17,7 @@ when_to_transfer_output = ON_EXIT
 #stream_output = False
 #stream_error = False
 
-request_cpus = 1
+request_cpus = 4
 request_memory = $(mem)GB
 request_disk = $(disk)GB
 
