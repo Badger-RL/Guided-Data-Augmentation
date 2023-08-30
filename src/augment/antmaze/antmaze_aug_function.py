@@ -467,6 +467,7 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
         valid_locations = []
         if direction == 0: # random
             valid_locations = [(1, 3)]
+            # valid_locations = [(1, 3), (1, 1), (2, 1), (3, 1), (3, 2), (2, 3), (3, 3)]
         elif direction == 1: # right
             valid_locations = [(1, 1), (2, 1)]
         elif direction == 2: # up
