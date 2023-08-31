@@ -23,7 +23,7 @@ from src.algorithms.utils import TrainConfigBase, soft_update, train_base
 TensorBatch = List[torch.Tensor]
 
 
-EXP_ADV_MAX = 1.0
+EXP_ADV_MAX = 100
 LOG_STD_MIN = -2
 LOG_STD_MAX = 1.0
 
@@ -45,7 +45,7 @@ class TrainConfig(TrainConfigBase):
     actor_lr: float = 3e-4  # Actor learning rate
     actor_dropout: Optional[float] = None  # Adroit uses dropout for policy network
     n_layers: int = 2
-    hidden_dims: int = 256
+    hidden_dims: int = 64
 
     def __post_init__(self):
         pass
@@ -275,7 +275,6 @@ class ImplicitQLearning:
         exp_adv = torch.exp(self.beta * adv.detach()).clamp(max=EXP_ADV_MAX)
         policy_out = self.actor(observations)
         if isinstance(policy_out, torch.distributions.Distribution):
-            print('hert')
             bc_losses = -policy_out.log_prob(actions).sum(-1, keepdim=False)
         elif torch.is_tensor(policy_out):
             if policy_out.shape != actions.shape:
