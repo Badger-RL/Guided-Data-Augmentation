@@ -180,7 +180,7 @@ if __name__ == "__main__":
     for k, v in dataset.items():
         dataset[k] = v[mask]
 
-    n = 850
+    n = 900
     ball_init = np.empty(shape=(n,2))
     noise = np.random.uniform(-50, 50, size=(n,2))
     ball_init[:] = dataset["absolute_observations"][n, 2:4] + noise
@@ -189,6 +189,9 @@ if __name__ == "__main__":
 
     dataset["absolute_observations"][:732, :2] += 300
     dataset["absolute_next_observations"][:732, :2] += 300
+
+    dataset["absolute_observations"][:732, :2] += 300
+    # dataset["absolute_next_observations"][:732, :2] += 300
 
     dataset["dones"][-1] = True
     dataset["terminals"][-1] = True

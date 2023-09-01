@@ -78,8 +78,8 @@ register(
     max_episode_steps=800,
     kwargs={
         'sparse': True,
-        'stochastic': True,
-        'realistic': True,
+        # 'stochastic': True,
+        # 'realistic': True,
         'displacement_coef': 0.06,
         "init_robot_x_range": [-200, 0],
         "init_robot_y_range": [-500, 0],

@@ -135,14 +135,14 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             # new_ball_final_pos_y = np.random.uniform(-1500, -1300)
             # new_ball_final_pos_x = np.random.uniform(3500, 4400)
             new_ball_final_pos_y = np.random.uniform(3000, 2700)
-            theta_range = (-25,-5)
+            theta_range = (-25,10)
             reflect = True
 
             ball_at_goal_x = aug_abs_obs[0, 2].copy()
             ball_at_goal_y = aug_abs_obs[0, 3].copy()
 
         if behavior == 'curve_to_goal':
-            new_ball_final_pos_x = np.random.uniform(3800, 4700)
+            new_ball_final_pos_x = np.random.uniform(4501, 4700)
             new_ball_final_pos_y = np.random.uniform(-300, 0)
             theta_range = (-50, -10)
             reflect = True
