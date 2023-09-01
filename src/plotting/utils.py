@@ -27,6 +27,7 @@ def load_data(paths, field_name='return'):
 
         data = np.load(path, allow_pickle=True)
         avg = data[field_name]
+
         avgs.append(avg)
 
         if t is None:
@@ -54,7 +55,6 @@ def plot(path_dict, field_name='return'):
         ci = 1.96 * std / np.sqrt(N)
         q05 = avg_of_avgs + ci
         q95 = avg_of_avgs - ci
-        print(agent, avg_of_avgs[-1], ci[-1])
 
         style_kwargs = {}
         style_kwargs['linewidth'] = 3
@@ -63,8 +63,7 @@ def plot(path_dict, field_name='return'):
             style_kwargs['linestyle'] = ':'
         elif 'random' in agent.lower():
             style_kwargs['linestyle'] = '--'
-        elif 'guided_neg' in agent.lower():
-            style_kwargs['linestyle'] = '-.'
+
         # t = np.arange(len(avg_of_avgs)) * 5000
 
         plt.plot(t, avg_of_avgs, label=agent, **style_kwargs)
