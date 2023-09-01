@@ -5,7 +5,7 @@ if __name__ == "__main__":
     all_commands = ""
     i = 0
     for env_id in ['PushBallToGoal-v0']:
-        for aug in ['guided' 'no_aug', 'random', ]:
+        for aug in ['guided', 'no_aug', 'random', ]:
             for policy_lr, qf_lr in [(3e-5, 3e-4)]:
                 for gap in [-5, -3, -1, 1]:
                     # for n_layers in [2]:
