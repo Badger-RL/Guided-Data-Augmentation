@@ -147,7 +147,8 @@ if __name__ == "__main__":
     # argv[1] = 'simrobot_normal/traj3'
     # argv[2] = '../../../datasets/PushBallToGoal-v0/simrobot/no_aug_3.hdf5'
     argv[1] = 'physical_data_clean/scoring_clean_3'
-    argv[2] = '../../../datasets/PushBallToGoalEasy-v0/physical/no_aug.hdf5'
+    argv[1] = 'guda_2'
+    argv[2] = '../../../datasets/PushBallToGoalEasy-v0/physical/no_aug_2.hdf5'
     # argv[1] = 'best'
     # argv[2] = 'best.hdf5'
     trajectory_files = []
