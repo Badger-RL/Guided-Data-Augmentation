@@ -61,7 +61,7 @@ def npify(data):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--env-id', type=str, default='PushBallToGoal-v2')
+    parser.add_argument('--env-id', type=str, default='PushBallToGoalHard-v0')
     parser.add_argument('--num_samples', type=int, default=int(100e3), help='Num samples to collect')
     parser.add_argument('--num_traj', type=int, default=5, help='Num trajectories to collect. Overrides num_samples')
     parser.add_argument('--num_traj_success', type=int, default=5, help='Num trajectories to collect. Overrides num_samples')
@@ -71,7 +71,7 @@ def main():
     parser.add_argument('--save-name', type=str, help='file_name')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--random_actions', type=int, default=0)
-    parser.add_argument('--render', type=bool, default=0)
+    parser.add_argument('--render', type=bool, default=1)
 
     args = parser.parse_args()
 
@@ -83,8 +83,8 @@ def main():
 
                    # init_robot_x_range=(4400, 4400),
                    # init_robot_y_range=(-3000, -3000),
-                   init_ball_x_range=(-1000,+1000),
-                   init_ball_y_range=(3000,3000)
+                   # init_ball_x_range=(-1000,+1000),
+                   # init_ball_y_range=(3000,3000)
                    )
 
     set_random_seed(args.seed)

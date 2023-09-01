@@ -18,7 +18,7 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
     observations = dataset["absolute_observations"]
     next_observations = dataset["absolute_next_observations"]
 
-    fig, ax = plt.subplots(figsize=(20,20))
+    fig, ax = plt.subplots(figsize=(10,10))
 
     robot_pos = observations[:, :2]
     next_robot_pos = next_observations[:, :2]
@@ -79,8 +79,8 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
         col = LineCollection(lines)
         ax.add_collection(col)
 
-    # plt.xlim(-6000, 6000)
-    # plt.ylim(-4500, 4500)
+    plt.xlim(-3500, 4500)
+    plt.ylim(-3500, 3500)
     plt.xlabel('x position')
     plt.ylabel('y position')
     plt.show()
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     # parser.add_argument('--dataset-path', type=str,
     #                     default='/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/datasets/PushBallToGoal-v1/physical/guided_traj.hdf5')
     parser.add_argument('--dataset-path', type=str,
-                        default='../datasets/PushBallToGoalEasy-v0/physical/guided_9.hdf5')
+                        default='../datasets/PushBallToGoalEasy-v0/physical/guided_3.hdf5')
     parser.add_argument('--save-dir', type=str, default='./figures/PushBallToGoalEasy-v0/')
     parser.add_argument('--save-name', type=str, default='tmp1.png')
     parser.add_argument('--single-episode', type=bool, default=False)
@@ -111,8 +111,25 @@ if __name__ == "__main__":
     dataset = {}
     data_hdf5 = h5py.File(args.dataset_path, "r")
     for key in data_hdf5.keys():
-        start = 000
-        end = 60000
+        # curve
+        start = 1750
+        end = 200000
+        # straight 1 ehhh
+        # start = 800
+        # end = 1170
+
+        # tight curve
+        # start = 1170
+        # end = 1700
+
+        #  straight 1
+        # start = 1530
+        # end = 2200
+
+        # straight 2 goal
+        # start = 2200
+        # end = 2995
+
         dataset[key] = np.array(data_hdf5[key][start:end])
 
     visualize_recorded_rollout(dataset, save_path, show_actions=args.show_actions, single_episode=args.single_episode)

@@ -6,7 +6,7 @@ import h5py
 import argparse
 
 from stable_baselines3.common.utils import set_random_seed
-from src.augment.abstractsim.rotate_reflect_trajectory import rotate_reflect_traj
+from src.augment.abstractsim.rotate_reflect_trajectory_corner import rotate_reflect_traj
 from src.augment.utils import check_valid
 import custom_envs
 
@@ -123,7 +123,7 @@ def gen_aug_dataset(env, observed_dataset, check_goal_post, validate=True, aug_s
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--observed-dataset-path', type=str, default=f'../../datasets/PushBallToGoalEasy-v0/physical/no_aug.hdf5', help='path to observed trajectory dataset')
+    parser.add_argument('--observed-dataset-path', type=str, default=f'../../datasets/PushBallToGoalEasy-v0/physical/no_aug_2.hdf5', help='path to observed trajectory dataset')
     parser.add_argument('--aug-func', type=str, default=f'guided')
     parser.add_argument('--aug-size', type=int, default=int(10e3), help='Number of augmented trajectories to generate')
     parser.add_argument('--save-dir', type=str, default='.', help='Directory to save augmented dataset')
@@ -148,7 +148,7 @@ if __name__ == '__main__':
     for k in aug_dataset:
         observed = observed_dataset[k]
         aug = np.array(aug_dataset[k])
-        data = np.concatenate([observed, aug])
+        data = np.concatenate([aug])
         new_dataset.create_dataset(k, data=data, compression='gzip')
 
     print(f"Aug dataset size: {new_dataset['observations'].shape[0]}")
