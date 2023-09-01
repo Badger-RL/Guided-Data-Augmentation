@@ -5,9 +5,9 @@ if __name__ == "__main__":
     all_commands = ""
     i = 0
     for env_id in ['PushBallToGoal-v0']:
-        for aug in ['no_aug', 'random', 'guided']:
-            for policy_lr, qf_lr in [(1e-4, 3e-4), (3e-5, 3e-4)]:
-                for gap in [-1, 1, 5]:
+        for aug in ['guided' 'no_aug', 'random', ]:
+            for policy_lr, qf_lr in [(3e-5, 3e-4)]:
+                for gap in [-5, -3, -1, 1]:
                     # for n_layers in [2]:
                     #     for hidden_dims in [256]:
                             m = 1
@@ -16,7 +16,7 @@ if __name__ == "__main__":
 
                             save_dir = f'results/{aug}/{env_id}/cql/lr_{policy_lr}/lr_{qf_lr}/g_{gap}'
                             batch_size = 64
-                            max_timesteps = int(500e3)
+                            max_timesteps = int(1e6)
                             eval_freq = int(20e3)
                             command = f'python -u algorithms/cql.py --max_timesteps {max_timesteps} --eval_freq {eval_freq}' \
                                       f' --save_dir {save_dir} ' \
@@ -26,7 +26,7 @@ if __name__ == "__main__":
                                       f' --cql_target_action_gap {gap}' \
                                       f' --batch_size {batch_size}' \
                                       f' --n_layers 2 --hidden_dims 64 --batch_size 64 ' \
-                                      f' --cql_min_q_weight 5 --cql_n_actions 5' \
+                                      f' --cql_min_q_weight 5 --cql_n_actions 10' \
                                       # f' --cql_max_target_backup 1 --cql_clip_diff_min -200'
 
                 # cql_max_target_backup: bool = True  # Use max target backup
@@ -38,7 +38,6 @@ if __name__ == "__main__":
                             # command = '4,9,' + command + f' --device cuda'
                             mem, disk = MEMDISK[1][env_id]
                             command = f'{mem},{disk},' + command.replace(' ', '*')
-                            # print(command)
                             print(command)
                             i+=1
                             all_commands += command + '\n'
