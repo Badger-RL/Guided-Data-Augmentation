@@ -20,7 +20,11 @@ BEHAVIORS = {
     'curve_to_goal': {
         'indices': (1950, 2995),
         # 'indices': (1950, 2650),
-        'ball_init': 800,
+        'max_len': 1,
+    },
+    'curve_to_goal_2': {
+        # 'indices': (1950, 2995),
+        'indices': (1950, 2650),
         'max_len': 1,
     },
     'straight_1': {
@@ -139,6 +143,15 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
 
         if behavior == 'curve_to_goal':
             new_ball_final_pos_x = np.random.uniform(3800, 4700)
+            new_ball_final_pos_y = np.random.uniform(-300, 0)
+            theta_range = (-50, -10)
+            reflect = True
+
+            ball_at_goal_x = aug_abs_obs[-1, 2].copy()
+            ball_at_goal_y = aug_abs_obs[-1, 3].copy()
+
+        if behavior == 'curve_to_goal_2':
+            new_ball_final_pos_x = np.random.uniform(4501, 4700)
             new_ball_final_pos_y = np.random.uniform(-10, 10)
             theta_range = (-50, -10)
             reflect = True
