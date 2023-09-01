@@ -11,7 +11,7 @@ import natsort
 
 #this file is for annotating trajectories returned from the physical robots with rewards and terminals.
 
-env = gym.make('PushBallToGoalEasy-v0')
+env = gym.make('PushBallToGoalHard-v0')
 
 
 EPISODE_BATCH_LENGTH = 2
@@ -96,31 +96,30 @@ def annotate_trajectories(paths):
 
         print([str(len(trajectories[key]) )for key in trajectories.keys()])
 
-        #
-        # if reward >= 1:
-        #     for i in range(300):
-        #         obs = trajectories['absolute_observations'][-1].copy()
-        #         next_obs = trajectories['absolute_next_observations'][-1].copy()
-        #
-        #         noise = np.random.uniform(-10, 10, size=(2,))
-        #         obs[:2] += noise
-        #         next_obs[:2] += noise
-        #
-        #         reward, ball_is_at_goal, ball_is_out_of_bounds = env.calculate_reward(next_obs)
-        #         trajectories["rewards"].append(reward)
-        #         trajectories["actions"].append(trajectories["actions"][-1])
-        #         trajectories["terminals"].append(ball_is_out_of_bounds)
-        #         trajectories["dones"].append(False)
-        #         if reward > 1:
-        #             print('goal')
-        #         if reward < 0:
-        #             print('out of bounds')
-        #
-        #
-        #         trajectories["observations"].append(env.get_obs(obs[:2], obs[2:4], obs[-1]))
-        #         trajectories["next_observations"].append(env.get_obs(next_obs[:2], next_obs[2:4], next_obs[-1]))
-        #         trajectories["absolute_observations"].append(obs)
-        #         trajectories["absolute_next_observations"].append(next_obs)
+
+    for i in range(300):
+        obs = trajectories['absolute_observations'][-1].copy()
+        next_obs = trajectories['absolute_next_observations'][-1].copy()
+
+        noise = np.random.uniform(-10, 10, size=(2,))
+        obs[:2] += noise
+        next_obs[:2] += noise
+
+        reward, ball_is_at_goal, ball_is_out_of_bounds = env.calculate_reward(next_obs)
+        trajectories["rewards"].append(reward)
+        trajectories["actions"].append(env.action_space.sample())
+        trajectories["terminals"].append(ball_is_out_of_bounds)
+        trajectories["dones"].append(False)
+        if reward > 1:
+            print('goal')
+        if reward < 0:
+            print('out of bounds')
+
+
+        trajectories["observations"].append(env.get_obs(obs[:2], obs[2:4], obs[-1]))
+        trajectories["next_observations"].append(env.get_obs(next_obs[:2], next_obs[2:4], next_obs[-1]))
+        trajectories["absolute_observations"].append(obs)
+        trajectories["absolute_next_observations"].append(next_obs)
 
     return trajectories
 
@@ -148,7 +147,7 @@ if __name__ == "__main__":
     # argv[2] = '../../../datasets/PushBallToGoal-v0/simrobot/no_aug_3.hdf5'
     argv[1] = 'physical_data_clean/scoring_clean_3'
     argv[1] = 'guda_2'
-    argv[2] = '../../../datasets/PushBallToGoalEasy-v0/physical/no_aug_2.hdf5'
+    argv[2] = '../../../datasets/PushBallToGoalHard-v0/no_aug.hdf5'
     # argv[1] = 'best'
     # argv[2] = 'best.hdf5'
     trajectory_files = []
