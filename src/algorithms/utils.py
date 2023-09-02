@@ -296,6 +296,7 @@ def eval_actor(
             action = actor.act(state, device)
             state, reward, done, info = env.step(action)
             episode_reward += reward
+            env.render()
         episode_rewards.append(episode_reward)
         if 'is_success' in info:
             successes.append(info['is_success'])
@@ -405,7 +406,7 @@ def train_base(config, env, trainer):
                     test = config.cql_n_actions
                     torch.save(
                         trainer.actor.state_dict(),
-                        os.path.join(config.save_dir, f"model.pt"),
+                        os.path.join(config.save_dir, f"model_{t}.pt"),
                     )
 
                     # save best model
