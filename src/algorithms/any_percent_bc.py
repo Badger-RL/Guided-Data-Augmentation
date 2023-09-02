@@ -27,6 +27,8 @@ class TrainConfig(TrainConfigBase):
     max_traj_len: int = 1000  # Max trajectory length
     learning_rate: float = 3e-5
     normalize: bool = True  # Normalize states
+    n_layers: int = 2
+    hidden_dims: int = 64
 
 
 def soft_update(target: nn.Module, source: nn.Module, tau: float):
@@ -36,17 +38,37 @@ def soft_update(target: nn.Module, source: nn.Module, tau: float):
 
 
 class Actor(nn.Module):
-    def __init__(self, state_dim: int, action_dim: int, max_action: float):
+    def __init__(self, state_dim: int, action_dim: int, max_action: float,
+                 n_layers: int, hidden_dims: int):
         super(Actor, self).__init__()
 
-        self.net = nn.Sequential(
-            nn.Linear(state_dim, 64),
-            nn.ReLU(),
-            nn.Linear(64, 64),
-            nn.ReLU(),
-            nn.Linear(64, action_dim),
-            nn.Tanh(),
-        )
+        if n_layers == 1:
+            self.net = nn.Sequential(
+                nn.Linear(state_dim, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, action_dim),
+                nn.Tanh(),
+            )
+        elif n_layers == 2:
+            self.net = nn.Sequential(
+                nn.Linear(state_dim, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, action_dim),
+                nn.Tanh(),
+            )
+        elif n_layers == 3:
+            self.net = nn.Sequential(
+                nn.Linear(state_dim, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, hidden_dims),
+                nn.ReLU(),
+                nn.Linear(hidden_dims, action_dim),
+                nn.Tanh(),
+            )
 
         self.max_action = max_action
 
@@ -147,7 +169,7 @@ def train(config: TrainConfig):
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
     max_action = float(env.action_space.high[0])
-    actor = Actor(state_dim, action_dim, max_action).to(config.device)
+    actor = Actor(state_dim, action_dim, max_action, n_layers=config.n_layers, hidden_dims=config.hidden_dims).to(config.device)
     actor_optimizer = torch.optim.Adam(actor.parameters(), lr=config.learning_rate)
 
     kwargs = {
