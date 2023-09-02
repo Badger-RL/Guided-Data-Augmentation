@@ -81,9 +81,9 @@ register(
         # 'stochastic': True,
         # 'realistic': True,
         'displacement_coef': 0.06,
-        "init_robot_x_range": [-200, 0],
-        "init_robot_y_range": [-500, 0],
-        "init_ball_x_range": [3200, 4200],
-        "init_ball_y_range": [3000, 3200],
+        "init_robot_x_range": [1800, 2200],
+        "init_robot_y_range": [-2700,-2300],
+        "init_ball_x_range": [4300, 4400],
+        "init_ball_y_range": [-2700, -2300],
     }
 )

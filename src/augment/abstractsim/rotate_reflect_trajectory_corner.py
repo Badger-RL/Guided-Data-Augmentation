@@ -17,28 +17,35 @@ BEHAVIORS = {
         'indices': (1370, 1700),
         'max_len': 1,
     },
+    # 'curve_before_goal': {
+    #     'indices': (1950, 2995),
+    #     # 'indices': (1950, 2650),
+    #     'max_len': 1,
+    # },
     'curve_to_goal': {
         'indices': (1950, 2995),
+        # 'indices': (1950, 3295),
         # 'indices': (1950, 2650),
         'max_len': 1,
     },
-    'curve_to_goal_2': {
-        # 'indices': (1950, 2995),
-        'indices': (1950, 2650),
-        'max_len': 1,
-    },
+    # 'curve_to_goal_2': {
+    #     # 'indices': (1950, 2995),
+    #     'indices': (1950, 2650),
+    #     'max_len': 1,
+    # },
     'straight_1': {
-        'indices': (0, 800),
+        'indices': (0, 400),
         'max_len': 1,
     },
-    'straight_2': {
-        'indices': (1530, 1800),
-        'max_len': 1,
-    },
-    'out_of_bounds': {
-        'indices': (2600, 2650),
-        'max_len': 1,
-    },
+    # 'straight_2': {
+    #     # 'indices': (1530, 1800),
+    #     'indices': (0, 400),
+    #     'max_len': 1,
+    # },
+    # 'out_of_bounds': {
+    #     'indices': (2600, 2650),
+    #     'max_len': 1,
+    # },
 
     # 'straight_2': {
     #     'indices': (1530, 2200),
@@ -61,9 +68,9 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
     behavior = None
 
     if np.random.random() < 1:
-        idx = np.random.randint(num_behaviors-1)
-        if np.random.random() < 0:
-            idx = num_behaviors-1
+        idx = np.random.randint(num_behaviors)
+        # if np.random.random() < 0:
+        #     idx = num_behaviors-1
         behavior = keys[idx]
         behavior_dict = BEHAVIORS[behavior]
         start_idx, end_idx = behavior_dict['indices']
@@ -131,20 +138,20 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             ball_at_goal_y = aug_abs_obs[0, 3].copy()
 
         if behavior == 'fish_out_ball_tight':
-            new_ball_final_pos_x = np.random.uniform(3200, 4200)
+            new_ball_final_pos_x = np.random.uniform(4300, 4400)
             # new_ball_final_pos_y = np.random.uniform(-1500, -1300)
             # new_ball_final_pos_x = np.random.uniform(3500, 4400)
-            new_ball_final_pos_y = np.random.uniform(3000, 2700)
-            theta_range = (-25,10)
+            new_ball_final_pos_y = np.random.uniform(3000, 1500)
+            theta_range = (-60,-30)
             reflect = True
 
             ball_at_goal_x = aug_abs_obs[0, 2].copy()
             ball_at_goal_y = aug_abs_obs[0, 3].copy()
 
         if behavior == 'curve_to_goal':
-            new_ball_final_pos_x = np.random.uniform(4501, 4700)
+            new_ball_final_pos_x = np.random.uniform(3800, 4700)
             new_ball_final_pos_y = np.random.uniform(-300, 0)
-            theta_range = (-50, -10)
+            theta_range = (-90, -10)
             reflect = True
 
             ball_at_goal_x = aug_abs_obs[-1, 2].copy()
@@ -162,24 +169,25 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
         if behavior == 'straight_1':
             # new_ball_final_pos_x = np.random.uniform(1000, 2000)
             # new_ball_final_pos_y = np.random.uniform(-2800, -2300)
-            new_ball_final_pos_x = np.random.uniform(-1000, 200)
-            new_ball_final_pos_y = np.random.uniform(-500, 500)
-            theta_range = (-30, -15)
-            reflect = False
+            new_ball_final_pos_x = np.random.uniform(3900, 4100)
+            new_ball_final_pos_y = np.random.uniform(3500, 2000)
+            theta_range = (15, 30)
+            reflect = True
 
-            ball_at_goal_x = aug_abs_obs[0, 2].copy()
-            ball_at_goal_y = aug_abs_obs[0, 3].copy()
+            ball_at_goal_x = aug_abs_obs[-1, 0].copy()
+            ball_at_goal_y = aug_abs_obs[-1, 0].copy()
 
         if behavior == 'straight_2':
             # new_ball_final_pos_x = np.random.uniform(100, 800)
             # new_ball_final_pos_y = np.random.uniform(-1200, -500)
-            new_ball_final_pos_x = np.random.uniform(2500, 2750)
-            new_ball_final_pos_y = np.random.uniform(-3200, -2000)
-            theta_range = (90, 100)
-            reflect = False
+            new_ball_final_pos_x = np.random.uniform(3000, 3700)
+            new_ball_final_pos_y = np.random.uniform(4200, 4500)
+            theta_range = (15, 30)
+            # theta_range = (90, 120)
+            reflect = True
 
-            ball_at_goal_x = aug_abs_obs[0, 2].copy()
-            ball_at_goal_y = aug_abs_obs[0, 3].copy()
+            ball_at_goal_x = aug_abs_obs[0, 0].copy()
+            ball_at_goal_y = aug_abs_obs[0, 0].copy()
 
         if behavior == 'out_of_bounds':
             new_ball_final_pos_x = np.random.uniform(4500, 4505)
@@ -241,13 +249,6 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
         aug_abs_next_obs[:, 2] += new_ball_final_pos_x
         aug_abs_next_obs[:, 3] += new_ball_final_pos_y
 
-        if behavior in ['straight_1', 'straight_2']:
-            origin_x = np.random.uniform(3800, 4000)
-            origin_y = np.random.uniform(-2900, -2700)
-            ball_init = np.array([origin_x, origin_y])
-            noise = np.random.uniform(-50, 50, size=(len(aug_abs_obs), 2))
-            aug_abs_obs[:, 2:4] = ball_init + noise
-            aug_abs_next_obs[:, 2:4] = ball_init + noise
 
         if reflect:
             aug_abs_obs[:, 1] *= -1
@@ -260,6 +261,16 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             aug_action[:, 0] *= -1
             aug_action[:, 1] *= 1
             aug_action[:, 2] *= -1
+
+        if behavior in ['straight_1', 'straight_2']:
+            origin_x = np.random.uniform(4300, 4400)
+            origin_y = np.random.uniform(-2600, -2400)
+            ball_init = np.array([origin_x, origin_y])
+            noise = np.random.uniform(-50, 50, size=(len(aug_abs_obs), 2))
+            aug_abs_obs[:, 2:4] = ball_init + noise
+            aug_abs_next_obs[:, 2:4] = ball_init + noise
+
+
 
 
         # Verify that translation doesn't move the agent out of bounds.
@@ -300,6 +311,8 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
         ball_pos = aug_abs_next_obs[i, 2:4]
         robot_angle = aug_abs_next_obs[i, 4]
         aug_next_obs[i] = env.get_obs(robot_pos, ball_pos, robot_angle)
+        if aug_reward[i] < 0:
+            print('neg')
 
     # if np.any(aug_abs_obs[:,0] > 5000):
     #     stop = 0

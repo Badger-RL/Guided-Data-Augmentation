@@ -141,7 +141,7 @@ def check_in_bounds(env, absolute_obs):
     abs_ball_y = np.abs(absolute_obs_truncated[:, 3])
 
     # check robot in bounds
-    if np.all(abs_robot_x < 4400):
+    if np.all(abs_robot_x < 4800):
         if np.all(abs_robot_y < 3500):
             if np.all(abs_ball_x < 4500):
                 if np.all(abs_ball_y < 3500):
