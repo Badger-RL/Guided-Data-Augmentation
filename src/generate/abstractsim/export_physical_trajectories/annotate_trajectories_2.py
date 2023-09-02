@@ -190,7 +190,10 @@ if __name__ == "__main__":
     dataset["absolute_observations"][:732, :2] += 300
     dataset["absolute_next_observations"][:732, :2] += 300
 
-    dataset["absolute_observations"][:732, :2] += 300
+    dataset["absolute_observations"][:1170, 2] += -300
+    dataset["absolute_next_observations"][:1170, 2] += -300
+
+    # dataset["absolute_observations"][:732, :2] += 300
     # dataset["absolute_next_observations"][:732, :2] += 300
 
     dataset["dones"][-1] = True

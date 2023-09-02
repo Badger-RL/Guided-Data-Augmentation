@@ -79,8 +79,8 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
         col = LineCollection(lines)
         ax.add_collection(col)
 
-    plt.xlim(-3500, 4500)
-    plt.ylim(-3500, 3500)
+    plt.xlim(-0, 5000)
+    plt.ylim(-4000, 4000)
     plt.xlabel('x position')
     plt.ylabel('y position')
     plt.show()
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     # parser.add_argument('--dataset-path', type=str,
     #                     default='/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/datasets/PushBallToGoal-v1/physical/guided_traj.hdf5')
     parser.add_argument('--dataset-path', type=str,
-                        default='../datasets/PushBallToGoalHard-v0/guided_5.hdf5')
+                        default='../datasets/PushBallToGoalHard-v0/no_aug.hdf5')
     parser.add_argument('--save-dir', type=str, default='./figures/PushBallToGoalHard-v0/')
     parser.add_argument('--save-name', type=str, default='tmp1.png')
     parser.add_argument('--single-episode', type=bool, default=False)
@@ -112,8 +112,8 @@ if __name__ == "__main__":
     data_hdf5 = h5py.File(args.dataset_path, "r")
     for key in data_hdf5.keys():
         # curve
-        start = 0
-        end = 999999
+        start = 2000
+        end = 2400
         # straight 1 ehhh
         # start = 800
         # end = 1170
