@@ -136,7 +136,7 @@ if __name__ == '__main__':
 
     set_random_seed(args.seed)
 
-    env = gym.make('PushBallToGoalEasy-v0')
+    env = gym.make('PushBallToGoalHard-v0')
 
     observed_dataset = load_observed_data(dataset_path=args.observed_dataset_path)
     aug_dataset = gen_aug_dataset(env, observed_dataset, aug_size=args.aug_size, validate=args.validate, check_goal_post=args.check_goal_post, aug_func=args.aug_func)

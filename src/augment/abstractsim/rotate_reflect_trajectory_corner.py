@@ -6,12 +6,16 @@ from src.augment.utils import convert_to_absolute_obs, calculate_reward, convert
 
 
 BEHAVIORS = {
-    # 'fish_out_ball': {
+    'fish_out_ball': {
         # 'indices': (0, 1170),
         # 'indices': (350, 1170),
-        # 'indices': (700, 1170),
-        # 'max_len': 1,
-    # },
+        'indices': (350, 1170),
+        'max_len': 1,
+    },
+    'fish_out_ball_goal': {
+        'indices': (600, 1170),
+        'max_len': 1,
+    },
     'fish_out_ball_tight': {
         # 'indices': (1170, 1700),
         'indices': (1370, 1700),
@@ -33,10 +37,10 @@ BEHAVIORS = {
     #     'indices': (1950, 2650),
     #     'max_len': 1,
     # },
-    'straight_1': {
-        'indices': (0, 400),
-        'max_len': 1,
-    },
+    # 'straight_1': {
+    #     'indices': (0, 400),
+    #     'max_len': 1,
+    # },
     # 'straight_2': {
     #     # 'indices': (1530, 1800),
     #     'indices': (0, 400),
@@ -94,7 +98,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
 
         if behavior in ['straight_1', 'straight2']:
             # put ball at final position in subtraj so it doesn't screw up rotation/
-            ball_init = aug_abs_obs[:, :2]
+            ball_init = aug_abs_obs[:, :2] + 100
             aug_abs_obs[:, 2:4] = ball_init
             aug_abs_next_obs[:, 2:4] = ball_init
 
@@ -116,6 +120,9 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
     aug_abs_next_obs_original = aug_abs_next_obs.copy()
 
 
+    ball_init_hard_x = (4200, 4400)
+    ball_init_hard_y = (-2700, -2300)
+
 
     attempts = 0
     max_attempts = 100
@@ -129,19 +136,30 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
         if behavior == 'fish_out_ball':
             # new_ball_final_pos_x = np.random.uniform(3200, 4200)
             # new_ball_final_pos_y = np.random.uniform(-1500, -1300)
-            new_ball_final_pos_x = np.random.uniform(0, 0)
-            new_ball_final_pos_y = np.random.uniform(-00, -0)
-            theta_range = (20,40)
+            new_ball_final_pos_x = np.random.uniform(4300, 4400)
+            new_ball_final_pos_y = np.random.uniform(-2000, -1500)
+            theta_range = (30,90)
             reflect = False
 
             ball_at_goal_x = aug_abs_obs[0, 2].copy()
             ball_at_goal_y = aug_abs_obs[0, 3].copy()
 
+        if behavior == 'fish_out_ball_goal':
+            # new_ball_final_pos_x = np.random.uniform(3200, 4200)
+            # new_ball_final_pos_y = np.random.uniform(-1500, -1300)
+            new_ball_final_pos_x = np.random.uniform(4501, 4600)
+            new_ball_final_pos_y = np.random.uniform(-100, 100)
+            theta_range = (-120, -90)
+            reflect = True
+
+            ball_at_goal_x = aug_abs_obs[-1, 2].copy()
+            ball_at_goal_y = aug_abs_obs[-1, 3].copy()
+
         if behavior == 'fish_out_ball_tight':
             new_ball_final_pos_x = np.random.uniform(4300, 4400)
             # new_ball_final_pos_y = np.random.uniform(-1500, -1300)
             # new_ball_final_pos_x = np.random.uniform(3500, 4400)
-            new_ball_final_pos_y = np.random.uniform(3000, 1500)
+            new_ball_final_pos_y = np.random.uniform(2000, 1500)
             theta_range = (-60,-30)
             reflect = True
 
@@ -264,7 +282,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
 
         if behavior in ['straight_1', 'straight_2']:
             origin_x = np.random.uniform(4300, 4400)
-            origin_y = np.random.uniform(-2600, -2400)
+            origin_y = np.random.uniform(-3000, -2000) + 300
             ball_init = np.array([origin_x, origin_y])
             noise = np.random.uniform(-50, 50, size=(len(aug_abs_obs), 2))
             aug_abs_obs[:, 2:4] = ball_init + noise

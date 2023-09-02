@@ -3,8 +3,8 @@ from condor.utils import MEMDISK
 if __name__ == "__main__":
     all_commands = ""
 
-    for env_id in ['PushBallToGoalEasy-v0']:
-        for aug in ['no_aug', 'random', 'guided']:
+    for env_id in ['PushBallToGoalHard-v0']:
+        for aug in ['guided']:
             aug = f'{aug}'
             # for aug in ['guided_transition']:
             for lr in [3e-5]:
@@ -33,7 +33,7 @@ if __name__ == "__main__":
                                 command += f' --dataset_name {dataset_name}'
 
                             mem, disk = MEMDISK[1][env_id]
-                            command = f'{mem},{disk},' + command.replace(' ', '*')
+                            # command = f'{mem},{disk},' + command.replace(' ', '*')
                             print(command)
                             # print(command + f' --device cuda')
                             all_commands += command + '\n'
