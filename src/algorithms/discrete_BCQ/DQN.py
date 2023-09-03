@@ -112,9 +112,6 @@ class DQN(object):
 		current_Q = self.Q(state).gather(1, action)
 
 		# Compute Q loss
-		# print("action", action[0])
-		# print("current_Q", current_Q[0])
-		# print("target_Q", target_Q[0])
 
 		Q_loss = F.smooth_l1_loss(current_Q, target_Q)
 

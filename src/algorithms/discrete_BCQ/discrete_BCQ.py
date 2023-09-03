@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from src.algorithms.utils import ReplayBuffer
 
 # Used for Atari
 class Conv_Q(nn.Module):
@@ -33,23 +34,27 @@ class Conv_Q(nn.Module):
 
 # Used for Box2D / Toy problems
 class FC_Q(nn.Module):
-	def __init__(self, state_dim, num_actions):
+	def __init__(self, state_dim, num_actions, hidden_size=256, num_layers=2):
 		super(FC_Q, self).__init__()
-		self.q1 = nn.Linear(state_dim, 256)
-		self.q2 = nn.Linear(256, 256)
-		self.q3 = nn.Linear(256, num_actions)
+		self.hidden_size = hidden_size
+		self.num_layers = num_layers
+		self.q1 = nn.Linear(state_dim, hidden_size)
+		self.q2 = nn.Linear(hidden_size, hidden_size)
+		self.q3 = nn.Linear(hidden_size, num_actions)
 
-		self.i1 = nn.Linear(state_dim, 256)
-		self.i2 = nn.Linear(256, 256)
-		self.i3 = nn.Linear(256, num_actions)		
+		self.i1 = nn.Linear(state_dim, hidden_size)
+		self.i2 = nn.Linear(hidden_size, hidden_size)
+		self.i3 = nn.Linear(hidden_size, num_actions)		
 
 
 	def forward(self, state):
 		q = F.relu(self.q1(state))
-		q = F.relu(self.q2(q))
+		if self.num_layers > 1:
+			q = F.relu(self.q2(q))
 
 		i = F.relu(self.i1(state))
-		i = F.relu(self.i2(i))
+		if self.num_layers > 1:
+			i = F.relu(self.i2(i))
 		i = self.i3(i)
 		return self.q3(q), F.log_softmax(i, dim=1), i
 
@@ -57,6 +62,7 @@ class FC_Q(nn.Module):
 class discrete_BCQ(object):
 	def __init__(
 		self, 
+		args,
 		is_atari,
 		num_actions,
 		state_dim,
@@ -77,7 +83,7 @@ class discrete_BCQ(object):
 		self.device = device
 
 		# Determine network type
-		self.Q = Conv_Q(state_dim[0], num_actions).to(self.device) if is_atari else FC_Q(state_dim, num_actions).to(self.device)
+		self.Q = Conv_Q(state_dim[0], num_actions).to(self.device) if is_atari else FC_Q(state_dim, num_actions, args.hidden_dim, args.num_layers).to(self.device)
 		self.Q_target = copy.deepcopy(self.Q)
 		self.Q_optimizer = getattr(torch.optim, optimizer)(self.Q.parameters(), **optimizer_parameters)
 
@@ -120,10 +126,10 @@ class discrete_BCQ(object):
 			return np.random.randint(self.num_actions)
 
 
-	def train(self, replay_buffer):
+	def train(self, replay_buffer, batch_size=100):
 		# Sample replay buffer
-		state, action, next_state, reward, done = replay_buffer.sample()
-
+		[state, action, reward, next_state, done] = replay_buffer.sample(batch_size)
+		# print(state, action, next_state, reward, done)
 		# Compute the target Q value
 		with torch.no_grad():
 			q, imt, i = self.Q(next_state)
@@ -139,7 +145,7 @@ class discrete_BCQ(object):
 		# Get current Q estimate
 		current_Q, imt, i = self.Q(state)
 		current_Q = current_Q.gather(1, action)
-
+		
 		# Compute Q loss
 		q_loss = F.smooth_l1_loss(current_Q, target_Q)
 		i_loss = F.nll_loss(imt, action.reshape(-1))
@@ -159,7 +165,6 @@ class discrete_BCQ(object):
 	def polyak_target_update(self):
 		for param, target_param in zip(self.Q.parameters(), self.Q_target.parameters()):
 		   target_param.data.copy_(self.tau * param.data + (1 - self.tau) * target_param.data)
-
 
 	def copy_target_update(self):
 		if self.iterations % self.target_update_frequency == 0:

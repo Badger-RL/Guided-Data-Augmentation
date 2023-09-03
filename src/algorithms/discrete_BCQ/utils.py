@@ -3,7 +3,7 @@ import gymnasium as gym
 import numpy as np
 import torch
 
-def ReplayBuffer(state_dim, is_atari, atari_preprocessing, batch_size, buffer_size, device):
+def ReplayBuffe1(state_dim, is_atari, atari_preprocessing, batch_size, buffer_size, device):
 	return StandardBuffer(state_dim, batch_size, buffer_size, device)
 
 
@@ -78,12 +78,16 @@ def make_env(env_name, atari_preprocessing):
 	
 	# is_atari = gym.envs.registry.spec(env_name).entry_point == 'gym.envs.atari:AtariEnv'
 	is_atari = False
-	state_dim = (
-		atari_preprocessing["state_history"], 
-		atari_preprocessing["frame_size"], 
-		atari_preprocessing["frame_size"]
-	) if is_atari else env.observation_space.shape[0]
-	# print("actions: ", env.action_space.n)
+
+	if env_name == 'parking-v0':
+		state_dim = 6
+	else:
+		state_dim = (
+			atari_preprocessing["state_history"], 
+			atari_preprocessing["frame_size"], 
+			atari_preprocessing["frame_size"]
+		) if is_atari else env.observation_space.shape[0]
+
 	return (
 		env,
 		is_atari,
