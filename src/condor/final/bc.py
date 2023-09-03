@@ -1,36 +1,36 @@
 from condor.utils import MEMDISK
 
 PARAMS = {
-    'maze2d-umaze-v1': {
-        'no_aug': 3e-6,
-        'random': 3e-6,
-        'guided': 3e-6,
-    },
-    'maze2d-medium-v1': {
-        'no_aug': 3e-6,
-        'random': 3e-6,
-        'guided': 3e-6,
-    },
-    'maze2d-large-v1': {
-        'no_aug': 3e-6,
-        'random': 3e-6,
-        'guided': 3e-6,
-    },
-    'antmaze-umaze-diverse-v1': {
-        'no_aug': 3e-6,
-        'random': 3e-6,
-        'guided': 3e-6,
-    },
-    'antmaze-medium-diverse-v1': {
-        'no_aug': 3e-6,
-        'random': 3e-6,
-        'guided': 3e-6,
-    },
-    'antmaze-large-diverse-v1': {
-        'no_aug': 3e-6,
-        'random': 3e-6,
-        'guided': 3e-6,
-    },
+    # 'maze2d-umaze-v1': {
+    #     'no_aug': 3e-6,
+    #     'random': 3e-6,
+    #     'guided': 3e-6,
+    # },
+    # 'maze2d-medium-v1': {
+    #     'no_aug': 3e-6,
+    #     'random': 3e-6,
+    #     'guided': 3e-6,
+    # },
+    # 'maze2d-large-v1': {
+    #     'no_aug': 3e-6,
+    #     'random': 3e-6,
+    #     'guided': 3e-6,
+    # },
+    # 'antmaze-umaze-diverse-v1': {
+    #     'no_aug': 3e-6,
+    #     'random': 3e-6,
+    #     'guided': 3e-6,
+    # },
+    # 'antmaze-medium-diverse-v1': {
+    #     'no_aug': 3e-6,
+    #     'random': 3e-6,
+    #     'guided': 3e-6,
+    # },
+    # 'antmaze-large-diverse-v1': {
+    #     'no_aug': 3e-6,
+    #     'random': 3e-6,
+    #     'guided': 3e-6,
+    # },
     'PushBallToGoal-v0': {
         'no_aug': 3e-6,
         'random': 3e-6,

@@ -6,8 +6,8 @@ PARAMS = {
     },
     'antmaze-medium-diverse-v1': {
         'no_aug': (64, 64, 3e-5, 3e-5, 0.5),
-        'random': (64, 64, 3e-5, 3e-5, 0.5), # good
-        'guided': (64, 64, 3e-5, 3e-5, 0.5),
+        'random': (64, 64, 3e-5, 3e-5, 0.5),
+        'guided': (2, 256, 256, 3e-5, 3e-4, 5),
     },
     'antmaze-large-diverse-v1': {
         'no_aug': (64, 64, 3e-4, 3e-4, 2.5),

@@ -1,23 +1,24 @@
 from condor.utils import MEMDISK
 
 PARAMS = {
-    'maze2d-umaze-v1': {
-        'no_aug': 5,
-        'random': 1,
-        'guided': 10,
-    },
-    'maze2d-medium-v1': {
-        'no_aug': 10,
-        'random': 10,
-        'guided': 10,
-    },
-    'maze2d-large-v1': {
-        'no_aug': 10,
-        'random': 5,
-        'guided': 10,
-    },
+    # 'maze2d-umaze-v1': {
+    #     'no_aug': 5,
+    #     'random': 1,
+    #     'guided': 10,
+    # },
+    # 'maze2d-medium-v1': {
+    #     'no_aug': 10,
+    #     'random': 10,
+    #     'guided': 10,
+    # },
+    # 'maze2d-large-v1': {
+    #     'no_aug': 10,
+    #     'random': 5,
+    #     'guided': 10,
+    # },
     'antmaze-umaze-diverse-v1': {
-        'no_aug': 1,
+        # 'no_aug': (3e-5, 3e-4, 1, 0.5, True),
+        'no_aug': (3e-5, 3e-5, 3e-5, 1, 0.7, True),
         'random': 10,
         'guided': 5,
     },
@@ -86,6 +87,7 @@ if __name__ == "__main__":
                       f' --env {env_id}' \
                       f' --actor_lr {actor_lr}' \
                       f' --qf_lr {critic_lr}' \
+                      f' --vf_lr 3e-05' \
                       f' --beta {beta}' \
                       f' --batch_size 64 --reward_bias -1' \
                       # f' --n_layers {nl}' \
