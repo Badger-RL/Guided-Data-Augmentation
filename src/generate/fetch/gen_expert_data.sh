@@ -1,0 +1,4 @@
+python3 ./gen_expert_data.py --policy_path ./saved_models/FetchPush-v2/model.pt  --env_id FetchPush-v2 --num_episodes 3 --save_dir ../../datasets/FetchPush-v2 --save_name no_aug.hdf5
+python3 ./gen_expert_data.py --policy_path ./saved_models/FetchSlide-v2/model.pt  --env_id FetchSlide-v2 --num_episodes 3 --save_dir ../../datasets/FetchSlide-v2 --save_name no_aug.hdf5
+python3 ./gen_expert_data.py --policy_path ./saved_models/FetchPush-v2/model.pt  --env_id FetchPush-v2 --num_episodes 1000 --save_dir ../../datasets/FetchPush-v2 --save_name no_aug_1k.hdf5
+python3 ./gen_expert_data.py --policy_path ./saved_models/FetchSlide-v2/model.pt  --env_id FetchSlide-v2 --num_episodes 1000 --save_dir ../../datasets/FetchSlide-v2 --save_name no_aug_1k.hdf5
