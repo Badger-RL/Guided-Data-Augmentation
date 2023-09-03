@@ -16,27 +16,27 @@ PARAMS = {
     #     'random': 5,
     #     'guided': 10,
     # },
-    'antmaze-umaze-diverse-v1': {
+    # 'antmaze-umaze-diverse-v1': {
         # 'no_aug': (3e-5, 3e-4, 1, 0.5, True),
-        'no_aug': (3e-5, 3e-5, 3e-5, 1, 0.7, True),
-        'random': 10,
-        'guided': 5,
-    },
-    'antmaze-medium-diverse-v1': {
-        'no_aug': 1,
-        'random': 10,
-        'guided': 5,
-    },
-    'antmaze-large-diverse-v1': {
-        'no_aug': 1,
-        'random': 10,
-        'guided': 5,
-    },
-    # 'PushBallToGoal-v0': {
-    #     'no_aug': 3e-6,
-    #     'random': 3e-6,
-    #     'guided': 3e-6,
+        'guided': (3e-5, 3e-5, 3e-5, 1, 0.7, True),
+        # 'random': 10,
+        # 'guided': 5,
     # },
+    # 'antmaze-medium-diverse-v1': {
+    #     'no_aug': (3e-5, 3e-5, 3e-5, 1, 0.7, True),
+    #     'random': (3e-5, 3e-4, 3e-5, 10, 0.9, True),
+    #     'guided': (3e-5, 3e-5, 3e-5, 1, 0.5, True), # try 0.7, 0.9
+    # },
+    # 'antmaze-large-diverse-v1': {
+    #     'no_aug': (3e-5, 3e-5, 3e-5, 10, 0.9, True),
+    #     'random': (3e-5, 3e-4, 3e-5, 10, 0.9, True),
+    #     'guided': (3e-5, 3e-5, 3e-5, 1, 0.5, True), # try 0.7, 0.9
+    # },
+    'PushBallToGoal-v0': {
+        'no_aug': (3e-5, 3e-5, 3e-5, 10, 0.9, True),
+        'random': (3e-5, 3e-5, 3e-5, 10, 0.9, True),
+        'guided': (3e-5, 3e-5, 3e-5, 10, 0.9, True), # try 0.7, 0.9
+    },
 }
 
 if __name__ == "__main__":
@@ -65,9 +65,10 @@ if __name__ == "__main__":
             # nl = 2
             # hd = 256
             bs = 64
-            actor_lr, critic_lr = 3e-5, 3e-4
-            beta = PARAMS[env_id][aug]
-
+            try:
+                actor_lr, critic_lr, vf_lr, beta, tau, reward_bias = PARAMS[env_id][aug]
+            except:
+                continue
             max_timesteps = int(1e6)
             eval_freq = int(20e3)
 
@@ -75,20 +76,20 @@ if __name__ == "__main__":
                 dataset_name = f'/staging/ncorrado/datasets/{env_id}/small/{aug}.hdf5'
             else:
                 dataset_name = f'/staging/ncorrado/datasets/{env_id}/{aug}.hdf5'
-            save_dir = f'results/{aug}/{env_id}/iql/lr_{actor_lr}/lr_{critic_lr}/b_{beta}'
+            save_dir = f'results/{env_id}/{aug}/iql'
 
 
             max_timesteps = int(1e6)
             eval_freq = int(20e3)
-            iql_tau = 0.7 if '2d' in env_id else 0.9
 
             command = f'python -u algorithms/iql.py --max_timesteps {max_timesteps} --eval_freq {eval_freq}' \
                       f' --save_dir {save_dir} ' \
                       f' --env {env_id}' \
                       f' --actor_lr {actor_lr}' \
                       f' --qf_lr {critic_lr}' \
-                      f' --vf_lr 3e-05' \
+                      f' --vf_lr {vf_lr}' \
                       f' --beta {beta}' \
+                      f' --iql_tau {tau}' \
                       f' --batch_size 64 --reward_bias -1' \
                       # f' --n_layers {nl}' \
                       # f' --hidden_dim {hd}'
