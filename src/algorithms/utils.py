@@ -13,6 +13,7 @@ from gymnasium.wrappers import StepAPICompatibility
 
 import d4rl
 import gymnasium as gym
+import gymnasium_robotics
 import h5py
 import numpy as np
 import torch
@@ -156,10 +157,18 @@ def wrap_env(
     reward_scale: float = 1.0,
 ) -> gym.Env:
     # PEP 8: E731 do not assign a lambda expression, use a def
-    def normalize_state(state):
-        return (
-            state - state_mean
-        ) / state_std  # epsilon should be already added in std.
+
+    if isinstance(env.observation_space, gym.spaces.Dict):
+        def normalize_state(state):
+            obs = (state['observation'] - state_mean[:-3]) / state_std[:-3]
+            goal = (state['desired_goal'] - state_mean[-3:]) / state_std[-3:]
+
+            return np.concatenate([obs, goal])
+    else:
+        def normalize_state(state):
+            return (
+                state - state_mean
+            ) / state_std  # epsilon should be already added in std.
 
     def scale_reward(reward):
         # Please be careful, here reward is multiplied by scale!
@@ -246,13 +255,13 @@ class ReplayBuffer:
 class TrainConfigBase:
     # Experiment
     device: str = "cpu"
-    env: str = "highway-v0"  # OpenAI gym environment name
+    env: str = "FetchPush-v2"  # OpenAI gym environment name
     seed: int = 0  # Sets Gym, PyTorch and Numpy seeds
     eval_freq: int = int(10e3)  # How often (time steps) we evaluate
-    n_episodes: int = 10  # How many episodes run during evaluation
+    n_episodes: int = 50  # How many episodes run during evaluation
     max_timesteps: int = int(1e6)  # Max time steps to run environment
     load_model: str = ""  # Model load file name, "" doesn't load
-    dataset_name: str = None
+    dataset_name: str = '../datasets/FetchPush-v2/no_aug_1k.hdf5'
     deterministic_torch: bool = True
     # Normalization
     normalize: bool = True  # Normalize states
@@ -286,6 +295,8 @@ def eval_actor(
         done = False
         episode_reward = 0.0
         while not done:
+            if isinstance(state, dict):
+                state = np.concatenate([state['observation'], state['desired_goal']])
             action = actor.act(state, device)
             state, reward, terminated, truncated, info = env.step(action)
             done = terminated or truncated
@@ -312,7 +323,10 @@ def train_base(config, env, trainer):
     env = wrap_env(env, state_mean=state_mean, state_std=state_std)
 
     # create replay buffer
-    state_dim = env.observation_space.shape[0]
+    if isinstance(env.observation_space, gym.spaces.Dict):
+        state_dim = env.observation_space.spaces['observation'].shape[0] + env.observation_space.spaces['desired_goal'].shape[0]
+    else:
+        state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
     if config.buffer_size is None:
         config.buffer_size = len(dataset['observations'])

@@ -245,7 +245,10 @@ class AdvantageWeightedActorCritic:
 @pyrallis.wrap()
 def train(config: TrainConfig):
     env = gym.make(config.env)
-    state_dim = env.observation_space.shape[0]
+    if isinstance(env.observation_space, gym.spaces.Dict):
+        state_dim = env.observation_space.spaces['observation'].shape[0] + env.observation_space.spaces['desired_goal'].shape[0]
+    else:
+        state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
     actor_critic_kwargs = {
         "state_dim": state_dim,

@@ -5,6 +5,7 @@ import copy
 from dataclasses import dataclass
 
 import gymnasium as gym
+import gymnasium_robotics
 import numpy as np
 import pyrallis
 import torch
@@ -292,7 +293,10 @@ def train(config: TrainConfig):
 
     # make env
     env = gym.make(config.env)
-    state_dim = env.observation_space.shape[0]
+    if isinstance(env.observation_space, gym.spaces.Dict):
+        state_dim = env.observation_space.spaces['observation'].shape[0] + env.observation_space.spaces['desired_goal'].shape[0]
+    else:
+        state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
     max_action = float(env.action_space.high[0])
 
