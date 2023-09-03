@@ -78,7 +78,7 @@ def simulate(env, policy, num_episodes, seed=0, render=False, flatten=True, verb
             ep_actions.append(action)
             ep_next_observations.append(np.concatenate([obs["observation"], obs["desired_goal"]]))
             ep_rewards.append(reward)
-            ep_dones.append(done)
+            ep_dones.append(terminated)
             # print(info["is_success"])
             ep_infos.append(int(info["is_success"]))
             ep_step_count += 1
