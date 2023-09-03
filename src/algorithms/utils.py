@@ -160,8 +160,11 @@ def wrap_env(
 
     if isinstance(env.observation_space, gym.spaces.Dict):
         def normalize_state(state):
-            obs = (state['observation'] - state_mean[:-3]) / state_std[:-3]
-            goal = (state['desired_goal'] - state_mean[-3:]) / state_std[-3:]
+            # obs_size = state['observation'].shape[0]
+            goal_size = state['desired_goal'].shape[0]
+
+            obs = (state['observation'] - state_mean[:-goal_size]) / state_std[:-goal_size]
+            goal = (state['desired_goal'] - state_mean[-goal_size:]) / state_std[-goal_size:]
 
             return np.concatenate([obs, goal])
     else:

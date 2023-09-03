@@ -1,0 +1,1 @@
+python gen_dataset.py --env_id parking-v0 --num_episodes 3 --save_dir ../../datasets/parking-v0 --save_name no_aug.hdf5

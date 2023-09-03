@@ -9,7 +9,7 @@ from stable_baselines3 import SAC, DDPG, DQN, PPO
 from stable_baselines3.common.utils import set_random_seed
 
 
-def simulate(env, model, num_samples, num_episodes=None,  seed=0, render=False, flatten=True, verbose=1, skip_terminated_episodes=False):
+def simulate(env, model, num_episodes=None,  seed=0, render=False, flatten=True, verbose=1, skip_terminated_episodes=False):
     set_random_seed(seed)
 
     observations = []
@@ -26,13 +26,12 @@ def simulate(env, model, num_samples, num_episodes=None,  seed=0, render=False, 
 
     episode_count = 0
     step_count = 0
-    # while episode_count < num_episodes:
-    while step_count < num_samples:
+    while episode_count < num_episodes:
         episode_count += 1
         ep_observations, ep_next_observations, ep_actions, ep_rewards, ep_dones, ep_infos,  = [], [], [], [], [], []
         ep_desired_goal, ep_achieved_goal = [], []
         ep_step_count = 0
-        obs, _ = env.reset()
+        obs, _ = env.reset(seed=episode_count)
         done = False
 
         while not done:
@@ -42,7 +41,7 @@ def simulate(env, model, num_samples, num_episodes=None,  seed=0, render=False, 
             else:
                 action = env.action_space.sample() # np.random.uniform(-1, +1, size=env.action_space.shape)
 
-            ep_observations.append(obs['observation'])
+            ep_observations.append(np.concatenate([obs['observation'], obs['desired_goal']]))
             ep_desired_goal.append(obs['desired_goal'])
 
             obs, reward, terminated, truncated, info = env.step(action)
@@ -55,7 +54,7 @@ def simulate(env, model, num_samples, num_episodes=None,  seed=0, render=False, 
             # action[1] += np.random.uniform(-0.05, +0.05)
 
             ep_actions.append(action)
-            ep_next_observations.append(obs['observation'])
+            ep_next_observations.append(np.concatenate([obs['observation'], obs['desired_goal']]))
             ep_rewards.append(reward)
             ep_dones.append(done)
             ep_infos.append(info)
@@ -106,7 +105,7 @@ if __name__ == "__main__":
     parser.add_argument("--algo", help="RL Algorithm", default='ddpg', type=str)
     parser.add_argument("--env_id", type=str, default="parking-v0", help="environment ID")
     parser.add_argument("--seed", help="Random generator seed", type=int, default=0)
-    parser.add_argument('--num_samples', type=int, default=int(100), help='Num samples to collect')
+    parser.add_argument('--num_episodes', type=int, default=int(300), help='Num samples to collect')
     parser.add_argument('--policy_path', type=str, default='file_name')
     parser.add_argument('--save_dir', type=str, default='tmp_dir')
     parser.add_argument('--save_name', type=str, default='tmp_name.hdf5')
@@ -114,20 +113,19 @@ if __name__ == "__main__":
     parser.add_argument('--skip_terminated_episodes', type=int, default=False)
 
     args = parser.parse_args()
+    set_random_seed(args.seed)
 
-    env_kwargs = {'render_mode': 'human'}
-    # env_kwargs = {}
+    if args.render:
+        env_kwargs = {'render_mode': 'human'}
+    else:
+        env_kwargs = {}
     env = gym.make(args.env_id, **env_kwargs)
 
 
     args.policy_path = f'../../policies/{args.env_id}/{args.algo}/best_model.zip'
-    # model = DQN.load(args.policy_path)
     model = DDPG.load(args.policy_path, env)
 
-    # args.policy_path = f'../../results/{args.env_id}/rl_model_3000_steps.zip'
-    # model = PPO.load(args.policy_path)
-
-    data = simulate(env=env, model=model, num_samples=args.num_samples, render=False, skip_terminated_episodes=args.skip_terminated_episodes)
+    data = simulate(env=env, model=model, num_episodes=args.num_episodes, render=False, skip_terminated_episodes=args.skip_terminated_episodes)
 
     save_dir = args.save_dir
     os.makedirs(save_dir, exist_ok=True)
