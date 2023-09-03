@@ -23,15 +23,15 @@ def simulate(env, model, num_episodes=None,  seed=0, render=False, flatten=True,
     desired_goal = []
     achieved_goal = []
 
-
     episode_count = 0
     step_count = 0
     while episode_count < num_episodes:
         episode_count += 1
+        seed += 1
         ep_observations, ep_next_observations, ep_actions, ep_rewards, ep_dones, ep_infos,  = [], [], [], [], [], []
         ep_desired_goal, ep_achieved_goal = [], []
         ep_step_count = 0
-        obs, _ = env.reset(seed=episode_count)
+        obs, _ = env.reset(seed=seed)
         done = False
 
         while not done:
@@ -63,6 +63,11 @@ def simulate(env, model, num_episodes=None,  seed=0, render=False, flatten=True,
             if render: env.render()
 
         if skip_terminated_episodes and info['crashed']:
+            episode_count -= 1
+            continue
+
+        if args.env_id == 'parking-v0' and ep_step_count > 100:
+            print(episode_count, ep_step_count)
             episode_count -= 1
             continue
 
