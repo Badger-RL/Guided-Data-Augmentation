@@ -35,11 +35,11 @@ def is_contact(obs, next_obs):
 
 def translate_robot(obs, new_pos):
     obs[ROBOT_POS] = new_pos
-    obs[OBJECT_RELATIVE_POS] = new_pos - obs[OBJECT_POS]
+    obs[OBJECT_RELATIVE_POS] = obs[ROBOT_POS] - obs[OBJECT_POS]
 
 def translate_obj(obs, new_pos):
     obs[OBJECT_POS] = new_pos
-    obs[OBJECT_RELATIVE_POS] = obs[ROBOT_POS] - new_pos
+    obs[OBJECT_RELATIVE_POS] = obs[ROBOT_POS] - obs[OBJECT_POS]
 
 def translate_goal(obs, new_pos):
     obs[GOAL] = new_pos
