@@ -41,6 +41,10 @@ def translate_obj(obs, new_pos):
     obs[OBJECT_POS] = new_pos
     obs[OBJECT_RELATIVE_POS] = obs[ROBOT_POS] - obs[OBJECT_POS]
 
+def rotate_obj(obs, new_pos):
+    obs[OBJECT_POS] = new_pos
+    obs[OBJECT_RELATIVE_POS] = obs[ROBOT_POS] - obs[OBJECT_POS]
+
 def translate_goal(obs, new_pos):
     obs[GOAL] = new_pos
 
@@ -54,93 +58,74 @@ def translate(obs, action, next_obs, reward, done, check_goal_post):
     new_obj_pos = np.random.uniform(-0.15, 0.15, size=(2,))
     translate_obj(obs, new_obj_pos)
 
+    '''
+    1. choose theta
+    2. origin = final position of the object
+    3. We want to rotate with the origin set to the object's final position, 
+       so subtract the origin from all object positions.
+    4. Make rotation matrix
+    5. apply the rotation matrix to all object positions in the trajectory segment.
+    6. Add the origin back to all the object positions
+    '''
+
+    # translation
+    traj_delta_x = origin_x - current_final_obj_x
+    traj_delta_y = origin_y - current_final_obj_y
+
     #
-    #
-    # traj_delta_x = new_ball_final_pos_x - ball_at_goal_x
-    # traj_delta_y = new_ball_final_pos_y - ball_at_goal_y
-    #
-    #     absolute_obs[:, 0] += traj_delta_x
-    #     absolute_obs[:, 1] += traj_delta_y
-    #     absolute_obs[:, 2] += traj_delta_x
-    #     absolute_obs[:, 3] += traj_delta_y
-    #
-    #     absolute_next_obs[:, 0] += traj_delta_x
-    #     absolute_next_obs[:, 1] += traj_delta_y
-    #     absolute_next_obs[:, 2] += traj_delta_x
-    #     absolute_next_obs[:, 3] += traj_delta_y
-    #
-    #     ball_at_goal_x = absolute_obs[-1, 2]
-    #     ball_at_goal_y = absolute_obs[-1, 3]
-    #
-    #     # Translate origin to the final ball position
-    #     aug_absolute_obs[:, 0] -= ball_at_goal_x
-    #     aug_absolute_obs[:, 1] -= ball_at_goal_y
-    #     aug_absolute_obs[:, 2] -= ball_at_goal_x
-    #     aug_absolute_obs[:, 3] -= ball_at_goal_y
-    #     aug_absolute_next_obs[:, 0] -= ball_at_goal_x
-    #     aug_absolute_next_obs[:, 1] -= ball_at_goal_y
-    #     aug_absolute_next_obs[:, 2] -= ball_at_goal_x
-    #     aug_absolute_next_obs[:, 3] -= ball_at_goal_y
-    #
-    #     # rotate robot and ball position about ball's final position
-    #     theta = np.random.uniform(-180, 180) * np.pi / 180
-    #     M = np.array([
-    #         [np.cos(theta), -np.sin(theta)],
-    #         [np.sin(theta), np.cos(theta)]
-    #     ])
-    #     aug_absolute_obs[:, :2] = M.dot(aug_absolute_obs[:, :2].T).T
-    #     aug_absolute_obs[:, 2:4] = M.dot(aug_absolute_obs[:, 2:4].T).T
-    #
-    #     robot_angle = aug_absolute_obs[:, 4] + theta
-    #     robot_angle[robot_angle < 0] += 2 * np.pi
-    #     aug_absolute_obs[:, 4] += theta
-    #
-    #     aug_absolute_next_obs[:, :2] = M.dot(aug_absolute_next_obs[:, :2].T).T
-    #     aug_absolute_next_obs[:, 2:4] = M.dot(aug_absolute_next_obs[:, 2:4].T).T
-    #
-    #     next_robot_angle = aug_absolute_next_obs[:, 4] + theta
-    #     next_robot_angle[next_robot_angle < 0] += 2 * np.pi
-    #     aug_absolute_next_obs[:, 4] += theta
-    #
-    #     aug_absolute_obs[:, 0] += ball_at_goal_x
-    #     aug_absolute_obs[:, 1] += ball_at_goal_y
-    #     aug_absolute_obs[:, 2] += ball_at_goal_x
-    #     aug_absolute_obs[:, 3] += ball_at_goal_y
-    #     aug_absolute_next_obs[:, 0] += ball_at_goal_x
-    #     aug_absolute_next_obs[:, 1] += ball_at_goal_y
-    #     aug_absolute_next_obs[:, 2] += ball_at_goal_x
-    #     aug_absolute_next_obs[:, 3] += ball_at_goal_y
-    #
-    #     # Verify that translation doesn't move the agent out of bounds.
-    #     # Only need to check y since we only translate vertically.
-    #
-    #     # check if agent and ball are in bounds
-    #     if check_in_bounds(aug_absolute_obs, check_goal_post=check_goal_post) and \
-    #             check_in_bounds(aug_absolute_next_obs, check_goal_post=check_goal_post):
-    #         break
-    #     else:
-    #         aug_absolute_obs = copy.deepcopy(absolute_obs)
-    #         aug_absolute_next_obs = copy.deepcopy(absolute_next_obs)
-    #     # print('theta', is_valid_theta)
-    # if attempts >= 100:
-    #     print(f'Skipping trajectory after {attempts} augmentation attempts.')
-    #     return None, None, None, None, None
-    #
-    # if np.random.random() < 0.5:
-    #     aug_absolute_obs[:, 1] *= -1
-    #     aug_absolute_next_obs[:, 1] *= -1
-    #     aug_absolute_obs[:, 3] *= -1
-    #     aug_absolute_next_obs[:, 3] *= -1
-    #     aug_absolute_obs[:, 4] *= -1
-    #     aug_absolute_next_obs[:, 4] *= -1
-    #
-    #     aug_action[:, 0] *= -1
-    #     aug_action[:, 1] *= 1
-    #     aug_action[:, 2] *= -1
-    #
-    # aug_reward, _ = calculate_reward(aug_absolute_next_obs)
-    #
-    # aug_obs = convert_to_relative_obs(aug_absolute_obs)
-    # aug_next_obs = convert_to_relative_obs(aug_absolute_next_obs)
-    #
-    # return aug_obs, aug_action, aug_reward, aug_next_obs, aug_done
+    aug_obs[:, 0] += traj_delta_x
+    aug_obs[:, 1] += traj_delta_y
+    aug_next_obs[:, 0] += traj_delta_x
+    aug_next_obs[:, 1] += traj_delta_y
+
+
+    ball_at_goal_x = aug_obs[-1, 2]
+    ball_at_goal_y = aug_obs[-1, 3]
+
+    # rotation.
+
+    # Translate origin to the final ball position
+    aug_aug_obs[:, 0] -= ball_at_goal_x
+    aug_aug_obs[:, 1] -= ball_at_goal_y
+    aug_aug_obs[:, 2] -= ball_at_goal_x
+    aug_aug_obs[:, 3] -= ball_at_goal_y
+    aug_aug_next_obs[:, 0] -= ball_at_goal_x
+    aug_aug_next_obs[:, 1] -= ball_at_goal_y
+    aug_aug_next_obs[:, 2] -= ball_at_goal_x
+    aug_aug_next_obs[:, 3] -= ball_at_goal_y
+
+    # rotate robot and ball position about ball's final position
+    theta = np.random.uniform(-180, 180) * np.pi / 180
+    M = np.array([
+        [np.cos(theta), -np.sin(theta)],
+        [np.sin(theta), np.cos(theta)]
+    ])
+    aug_aug_obs[:, :2] = M.dot(aug_aug_obs[:, :2].T).T
+    aug_aug_obs[:, 2:4] = M.dot(aug_aug_obs[:, 2:4].T).T
+
+    robot_angle = aug_aug_obs[:, 4] + theta
+    robot_angle[robot_angle < 0] += 2 * np.pi
+    aug_aug_obs[:, 4] += theta
+
+    aug_aug_next_obs[:, :2] = M.dot(aug_aug_next_obs[:, :2].T).T
+    aug_aug_next_obs[:, 2:4] = M.dot(aug_aug_next_obs[:, 2:4].T).T
+
+    next_robot_angle = aug_aug_next_obs[:, 4] + theta
+    next_robot_angle[next_robot_angle < 0] += 2 * np.pi
+    aug_aug_next_obs[:, 4] += theta
+
+    aug_aug_obs[:, 0] += ball_at_goal_x
+    aug_aug_obs[:, 1] += ball_at_goal_y
+    aug_aug_obs[:, 2] += ball_at_goal_x
+    aug_aug_obs[:, 3] += ball_at_goal_y
+    aug_aug_next_obs[:, 0] += ball_at_goal_x
+    aug_aug_next_obs[:, 1] += ball_at_goal_y
+    aug_aug_next_obs[:, 2] += ball_at_goal_x
+    aug_aug_next_obs[:, 3] += ball_at_goal_y
+
+    aug_reward, _ = calculate_reward(aug_aug_next_obs)
+
+    aug_obs = convert_to_relative_obs(aug_aug_obs)
+    aug_next_obs = convert_to_relative_obs(aug_aug_next_obs)
+
+    return aug_obs, aug_action, aug_reward, aug_next_obs, aug_done
