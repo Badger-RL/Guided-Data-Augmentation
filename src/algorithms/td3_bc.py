@@ -5,7 +5,7 @@ import copy
 from dataclasses import dataclass
 
 import gymnasium as gym
-import gymnasium_robotics
+# import gymnasium_robotics
 import numpy as np
 import pyrallis
 import torch
