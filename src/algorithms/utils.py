@@ -13,7 +13,7 @@ from gymnasium.wrappers import StepAPICompatibility
 
 import d4rl
 import gymnasium as gym
-import gymnasium_robotics
+# import gymnasium_robotics
 import h5py
 import numpy as np
 import torch
