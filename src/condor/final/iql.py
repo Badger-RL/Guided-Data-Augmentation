@@ -18,25 +18,25 @@ PARAMS = {
     # },
     # 'antmaze-umaze-diverse-v1': {
         # 'no_aug': (3e-5, 3e-4, 1, 0.5, True),
-        'guided': (3e-5, 3e-5, 3e-5, 1, 0.7, True),
+        # 'guided': (3e-5, 3e-5, 3e-5, 1, 0.7, True),
         # 'random': 10,
         # 'guided': 5,
     # },
-    # 'antmaze-medium-diverse-v1': {
-    #     'no_aug': (3e-5, 3e-5, 3e-5, 1, 0.7, True),
-    #     'random': (3e-5, 3e-4, 3e-5, 10, 0.9, True),
-    #     'guided': (3e-5, 3e-5, 3e-5, 1, 0.5, True), # try 0.7, 0.9
-    # },
+    'antmaze-medium-diverse-v1': {
+        # 'no_aug': (3e-5, 3e-5, 3e-5, 1, 0.7, True),
+        'random': (3e-6, 3e-4, 3e-5, 5, 0.7, True),
+        # 'guided': (3e-6, 3e-5, 3e-5, 1, 0.5, True), # try 0.7, 0.9
+    },
     # 'antmaze-large-diverse-v1': {
     #     'no_aug': (3e-5, 3e-5, 3e-5, 10, 0.9, True),
     #     'random': (3e-5, 3e-4, 3e-5, 10, 0.9, True),
     #     'guided': (3e-5, 3e-5, 3e-5, 1, 0.5, True), # try 0.7, 0.9
     # },
-    'PushBallToGoal-v0': {
-        'no_aug': (3e-5, 3e-5, 3e-5, 10, 0.9, True),
-        'random': (3e-5, 3e-5, 3e-5, 10, 0.9, True),
-        'guided': (3e-5, 3e-5, 3e-5, 10, 0.9, True), # try 0.7, 0.9
-    },
+    # 'PushBallToGoal-v0': {
+    #     'no_aug': (3e-5, 3e-5, 3e-5, 10, 0.9, True),
+    #     'random': (3e-5, 3e-5, 3e-5, 10, 0.9, True),
+    #     'guided': (3e-5, 3e-5, 3e-5, 10, 0.9, True), # try 0.7, 0.9
+    # },
 }
 
 if __name__ == "__main__":

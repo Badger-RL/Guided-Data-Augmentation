@@ -68,7 +68,8 @@ if __name__ == "__main__":
                       # f' --n_layers {nl}' \
                       # f' --hidden_dims {hd}'
 
-
+            if 'antmaze-umaze' in env_id:
+                command += '--n_layers 1 --hidden_dims 64'
 
             mem, disk = MEMDISK[1][env_id]
             memdisk = f'{mem},{disk},'
