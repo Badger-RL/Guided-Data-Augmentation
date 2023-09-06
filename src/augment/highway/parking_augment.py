@@ -33,11 +33,17 @@ def get_trajectories(dataset, start_timestamp, end_timestamp):
 
 def generate_aug_trajectory(trajectory):
     env = gym.make('parking-v0', render_mode='rgb_array')
+    
     aug_trajectory = init_trajectory()
     n = len(trajectory['observations'])
     original_desired_goal = trajectory['desired_goal'][0]
-    obs, _ = env.reset()
-    new_desired_goal = trajectory['desired_goal'][0]
+
+    state = env.reset()
+    new_desired_goal = state[0]['desired_goal']
+
+    while new_desired_goal[1] * original_desired_goal[1] < 0:
+        state = env.reset()
+        new_desired_goal = state[0]['desired_goal']
 
     for i in range(n):
         original_obs = trajectory['observations'][i]
@@ -47,16 +53,16 @@ def generate_aug_trajectory(trajectory):
         aug_obs = original_obs.copy()
         aug_obs[6:] = new_desired_goal.copy() 
         aug_obs[0] = new_desired_goal[0] + delta_x
-        aug_obs[1] = new_desired_goal[1] + delta_y
+        aug_obs[1] = new_desired_goal[1] + delta_y * flip
 
         original_next_obs = trajectory['next_observations'][i].copy()    
         delta_x = original_next_obs[0] - original_desired_goal[0]
         delta_y = original_next_obs[1] - original_desired_goal[1]
-
+    
         aug_next_obs = original_next_obs.copy()
         aug_next_obs[6:] = new_desired_goal.copy()
         aug_next_obs[0] = new_desired_goal[0] + delta_x
-        aug_next_obs[1] = new_desired_goal[1] + delta_y
+        aug_next_obs[1] = new_desired_goal[1] + delta_y * flip
         
         ## TODO how to get achieved goal, reward, and terminal:
         achieved_goal = aug_obs[6:].copy()
@@ -79,13 +85,13 @@ def generate_aug_trajectory(trajectory):
         new_state, _, _, _, _ = env.step(aug_action)
         true_obs = new_state['observation']
         print(f"difference: {true_obs - aug_next_obs[:6]}")
-
     return aug_trajectory
 
 dataset_path = f"/Users/yxqu/Desktop/Research/GuDA/GuidedDataAugmentationForRobotics/src/datasets/parking-v0/no_aug.hdf5"
 observed_dataset = load_dataset(dataset_path)
 
 n = len(observed_dataset['observations'])
+n = 100
 
 start_timestamp = 0
 aug_trajectories = init_trajectory()
