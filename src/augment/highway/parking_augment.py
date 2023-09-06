@@ -31,6 +31,42 @@ def get_trajectories(dataset, start_timestamp, end_timestamp):
             trajectory[key].append(dataset[key][i])
         trajectory[key] = np.array(trajectory[key])
     return trajectory
+
+GOALS = [
+    # top left
+    [-0.26, -0.14, 0, 0, 1, 0],
+    [-0.22, -0.14, 0, 0, 1, 0],
+    [-0.18, -0.14], 0, 0, 1, 0,
+    [-0.14, -0.14, 0, 0, 1, 0],
+    [-0.10, -0.14, 0, 0, 1, 0],
+    [-0.6, -0.14, 0, 0, 1, 0],
+    [-0.2, -0.14, 0, 0, 1, 0],
+    # top right
+    [0.26, -0.14, 0, 0, 1, 0],
+    [0.22, -0.14], 0, 0, 1, 0,
+    [0.18, -0.14, 0, 0, 1, 0],
+    [0.14, -0.14, 0, 0, 1, 0],
+    [0.10, -0.14, 0, 0, 1, 0],
+    [0.6, -0.14, 0, 0, 1, 0],
+    [0.2, -0.14, 0, 0, 1, 0],
+    # bottom left
+    [-0.26, 0.14, 0, 0, 0, -1],
+    [-0.22, 0.14, 0, 0, 0, -1],
+    [-0.18, 0.14, 0, 0, 0, -1],
+    [-0.14, 0.14, 0, 0, 0, -1],
+    [-0.10, 0.14, 0, 0, 0, -1],
+    [-0.6, 0.14, 0, 0, 0, -1],
+    [-0.2, 0.14, 0, 0, 0, -1],
+    # bottom right
+    [0.26, 0.14, 0, 0, 0, -1],
+    [0.22, 0.14, 0, 0, 0, -1],
+    [0.18, 0.14, 0, 0, 0, -1],
+    [0.14, 0.14, 0, 0, 0, -1],
+    [0.10, 0.14, 0, 0, 0, -1],
+    [0.6, 0.14, 0, 0, 0, -1],
+    [0.2, 0.14, 0, 0, 0, -1],
+]
+GOALS = np.array(GOALS)
 #
 # def sample_new_goal():
 #     if np.random.random() < 0.5:
@@ -40,7 +76,7 @@ def get_trajectories(dataset, start_timestamp, end_timestamp):
 #         is_top = np.random.random() < 0.5 # sample top spots w.p. 0.5
 #
 #         pos = idx * 2
-#
+
 
 
 def is_valid(obs):
@@ -60,6 +96,7 @@ def generate_aug_trajectory(trajectory):
 
     state = env.reset()
     new_desired_goal = state[0]['desired_goal']
+    new_desired_goal[0] = 0.22
 
     while new_desired_goal[1] * original_desired_goal[1] < 0:
         state = env.reset()
@@ -68,35 +105,71 @@ def generate_aug_trajectory(trajectory):
     print(f"new_desired_goal: {new_desired_goal}")
 
     final_pos = trajectory['observations'][-1, :2]
-    delta_x = final_pos[0] - original_desired_goal[0]
-    delta_y = final_pos[1] - original_desired_goal[1]
+    delta_to_goal = new_desired_goal[:2] - final_pos
+
 
     for i in range(n):
         original_obs = trajectory['observations'][i]
+        original_next_obs = trajectory['next_observations'][i]
 
         aug_obs = original_obs.copy()
-        aug_obs[6:] = new_desired_goal.copy() 
-        aug_obs[0] = new_desired_goal[0] + delta_x
-        aug_obs[1] = new_desired_goal[1] + delta_y
-
-        original_next_obs = trajectory['next_observations'][i].copy()    
-        delta_x = original_next_obs[0] - original_desired_goal[0]
-        delta_y = original_next_obs[1] - original_desired_goal[1]
-    
         aug_next_obs = original_next_obs.copy()
+
+        # TRANSLATE
+        # set goal
+        aug_obs[6:] = new_desired_goal.copy()
         aug_next_obs[6:] = new_desired_goal.copy()
-        aug_next_obs[0] = new_desired_goal[0] + delta_x
-        aug_next_obs[1] = new_desired_goal[1] + delta_y
-        
+
+        # translate such that final pos is at goal
+        aug_obs[:2] += delta_to_goal
+        aug_next_obs[:2] += delta_to_goal
+
+
+        # ROTATE
+        # set origin to goal, since we are rotating about the goal.
+        # aug_obs[:2] -= new_desired_goal[:2]
+        # aug_next_obs[:2] -= new_desired_goal[:2]
+        #
+        # # compute rotation matrix
+        # theta = np.random.uniform(-np.pi, np.pi)
+        # M = np.array([
+        #     [np.cos(theta), -np.sin(theta)],
+        #     [np.sin(theta), np.cos(theta)]
+        # ])
+        #
+        # # rotate positions about desired goal
+        # aug_obs[:2] = M.dot(aug_obs[:2]).T
+        # aug_next_obs[:2] = M.dot(aug_next_obs[:2]).T
+        #
+        # # shift origin back to normal
+        # aug_obs[:2] += new_desired_goal[:2]
+        # aug_next_obs[:2] += new_desired_goal[:2]
+        #
+        # # rotate heading
+        # heading = np.arctan2(aug_obs[5], aug_obs[4])
+        # next_heading = np.arctan2(aug_next_obs[5], aug_next_obs[4])
+        # aug_heading = heading + theta
+        # aug_next_heading = next_heading + theta
+        # aug_obs[4] = np.cos(aug_heading)
+        # aug_obs[5] = np.sin(aug_heading)
+        # aug_next_obs[4] = np.cos(aug_next_heading)
+        # aug_next_obs[5] = np.sin(aug_next_heading)
+
+        # action does not change, since it's defined related to the car's heading.
+
         ## TODO how to get achieved goal, reward, and terminal:
-        achieved_goal = aug_obs[6:].copy()
+        achieved_goal = aug_next_obs[:6].copy()
         aug_reward = env.compute_reward(achieved_goal, new_desired_goal, {})
         aug_action = trajectory['actions'][i]
         aug_terminal = trajectory['terminals'][i]
 
-        if (not is_valid(aug_obs)) or (not is_valid(aug_next_obs)):
-            
-            break
+        # rotate position
+
+
+
+        # if (not is_valid(aug_obs)) or (not is_valid(aug_next_obs)):
+        #
+        #     break
 
         aug_trajectory['observations'].append(aug_obs)
         aug_trajectory['actions'].append(aug_action)
@@ -104,16 +177,16 @@ def generate_aug_trajectory(trajectory):
         aug_trajectory['rewards'].append(aug_reward)
         aug_trajectory['terminals'].append(aug_terminal)
         aug_trajectory['desired_goal'].append(new_desired_goal)
-        aug_state = {
-            'observation': aug_obs,
-            'desired_goal': new_desired_goal,
-            'achieved_goal': achieved_goal
-        }
-        env.set_state(aug_state)
-        new_state, _, _, _, _ = env.step(aug_action)
-        true_obs = new_state['observation']
-    if len(aug_trajectory['observations']) != 0:
-        print(f"difference: {true_obs - aug_next_obs[:6]}")
+        # aug_state = {
+        #     'observation': aug_obs,
+        #     'desired_goal': new_desired_goal,
+        #     'achieved_goal': achieved_goal
+        # }
+        # env.set_state(aug_state)
+        # new_state, _, _, _, _ = env.step(aug_action)
+        # true_obs = new_state['observation']
+    # if len(aug_trajectory['observations']) != 0:
+    #     print(f"difference: {true_obs - aug_next_obs[:6]}")
     return aug_trajectory
 
 dataset_path = f"../../datasets/parking-v0/no_aug.hdf5"
