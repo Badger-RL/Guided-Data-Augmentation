@@ -41,8 +41,11 @@ def simulate(env, model, num_episodes=None,  seed=0, render=False, flatten=True,
             else:
                 action = env.action_space.sample() # np.random.uniform(-1, +1, size=env.action_space.shape)
 
-            ep_observations.append(np.concatenate([obs['observation'], obs['desired_goal']]))
-            ep_desired_goal.append(obs['desired_goal'])
+            if isinstance(obs, dict):
+                ep_observations.append(np.concatenate([obs['observation'], obs['desired_goal']]))
+                ep_desired_goal.append(obs['desired_goal'])
+            else:
+                ep_observations.append(obs)
 
             obs, reward, terminated, truncated, info = env.step(action)
             done = terminated or truncated
@@ -54,7 +57,10 @@ def simulate(env, model, num_episodes=None,  seed=0, render=False, flatten=True,
             # action[1] += np.random.uniform(-0.05, +0.05)
 
             ep_actions.append(action)
-            ep_next_observations.append(np.concatenate([obs['observation'], obs['desired_goal']]))
+            if isinstance(obs, dict):
+                ep_next_observations.append(np.concatenate([obs['observation'], obs['desired_goal']]))
+            else:
+                ep_next_observations.append(obs)
             ep_rewards.append(reward)
             ep_dones.append(done)
             ep_infos.append(info)
@@ -126,9 +132,13 @@ if __name__ == "__main__":
         env_kwargs = {}
     env = gym.make(args.env_id, **env_kwargs)
 
-
+    ALGOS = {
+        'ddpg': DDPG,
+        'dqn': DQN,
+    }
+    algo_class = ALGOS[args.algo]
     args.policy_path = f'../../policies/{args.env_id}/{args.algo}/best_model.zip'
-    model = DDPG.load(args.policy_path, env)
+    model = algo_class.load(args.policy_path, env)
 
     data = simulate(env=env, model=model, num_episodes=args.num_episodes, render=False, skip_terminated_episodes=args.skip_terminated_episodes)
 
