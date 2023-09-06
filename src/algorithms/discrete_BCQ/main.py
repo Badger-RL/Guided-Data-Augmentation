@@ -223,7 +223,7 @@ def train_BCQ(env, replay_buffer, is_atari, num_actions, state_dim, device, args
 			# np.save(f"BCQ_{setting}", evaluations)
 
 			training_iters += int(parameters["eval_freq"])
-			print(f"Training iterations: {training_iters}")
+			# print(f"Training iterations: {training_iters}")
 
 
 # Runs policy for X episodes and returns average reward
@@ -243,7 +243,7 @@ def eval_policy(policy, env_name, seed, eval_episodes=50):
 		episode_reward = 0.0
 		while not done:
 			action = policy.select_action(np.array(state), eval=True)
-			if args.env == 'roundabout-v0' or args.env == 'intersection-v0':
+			if args.env == 'roundabout-v0' or args.env == 'two-way-v0':
 				state, reward, terminated, truncated, info = env.step(action)
 				done = terminated or truncated
 				if 'is_success' in info:
@@ -299,7 +299,7 @@ if __name__ == "__main__":
 		"eps_decay_period": 1,
 		# Evaluation
 		"eval_freq": 5e4,
-		"eval_eps": 1000,
+		"eval_eps": 0,
 		# Learning
 		"discount": 0.99,
 		"buffer_size": 15000,
@@ -316,11 +316,11 @@ if __name__ == "__main__":
 
 	# Load parameters
 	parser = argparse.ArgumentParser()
-	parser.add_argument("--env", default='intersection-v0')     # OpenAI gym environment name
+	parser.add_argument("--env", default='two-way-v0')     # OpenAI gym environment name
 	# parser.add_argument("--env", default='CartPole-v1')
 	parser.add_argument("--seed", default=0, type=int)             # Sets Gym, PyTorch and Numpy seeds
 	parser.add_argument("--buffer_name", default="Default")        # Prepends name to filename
-	parser.add_argument("--max_timesteps", default=10000, type=int)  # Max time steps to run environment or train for
+	parser.add_argument("--max_timesteps", default=1000000, type=int)  # Max time steps to run environment or train for
 	parser.add_argument("--BCQ_threshold", default=0.3, type=float)# Threshold hyper-parameter for BCQ
 	parser.add_argument("--low_noise_p", default=0.2, type=float)  # Probability of a low noise episode when generating buffer
 	parser.add_argument("--rand_action_p", default=0.2, type=float)# Probability of taking a random action when generating buffer, during non-low noise episode
@@ -331,24 +331,26 @@ if __name__ == "__main__":
 	# DQN parameters
 	parser.add_argument("--num_layers", default=1, type=int)
 	parser.add_argument("--hidden_dim", default=256, type=int)
-	parser.add_argument("--dataset_name", default="/Users/yxqu/Desktop/Research/GuDA/GuidedDataAugmentationForRobotics/src/algorithms/discrete_BCQ/buffers/intersection-v0_no_aug.hdf5", type=str)
+	parser.add_argument("--dataset_name", default="../../datasets/two-way-v0/no_aug.hdf5", type=str)
 
 	# Extended arguments from `regular_parameters`
 	parser.add_argument("--start_timesteps", default=2e2, type=float)
 	parser.add_argument("--initial_eps", default=0.1, type=float)
 	parser.add_argument("--end_eps", default=0.1, type=float)
 	parser.add_argument("--eps_decay_period", default=1, type=int)
-	parser.add_argument("--eval_freq", default=2e3, type=float)
-	parser.add_argument("--eval_eps", default=100, type=int)
+	parser.add_argument("--eval_freq", default=10e3, type=float)
+	parser.add_argument("--eval_eps", default=0, type=int)
 	parser.add_argument("--discount", default=0.99, type=float)
 	parser.add_argument("--buffer_size", default=15000, type=int)
 	parser.add_argument("--batch_size", default=32, type=int)
 	parser.add_argument("--optimizer", default="Adam", type=str)
-	parser.add_argument("--lr", default=5e-4, type=float) # for "optimizer_parameters" -> "lr"
+	parser.add_argument("--lr", default=3e-5, type=float) # for "optimizer_parameters" -> "lr"
 	parser.add_argument("--train_freq", default=1, type=int)
 	parser.add_argument("--polyak_target_update", action="store_true") # assuming it's boolean
 	parser.add_argument("--target_update_freq", default=1, type=int)
 	parser.add_argument("--tau", default=0.005, type=float)
+	parser.add_argument("--normalize", default=1, type=int)
+	parser.add_argument("--normalize_reward", default=0, type=int)
 
 	args = parser.parse_args()
 
@@ -415,7 +417,7 @@ if __name__ == "__main__":
 	# create replay buffer
 
 	state_dim = env.observation_space.shape[0]
-	if args.env == "intersection-v0":
+	if args.env == "two-way-v0":
 		action_dim = env.action_space.n
 	else:
 		action_dim = env.action_space.shape[0]
@@ -424,11 +426,17 @@ if __name__ == "__main__":
 		args.buffer_size = len(dataset['observations'])
 	replay_buffer = ReplayBuffer(
     	state_dim,
-    	action_dim,
+    	1,
         args.buffer_size,
         # args.device,
     )
+	dataset['actions'] = dataset['actions'].reshape(-1, 1)
 	replay_buffer.load_d4rl_dataset(dataset)
+	replay_buffer._actions = replay_buffer._actions.type(torch.int64)
+
+	# .astype(np.int64)
+	# self._actions = self._actions.type(torch.int64)
+
 	# replay_buffer = utils.ReplayBuffer(state_dim, is_atari, atari_preprocessing, parameters["batch_size"], parameters["buffer_size"], device)
 
 	if args.train_behavioral or args.generate_buffer:
