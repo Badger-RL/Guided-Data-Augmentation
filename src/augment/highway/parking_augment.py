@@ -26,10 +26,22 @@ def append_trajectory(trajectories, trajectory):
 def get_trajectories(dataset, start_timestamp, end_timestamp):
     trajectory = init_trajectory()
 
-    for i in range(start_timestamp, end_timestamp + 1):
-        for key in dataset:
+    for key in dataset:
+        for i in range(start_timestamp, end_timestamp + 1):
             trajectory[key].append(dataset[key][i])
+        trajectory[key] = np.array(trajectory[key])
     return trajectory
+#
+# def sample_new_goal():
+#     if np.random.random() < 0.5:
+#         # top
+#         idx = np.random.randint(1,7+1) # generate number in [1, 7]
+#         is_left = np.random.random() < 0.5 # sample left spots w.p. 0.5
+#         is_top = np.random.random() < 0.5 # sample top spots w.p. 0.5
+#
+#         pos = idx * 2
+#
+
 
 def generate_aug_trajectory(trajectory):
     env = gym.make('parking-v0', render_mode='rgb_array')
@@ -39,10 +51,12 @@ def generate_aug_trajectory(trajectory):
     obs, _ = env.reset()
     new_desired_goal = trajectory['desired_goal'][0]
 
+    final_pos = trajectory['observations'][-1, :2]
+    delta_x = final_pos[0] - original_desired_goal[0]
+    delta_y = final_pos[1] - original_desired_goal[1]
+
     for i in range(n):
         original_obs = trajectory['observations'][i]
-        delta_x = original_obs[0] - original_desired_goal[0]
-        delta_y = original_obs[1] - original_desired_goal[1]
 
         aug_obs = original_obs.copy()
         aug_obs[6:] = new_desired_goal.copy() 
@@ -82,7 +96,7 @@ def generate_aug_trajectory(trajectory):
 
     return aug_trajectory
 
-dataset_path = f"/Users/yxqu/Desktop/Research/GuDA/GuidedDataAugmentationForRobotics/src/datasets/parking-v0/no_aug.hdf5"
+dataset_path = f"../../datasets/parking-v0/no_aug.hdf5"
 observed_dataset = load_dataset(dataset_path)
 
 n = len(observed_dataset['observations'])
