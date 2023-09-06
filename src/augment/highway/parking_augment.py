@@ -43,13 +43,29 @@ def get_trajectories(dataset, start_timestamp, end_timestamp):
 #
 
 
+def is_valid(obs):
+    x, y = obs[0], obs[1]
+    if x >= -0.26 and x <= 0.26 and y >= -0.15 and y <= 0.15:
+        return True
+    else:
+        return False
+    
 def generate_aug_trajectory(trajectory):
+
     env = gym.make('parking-v0', render_mode='rgb_array')
+    
     aug_trajectory = init_trajectory()
     n = len(trajectory['observations'])
     original_desired_goal = trajectory['desired_goal'][0]
-    obs, _ = env.reset()
-    new_desired_goal = trajectory['desired_goal'][0]
+
+    state = env.reset()
+    new_desired_goal = state[0]['desired_goal']
+
+    while new_desired_goal[1] * original_desired_goal[1] < 0:
+        state = env.reset()
+        new_desired_goal = state[0]['desired_goal']
+    print(f"original_desired_goal: {original_desired_goal}")
+    print(f"new_desired_goal: {new_desired_goal}")
 
     final_pos = trajectory['observations'][-1, :2]
     delta_x = final_pos[0] - original_desired_goal[0]
@@ -66,7 +82,7 @@ def generate_aug_trajectory(trajectory):
         original_next_obs = trajectory['next_observations'][i].copy()    
         delta_x = original_next_obs[0] - original_desired_goal[0]
         delta_y = original_next_obs[1] - original_desired_goal[1]
-
+    
         aug_next_obs = original_next_obs.copy()
         aug_next_obs[6:] = new_desired_goal.copy()
         aug_next_obs[0] = new_desired_goal[0] + delta_x
@@ -77,6 +93,10 @@ def generate_aug_trajectory(trajectory):
         aug_reward = env.compute_reward(achieved_goal, new_desired_goal, {})
         aug_action = trajectory['actions'][i]
         aug_terminal = trajectory['terminals'][i]
+
+        if (not is_valid(aug_obs)) or (not is_valid(aug_next_obs)):
+            
+            break
 
         aug_trajectory['observations'].append(aug_obs)
         aug_trajectory['actions'].append(aug_action)
@@ -92,8 +112,8 @@ def generate_aug_trajectory(trajectory):
         env.set_state(aug_state)
         new_state, _, _, _, _ = env.step(aug_action)
         true_obs = new_state['observation']
+    if len(aug_trajectory['observations']) != 0:
         print(f"difference: {true_obs - aug_next_obs[:6]}")
-
     return aug_trajectory
 
 dataset_path = f"../../datasets/parking-v0/no_aug.hdf5"
