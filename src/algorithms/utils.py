@@ -420,7 +420,7 @@ def train_base(config, env, trainer):
                     is_cql = False
                     torch.save(
                         trainer.state_dict(),
-                        os.path.join(config.save_dir, f"model.pt"),
+                        os.path.join(config.save_dir, f"model_{t}.pt"),
                     )
 
                     # save best model
