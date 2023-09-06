@@ -18,13 +18,13 @@ BEHAVIORS = {
         'indices': (0, 800),
         'max_len': 1,
     },
-    'fish_out_ball_goal': {
-        'indices': (600, 1170),
-        'max_len': 1,
-    },
+    # 'fish_out_ball_goal': {
+    #     'indices': (600, 1170),
+    #     'max_len': 1,
+    # },
     'fish_out_ball_tight': {
         # 'indices': (1170, 1700),
-        'indices': (1370, 1700),
+        'indices': (1370, 1570),
         'max_len': 1,
     },
     # 'curve_before_goal': {
@@ -39,11 +39,15 @@ BEHAVIORS = {
         'max_len': 1,
     },
     'curve_to_goal_2': {
-        'indices': (2000, 2400),
+        'indices': (1900, 2500),
         # 'indices': (1950, 3295),
         # 'indices': (1950, 2650),
         'max_len': 1,
     },
+    # 'turnaround': {
+    #     'indices': (1250, 1800),
+    #     'max_len': 1,
+    # },
     # 'curve_to_goal_2': {
     #     # 'indices': (1950, 2995),
     #     'indices': (1950, 2650),
@@ -87,6 +91,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
         idx = np.random.randint(num_behaviors)
         # if np.random.random() < 0:
         #     idx = num_behaviors-1
+        # idx = idx % num_behaviors # hack to sample more curve_to_ball segments
         behavior = keys[idx]
         behavior_dict = BEHAVIORS[behavior]
         start_idx, end_idx = behavior_dict['indices']
@@ -145,13 +150,25 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             new_ball_final_pos_x = np.random.uniform(4500, 4700)
             new_ball_final_pos_y = np.random.uniform(-10, 10)
 
+
+        if behavior == 'turnaround':
+            # new_ball_final_pos_x = np.random.uniform(3200, 4200)
+            # new_ball_final_pos_y = np.random.uniform(-1500, -1300)
+            new_ball_final_pos_x = np.random.uniform(4501, 4510)
+            new_ball_final_pos_y = np.random.uniform(-300, 300)
+            theta_range = (60,120)
+            reflect = 0
+
+            ball_at_goal_x = aug_abs_obs[-1, 2].copy()
+            ball_at_goal_y = aug_abs_obs[-1, 3].copy()
+
         if behavior == 'fish_out_ball':
             # new_ball_final_pos_x = np.random.uniform(3200, 4200)
             # new_ball_final_pos_y = np.random.uniform(-1500, -1300)
             new_ball_final_pos_x = np.random.uniform(4300, 4400)
             new_ball_final_pos_y = np.random.uniform(-2500, -1500)
             theta_range = (30,120)
-            reflect = False
+            reflect = 0
 
             ball_at_goal_x = aug_abs_obs[0, 2].copy()
             ball_at_goal_y = aug_abs_obs[0, 3].copy()
@@ -162,7 +179,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             new_ball_final_pos_x = np.random.uniform(4300, 4400)
             new_ball_final_pos_y = np.random.uniform(-2500, -1500)
             theta_range = (-60,120)
-            reflect = False
+            reflect = 0
 
             ball_at_goal_x = aug_abs_obs[0, 2].copy()
             ball_at_goal_y = aug_abs_obs[0, 3].copy()
@@ -173,7 +190,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             new_ball_final_pos_x = np.random.uniform(4501, 4600)
             new_ball_final_pos_y = np.random.uniform(-100, 100)
             theta_range = (-120, -90)
-            reflect = True
+            reflect = 1
 
             ball_at_goal_x = aug_abs_obs[-1, 2].copy()
             ball_at_goal_y = aug_abs_obs[-1, 3].copy()
@@ -184,7 +201,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             # new_ball_final_pos_x = np.random.uniform(3500, 4400)
             new_ball_final_pos_y = np.random.uniform(2000, 1500)
             theta_range = (-90,-30)
-            reflect = True
+            reflect = 1
 
             ball_at_goal_x = aug_abs_obs[0, 2].copy()
             ball_at_goal_y = aug_abs_obs[0, 3].copy()
@@ -193,16 +210,16 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             new_ball_final_pos_x = np.random.uniform(3800, 4700)
             new_ball_final_pos_y = np.random.uniform(-300, 0)
             theta_range = (-90, -10)
-            reflect = True
+            reflect = 1
 
             ball_at_goal_x = aug_abs_obs[-1, 2].copy()
             ball_at_goal_y = aug_abs_obs[-1, 3].copy()
 
         if behavior == 'curve_to_goal_2':
             new_ball_final_pos_x = np.random.uniform(4501, 4700)
-            new_ball_final_pos_y = np.random.uniform(-300, 300)
+            new_ball_final_pos_y = np.random.uniform(-10, 10)
             theta_range = (-15, 15)
-            reflect = True
+            reflect = 1
 
             ball_at_goal_x = aug_abs_obs[-1, 2].copy()
             ball_at_goal_y = aug_abs_obs[-1, 3].copy()
@@ -213,7 +230,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             new_ball_final_pos_x = np.random.uniform(3900, 4100)
             new_ball_final_pos_y = np.random.uniform(3500, 2000)
             theta_range = (15, 30)
-            reflect = True
+            reflect = 1
 
             ball_at_goal_x = aug_abs_obs[-1, 0].copy()
             ball_at_goal_y = aug_abs_obs[-1, 0].copy()
@@ -225,7 +242,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             new_ball_final_pos_y = np.random.uniform(4200, 4500)
             theta_range = (15, 30)
             # theta_range = (90, 120)
-            reflect = True
+            reflect = 1
 
             ball_at_goal_x = aug_abs_obs[0, 0].copy()
             ball_at_goal_y = aug_abs_obs[0, 0].copy()
@@ -234,7 +251,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             new_ball_final_pos_x = np.random.uniform(4500, 4505)
             new_ball_final_pos_y = np.random.uniform(-3000, -751)
             theta_range = (15, 80)
-            reflect = False
+            reflect = 0
 
             ball_at_goal_x = aug_abs_obs[-1, 2].copy()
             ball_at_goal_y = aug_abs_obs[-1, 3].copy()
@@ -291,7 +308,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
         aug_abs_next_obs[:, 3] += new_ball_final_pos_y
 
 
-        if reflect:
+        if np.random.random() < reflect:
             aug_abs_obs[:, 1] *= -1
             aug_abs_next_obs[:, 1] *= -1
             aug_abs_obs[:, 3] *= -1
