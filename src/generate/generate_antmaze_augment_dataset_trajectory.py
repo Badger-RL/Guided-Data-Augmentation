@@ -46,6 +46,7 @@ for maze in ['umaze']:
         dataset_path = f"../datasets/antmaze-{maze}-diverse-v1/no_aug_no_collisions_relabeled.hdf5"
         select_trajectories_save_path = f"../datasets/{env_id}/no_aug.hdf5"
         generate_trajectories_save_path = f"../datasets/{env_id}/{aug}.hdf5"
+        # generate_trajectories_save_path = f"../datasets/{env_id}/{aug}_{int(generate_num_of_transitions/1e3)}k.hdf5"
 
         start_timestamps = timestamps[env_id]['start']
         end_timestamps = timestamps[env_id]['end']
