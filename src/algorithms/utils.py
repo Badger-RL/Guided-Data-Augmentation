@@ -408,7 +408,10 @@ def train_base(config, env, trainer):
                         trainer.actor.state_dict(),
                         os.path.join(config.save_dir, f"model_{t}.pt"),
                     )
-
+                    torch.save(
+                        trainer.state_dict(),
+                        os.path.join(config.save_dir, f"model.pt"),
+                    )
                     # save best model
                     if eval_score > best_eval_score:
                         best_eval_score = eval_score
@@ -422,7 +425,10 @@ def train_base(config, env, trainer):
                         trainer.state_dict(),
                         os.path.join(config.save_dir, f"model_{t}.pt"),
                     )
-
+                    torch.save(
+                        trainer.state_dict(),
+                        os.path.join(config.save_dir, f"model.pt"),
+                    )
                     # save best model
                     if eval_score > best_eval_score:
                         best_eval_score = eval_score
