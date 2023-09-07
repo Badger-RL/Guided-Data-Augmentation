@@ -7,8 +7,8 @@ import h5py
 
 
 dataset_path = f"/Users/yxqu/Desktop/Research/GuDA/GuidedDataAugmentationForRobotics/src/datasets/parking-v0/no_aug.hdf5"
-dataset_path = f"../../datasets/parking-v0/no_aug.hdf5"
-dataset_path = f"tmp.hdf5"
+dataset_path = f"../../datasets/parking-v0/guided_2.hdf5"
+# dataset_path = f"tmp.hdf5"
 observed_dataset = load_dataset(dataset_path)
 
 n = len(observed_dataset['observations'])

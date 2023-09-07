@@ -1,8 +1,6 @@
 import gymnasium as gym
 import numpy as np
 from matplotlib import pyplot as plt
-
-from augment.highway.parking_augment_transition import aug_middle
 from src.generate.utils import reset_data, append_data, load_dataset, npify
 import time
 import h5py
@@ -85,25 +83,28 @@ def is_valid(obs):
 
 
 def get_theta(obs):
-    x, y = obs[:, 0], obs[:, 1]
+    # x, y = obs[:, 0], obs[:, 1]
 
     agent_pos = obs[:2]
     goal_pos = obs[6:8]
-    delta = goal_pos - agent_pos
+    delta_goal = goal_pos - agent_pos
+
+    if delta_goal[0] > 0:
+        # goal is to the right
+        guide_theta = 0
+    else:
+        # goal is to the left
+        guide_theta = np.pi
+
+    theta = np.arctan2(obs[5], obs[4])
 
 
-    if np.abs(y) < 3:
-        if delta[0] > 0:
-            guide_theta = 0
-        else:
-            guide_theta = np.pi
-
-    return guide_theta + np.random.uniform(-np.pi/12, np.pi/12)
+    return guide_theta - theta# + np.random.uniform(-np.pi/12, np.pi/12)
 
 
 
 
-def generate_aug_trajectory(trajectory, random=False):
+def aug_middle(trajectory, random=False):
 
 
     aug_trajectory = init_trajectory()
@@ -133,36 +134,6 @@ def generate_aug_trajectory(trajectory, random=False):
         final_pos = trajectory['observations'][-1, :2]
         init_pos = trajectory['observations'][-1, :2]
 
-        # if park:
-        delta = new_desired_goal[:2] - final_pos
-        # else:
-        #     new_pos = np.random.uniform(low=[-0.26, -0.5], high=[0.26, 0.5])
-        #     delta = new_pos - init_pos
-
-        # compute theta
-        final_heading = np.arctan2(trajectory['observations'][-1, 5], trajectory['observations'][-1, 4])
-        if new_desired_goal[-1] > 0:
-            desired_theta = np.pi/2
-        else:
-            desired_theta = -np.pi/2
-
-        if random:
-            theta = np.random.uniform(-np.pi, np.pi)
-        else:
-            theta = desired_theta - final_heading
-
-        # if park:
-        #     theta = desired_theta - final_heading
-        # else:
-        #     theta = np.pi/2 + np.random.uniform(-np.pi/12, np.pi/12)
-        #     if np.random.random() < 0.5:
-        #         theta *= -1
-
-        # compute rotation matrix
-        M = np.array([
-            [np.cos(theta), -np.sin(theta)],
-            [np.sin(theta), np.cos(theta)]
-        ])
 
         original_obs = trajectory['observations']
         original_next_obs = trajectory['next_observations']
@@ -170,19 +141,40 @@ def generate_aug_trajectory(trajectory, random=False):
         aug_obs = original_obs.copy()
         aug_next_obs = original_next_obs.copy()
 
-        # TRANSLATE
         # set goal
         aug_obs[:, 6:] = new_desired_goal.copy()
         aug_next_obs[:, 6:] = new_desired_goal.copy()
+
+        goal_x = new_desired_goal[0]
+        if np.random.random() < 0.5:
+            new_pos = np.random.uniform(low=[goal_x, -0.005], high=[0.26, 0.005])
+        else:
+            new_pos = np.random.uniform(low=[-0.26, -0.005], high=[goal_x, 0.005])
+
+        # new_pos = np.random.uniform(low=[-0.26, -0.01], high=[0.26, 0.01])
+        delta = new_pos - final_pos
+        new_final_pos = aug_next_obs[-1, :2]
+        # TRANSLATE
+
 
         # translate such that final pos is at goal
         aug_obs[:, :2] += delta
         aug_next_obs[:, :2] += delta
 
+        # compute theta
+        theta = get_theta(aug_next_obs[-1])
+
+        # compute rotation matrix
+        M = np.array([
+            [np.cos(theta), -np.sin(theta)],
+            [np.sin(theta), np.cos(theta)]
+        ])
+
+
         # ROTATE
         # set origin to goal, since we are rotating about the goal.
-        aug_obs[:, :2] -= new_desired_goal[:2]
-        aug_next_obs[:, :2] -= new_desired_goal[:2]
+        aug_obs[:, :2] -= new_final_pos
+        aug_next_obs[:, :2] -= new_final_pos
 
         # rotate positions about desired goal
         aug_obs[:, :2] = M.dot(aug_obs[:, :2].T).T
@@ -192,8 +184,8 @@ def generate_aug_trajectory(trajectory, random=False):
         aug_next_obs[:, 2:4] = M.dot(aug_next_obs[:, 2:4].T).T
 
         # shift origin back to normal
-        aug_obs[:, :2] += new_desired_goal[:2]
-        aug_next_obs[:, :2] += new_desired_goal[:2]
+        aug_obs[:, :2] += new_final_pos
+        aug_next_obs[:, :2] += new_final_pos
 
         # rotate heading
         heading = np.arctan2(aug_obs[:, 5], aug_obs[:, 4])
@@ -254,35 +246,27 @@ n = len(observed_dataset['observations'])
 aug_trajectories = init_trajectory()
 
 
-max_aug = 1e6
+max_aug = 500
 aug_count = 0
 
-while aug_count < max_aug:
-    start_timestamp = 0
-    for i in range(n):
-        if observed_dataset['terminals'][i]:
-            trajectory = get_trajectories(observed_dataset, start_timestamp, i)
-            start_timestamp = (i + 1)
-            aug_trajectory = generate_aug_trajectory(trajectory)
-            if aug_trajectory is None:
-                continue
-            append_trajectory(aug_trajectories, aug_trajectory)
-            aug_count += len(aug_trajectory['observations'])
-    start_timestamp = 0
-    for i in range(5, n, 5):
-        trajectory = get_trajectories(observed_dataset, start_timestamp, i)
-        start_timestamp = (i + 1)
-        aug_trajectory = aug_middle(trajectory)
-        if aug_trajectory is None:
-            continue
-        append_trajectory(aug_trajectories, aug_trajectory)
-        aug_count += len(aug_trajectory['observations'])
-    print(f'aug_count = {aug_count}')
 
-dataset = h5py.File("../../datasets/parking-v0/guided_2.hdf5", 'w')
-for k in aug_trajectories:
-    aug_trajectories[k] = np.concatenate(aug_trajectories[k])
-    dataset.create_dataset(k, data=np.array(aug_trajectories[k]), compression='gzip')
+
+# while aug_count < max_aug:
+#     start_timestamp = 0
+#     for i in range(0, n, 5):
+#         trajectory = get_trajectories(observed_dataset, start_timestamp, i)
+#         start_timestamp = (i + 1)
+#         aug_trajectory = aug_middle(trajectory)
+#         if aug_trajectory is None:
+#             continue
+#         append_trajectory(aug_trajectories, aug_trajectory)
+#         aug_count += len(aug_trajectory['observations'])
+#     print(f'aug_count = {aug_count}')
+#
+# dataset = h5py.File("../../datasets/parking-v0/guided_2.hdf5", 'w')
+# for k in aug_trajectories:
+#     aug_trajectories[k] = np.concatenate(aug_trajectories[k])
+#     dataset.create_dataset(k, data=np.array(aug_trajectories[k]), compression='gzip')
 
 
 
