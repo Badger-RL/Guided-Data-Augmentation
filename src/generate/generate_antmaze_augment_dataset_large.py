@@ -33,6 +33,7 @@ for maze in ['umaze']:
 
             env_id = f'antmaze-{maze}-diverse-v1'
             d4rl_dataset_path = f"../datasets/antmaze-{maze}-diverse-v1/no_aug_relabeled.hdf5"
+            demo_size = int(10e3)
             to_aug_dataset_path = f"../datasets/antmaze-{maze}-diverse-v1/no_aug_no_collisions_relabeled.hdf5"
 
             save_dir = f'../datasets/{env_id}/s_{int(aug_size / 1e3)}k'
@@ -94,6 +95,6 @@ for maze in ['umaze']:
 
             npify(augmented_trajectories)
             for k in augmented_trajectories:
-                data = np.concatenate([d4rl_dataset[k], augmented_trajectories[k]])
+                data = np.concatenate([d4rl_dataset[k][:demo_size], augmented_trajectories[k]])
                 augmented_trajectory_dataset.create_dataset(k, data=data, compression='gzip')
             augmented_trajectory_dataset.close()
