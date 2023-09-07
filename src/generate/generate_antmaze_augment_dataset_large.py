@@ -26,14 +26,14 @@ timestamps = {
     }
 }
 
-for maze in ['umaze']:
+for maze in ['umaze', 'medium', 'large']:
     for aug in ['guided']:
-        for aug_size in [1e6]:
-            aug_size = int(aug_size)
+        for demo_size in [50e3]:
+            aug_size = int(1e6)
+            demo_size = int(demo_size)
 
             env_id = f'antmaze-{maze}-diverse-v1'
             d4rl_dataset_path = f"../datasets/antmaze-{maze}-diverse-v1/no_aug_relabeled.hdf5"
-            demo_size = int(10e3)
             to_aug_dataset_path = f"../datasets/antmaze-{maze}-diverse-v1/no_aug_no_collisions_relabeled.hdf5"
 
             save_dir = f'../datasets/{env_id}/s_{int(aug_size / 1e3)}k'
@@ -43,6 +43,9 @@ for maze in ['umaze']:
             env = gym.make(env_id)
             d4rl_dataset = load_dataset(d4rl_dataset_path)
             to_aug_dataset = load_dataset(to_aug_dataset_path)
+            for k, v in to_aug_dataset.items():
+                to_aug_dataset[k] = v[:demo_size]
+
             n = len(to_aug_dataset['rewards'])
 
             start_timestamps = np.arange(0, n - 30, 30)
