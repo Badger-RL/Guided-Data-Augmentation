@@ -6,23 +6,27 @@ from src.augment.utils import convert_to_absolute_obs, calculate_reward, convert
 
 
 BEHAVIORS = {
-    'kick_away_from_sideline': {
-        # 'indices': (1170, 1700),
-        'indices': (1370, 1570),
+    'walk_to_ball': {
+        'indices': (0, 1370),
         'max_len': 1,
     },
     'get_behind_ball_sideline': {
         'indices': (0, 800),
         'max_len': 1,
     },
-    'get_behind_ball_goal': {
-        'indices': (1210, 1500),
-        'max_len': 1,
-    },
-    'kick_to_goal': {
-        'indices': (2200, 2600),
-        'max_len': 1,
-    },
+    # 'kick_away_from_sideline': {
+    #     # 'indices': (1170, 1700),
+    #     'indices': (1370, 1570),
+    #     'max_len': 1,
+    # },
+    # 'get_behind_ball_goal': {
+    #     'indices': (1210, 1500),
+    #     'max_len': 1,
+    # },
+    # 'kick_to_goal': {
+    #     'indices': (2200, 2600),
+    #     'max_len': 1,
+    # },
 }
 
 def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
@@ -98,6 +102,16 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             new_ball_final_pos_x = np.random.uniform(4500, 4700)
             new_ball_final_pos_y = np.random.uniform(-10, 10)
 
+        if behavior == 'walk_to_ball':
+            new_ball_final_pos_x = np.random.uniform(-300, 300)
+            new_ball_final_pos_y = np.random.uniform(-300, 300)
+            theta_range = (0,0)
+            reflect = 0
+
+            ball_at_goal_x = aug_abs_obs[0, 2].copy()
+            ball_at_goal_y = aug_abs_obs[0, 3].copy()
+
+
         if behavior == 'get_behind_ball_sideline':
             new_ball_final_pos_x = np.random.uniform(4300, 4400)
             new_ball_final_pos_y = np.random.uniform(-2500, -1500)
@@ -156,6 +170,15 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             aug_abs_obs[:, 2:4] = ball_init + noise
             aug_abs_next_obs[:, 2:4] = ball_init + noise
 
+        if behavior in ['walk_to_ball']:
+            # set ball to wherever the agent is at the end of the segment.
+            n = len(aug_abs_obs)
+            x = np.random.uniform(4000,4400)
+            y = np.random.uniform(-2500,-1500)
+            ball_init = np.array([x, y])
+            noise = np.random.uniform(-300, 300, size=(len(aug_abs_obs), 2))
+            aug_abs_obs[:, 2:4] = ball_init + noise
+            aug_abs_next_obs[:, 2:4] = ball_init + noise
 
         aug_abs_obs[:, 0] += traj_delta_x
         aug_abs_obs[:, 1] += traj_delta_y
