@@ -101,7 +101,7 @@ def get_theta(obs):
 
 
 
-def generate_aug_trajectory(trajectory):
+def generate_aug_trajectory(trajectory, random=False):
 
 
     aug_trajectory = init_trajectory()
@@ -144,15 +144,19 @@ def generate_aug_trajectory(trajectory):
         else:
             desired_theta = -np.pi/2
 
-        # compute rotation matrix
-        # theta = np.random.uniform(-np.pi, np.pi)
+        if random:
+            theta = np.random.uniform(-np.pi, np.pi)
+        else:
+            theta = desired_theta - final_heading
+
         # if park:
-        theta = desired_theta - final_heading
+        #     theta = desired_theta - final_heading
         # else:
         #     theta = np.pi/2 + np.random.uniform(-np.pi/12, np.pi/12)
         #     if np.random.random() < 0.5:
         #         theta *= -1
 
+        # compute rotation matrix
         M = np.array([
             [np.cos(theta), -np.sin(theta)],
             [np.sin(theta), np.cos(theta)]
@@ -248,7 +252,7 @@ n = len(observed_dataset['observations'])
 aug_trajectories = init_trajectory()
 
 
-max_aug = 1e5
+max_aug = 1e6
 aug_count = 0
 
 while aug_count < max_aug:
@@ -264,7 +268,7 @@ while aug_count < max_aug:
             aug_count += len(aug_trajectory['observations'])
     print(f'aug_count = {aug_count}')
 
-dataset = h5py.File("../../datasets/parking-v0/guided_2.hdf5", 'w')
+dataset = h5py.File("../../datasets/parking-v0/random.hdf5", 'w')
 for k in aug_trajectories:
     aug_trajectories[k] = np.concatenate(aug_trajectories[k])
     dataset.create_dataset(k, data=np.array(aug_trajectories[k]), compression='gzip')
