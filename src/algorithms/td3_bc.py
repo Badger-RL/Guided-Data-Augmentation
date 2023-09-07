@@ -20,10 +20,10 @@ TensorBatch = List[torch.Tensor]
 @dataclass
 class TrainConfig(TrainConfigBase):
     # TD3
-    hidden_dims: int =128
-    n_layers: int = 1
+    hidden_dims: int = 64
+    n_layers: int = 2
     buffer_size: int = None  # Replay buffer size
-    batch_size: int = 256  # Batch size for all networks
+    batch_size: int = 64  # Batch size for all networks
     gamma: float = 0.99  # gamma for
     expl_noise: float = 0.1  # Std of Gaussian exploration noise
     tau: float = 0.005  # Target network update rate
