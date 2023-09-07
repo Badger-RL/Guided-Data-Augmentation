@@ -6,27 +6,27 @@ from src.augment.utils import convert_to_absolute_obs, calculate_reward, convert
 
 
 BEHAVIORS = {
-    'walk_to_ball': {
-        'indices': (0, 1370),
-        'max_len': 1,
-    },
+    # 'walk_to_ball': {
+    #     'indices': (0, 1370),
+    #     'max_len': 1,
+    # },
     'get_behind_ball_sideline': {
         'indices': (0, 800),
         'max_len': 1,
     },
-    # 'kick_away_from_sideline': {
-    #     # 'indices': (1170, 1700),
-    #     'indices': (1370, 1570),
-    #     'max_len': 1,
-    # },
-    # 'get_behind_ball_goal': {
-    #     'indices': (1210, 1500),
-    #     'max_len': 1,
-    # },
-    # 'kick_to_goal': {
-    #     'indices': (2200, 2600),
-    #     'max_len': 1,
-    # },
+    'kick_away_from_sideline': {
+        # 'indices': (1170, 1700),
+        'indices': (1370, 1570),
+        'max_len': 1,
+    },
+    'get_behind_ball_goal': {
+        'indices': (1210, 1500),
+        'max_len': 1,
+    },
+    'kick_to_goal': {
+        'indices': (2200, 2600),
+        'max_len': 1,
+    },
 }
 
 def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
@@ -113,8 +113,8 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
 
 
         if behavior == 'get_behind_ball_sideline':
-            new_ball_final_pos_x = np.random.uniform(4300, 4400)
-            new_ball_final_pos_y = np.random.uniform(-2500, -1500)
+            new_ball_final_pos_x = np.random.uniform(2500, 3500)
+            new_ball_final_pos_y = np.random.uniform(-1400, -2200)
             theta_range = (-60,60)
             reflect = 0
 
@@ -122,8 +122,8 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             ball_at_goal_y = aug_abs_obs[0, 3].copy()
 
         if behavior == 'kick_away_from_sideline':
-            new_ball_final_pos_x = np.random.uniform(4300, 4400)
-            new_ball_final_pos_y = np.random.uniform(2000, 1500)
+            new_ball_final_pos_x = np.random.uniform(2500, 3500)
+            new_ball_final_pos_y = np.random.uniform(1400, 2200)
             theta_range = (-90,-30)
             reflect = 1
 
@@ -131,7 +131,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             ball_at_goal_y = aug_abs_obs[0, 3].copy()
 
         if behavior == 'get_behind_ball_goal':
-            new_ball_final_pos_x = np.random.uniform(3800, 4400)
+            new_ball_final_pos_x = np.random.uniform(2500, 3500)
             new_ball_final_pos_y = np.random.uniform(-300, 300)
             theta_range = (-20, 20)
             reflect = 0
@@ -148,7 +148,8 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
 
 
         if behavior == 'kick_to_goal':
-            new_ball_final_pos_x = np.random.uniform(3800, 4700)
+            new_ball_final_pos_x = np.random.uniform(2000, 3700)
+            # new_ball_final_pos_y = np.random.uniform(-1400, -2200)
             new_ball_final_pos_y = np.random.uniform(-300, 0)
             theta_range = (-90, -10)
             reflect = 1
@@ -173,8 +174,8 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
         if behavior in ['walk_to_ball']:
             # set ball to wherever the agent is at the end of the segment.
             n = len(aug_abs_obs)
-            x = np.random.uniform(4000,4400)
-            y = np.random.uniform(-2500,-1500)
+            x = np.random.uniform(2500, 3500)
+            y = np.random.uniform(-1400, -2200)
             ball_init = np.array([x, y])
             noise = np.random.uniform(-300, 300, size=(len(aug_abs_obs), 2))
             aug_abs_obs[:, 2:4] = ball_init + noise
