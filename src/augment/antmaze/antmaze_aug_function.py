@@ -535,8 +535,28 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
         return valid_locations
 
 
+    def get_direction(self, obs, final_obs):
+        init_pos = obs[:2]
+        final_pos = final_obs[:2]
+
+        delta = final_pos - init_pos
+        theta = np.arctan2(delta[1], delta[0])
+
+        if np.linalg.norm(delta) < 2:
+            return 0
+        if np.abs(theta - 0) < np.pi/4:
+            return 1
+        if np.abs(theta - np.pi/2) < np.pi/4:
+            return 2
+        if np.abs(theta - np.pi) < np.pi/4:
+            return 3
+        if np.abs(theta + np.pi/2) < np.pi/4:
+            return 4
+
     def augment_trajectory(self, trajectory: dict, direction):
         length = len(trajectory['observations'])
+
+        # print(direction, direction2)
 
         augmented_trajectory = {
             'observations': [],
@@ -545,17 +565,20 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
             'next_observations': [],
             'terminals': [],
         }
-
-        valid_locations = self.get_valid_locations(direction)
-        if len(valid_locations) == 0:
-            return augmented_trajectory
         is_new_trajectory = True
+
         for i in range(length):
             observation = trajectory['observations'][i]
             action = trajectory['actions'][i]
             next_observation = trajectory['next_observations'][i]
 
+
             if is_new_trajectory:
+                direction = self.get_direction(trajectory['observations'][i], trajectory['next_observations'][-1])
+                valid_locations = self.get_valid_locations(direction)
+                if len(valid_locations) == 0:
+                    return augmented_trajectory
+
                 idx = np.random.choice(len(valid_locations))
                 location = np.array(valid_locations[idx]).astype(self.env.observation_space.dtype)
                 boundary = self._get_valid_boundaries(*location)
