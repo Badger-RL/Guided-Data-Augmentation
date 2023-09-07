@@ -9,7 +9,6 @@ import torch.nn as nn
 import torch.nn.functional
 
 from src.algorithms.utils import TensorBatch, TrainConfigBase, train_base
-
 @dataclass
 class TrainConfig(TrainConfigBase):
     buffer_size: int = None
@@ -17,8 +16,10 @@ class TrainConfig(TrainConfigBase):
     eval_freq: int = 10000
 
     n_layers: int = 1
-    hidden_dim: int = 256
+    hidden_dim: int = 128
     learning_rate: float = 3e-4
+    actor_lr: float = 3e-5
+    critic_lr: float = 3e-6
     gamma: float = 0.99
     tau: float = 5e-3
     awac_lambda: float = 1.0
@@ -259,13 +260,13 @@ def train(config: TrainConfig):
 
     actor = Actor(**actor_critic_kwargs)
     actor.to(config.device)
-    actor_optimizer = torch.optim.Adam(actor.parameters(), lr=config.learning_rate)
+    actor_optimizer = torch.optim.Adam(actor.parameters(), lr=config.actor_lr)
     critic_1 = Critic(**actor_critic_kwargs)
     critic_2 = Critic(**actor_critic_kwargs)
     critic_1.to(config.device)
     critic_2.to(config.device)
-    critic_1_optimizer = torch.optim.Adam(critic_1.parameters(), lr=config.learning_rate)
-    critic_2_optimizer = torch.optim.Adam(critic_2.parameters(), lr=config.learning_rate)
+    critic_1_optimizer = torch.optim.Adam(critic_1.parameters(), lr=config.critic_lr)
+    critic_2_optimizer = torch.optim.Adam(critic_2.parameters(), lr=config.critic_lr)
 
     trainer = AdvantageWeightedActorCritic(
         actor=actor,
