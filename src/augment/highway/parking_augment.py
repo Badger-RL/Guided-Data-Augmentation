@@ -19,9 +19,8 @@ def init_trajectory():
     return trajectory
 
 def append_trajectory(trajectories, trajectory):
-    for key in trajectory:
-        for i in range(len(trajectory[key])):
-            trajectories[key].append(trajectory[key][i])
+    for key, val in trajectory.items():
+        trajectories[key].append(val)
 
 def get_trajectories(dataset, start_timestamp, end_timestamp):
     trajectory = init_trajectory()
@@ -70,8 +69,9 @@ GOALS = np.array(GOALS)
 
 
 def is_valid(obs):
-    x, y = obs[0], obs[1]
-    if x >= -0.26 and x <= 0.26 and y >= -0.15 and y <= 0.15:
+    x, y = obs[:, 0], obs[:, 1]
+
+    if np.all((x >= -0.26) & (x <= 0.26) & (y >= -0.15) & (y <= 0.15)):
         return True
     else:
         return False
@@ -110,80 +110,68 @@ def generate_aug_trajectory(trajectory):
             [np.sin(theta), np.cos(theta)]
         ])
 
-        for i in range(n):
-            original_obs = trajectory['observations'][i]
-            original_next_obs = trajectory['next_observations'][i]
+        original_obs = trajectory['observations']
+        original_next_obs = trajectory['next_observations']
 
-            aug_obs = original_obs.copy()
-            aug_next_obs = original_next_obs.copy()
+        aug_obs = original_obs.copy()
+        aug_next_obs = original_next_obs.copy()
 
-            # TRANSLATE
-            # set goal
-            aug_obs[6:] = new_desired_goal.copy()
-            aug_next_obs[6:] = new_desired_goal.copy()
+        # TRANSLATE
+        # set goal
+        aug_obs[:, 6:] = new_desired_goal.copy()
+        aug_next_obs[:, 6:] = new_desired_goal.copy()
 
-            # translate such that final pos is at goal
-            aug_obs[:2] += delta_to_goal
-            aug_next_obs[:2] += delta_to_goal
+        # translate such that final pos is at goal
+        aug_obs[:, :2] += delta_to_goal
+        aug_next_obs[:, :2] += delta_to_goal
 
-            # ROTATE
-            # set origin to goal, since we are rotating about the goal.
-            aug_obs[:2] -= new_desired_goal[:2]
-            aug_next_obs[:2] -= new_desired_goal[:2]
+        # ROTATE
+        # set origin to goal, since we are rotating about the goal.
+        aug_obs[:, :2] -= new_desired_goal[:2]
+        aug_next_obs[:, :2] -= new_desired_goal[:2]
 
-            # rotate positions about desired goal
-            aug_obs[:2] = M.dot(aug_obs[:2]).T
-            aug_next_obs[:2] = M.dot(aug_next_obs[:2]).T
-            # rotate velocities
-            aug_obs[2:4] = M.dot(aug_obs[2:4]).T
-            aug_next_obs[2:4] = M.dot(aug_next_obs[2:4]).T
+        # rotate positions about desired goal
+        aug_obs[:, :2] = M.dot(aug_obs[:, :2].T).T
+        aug_next_obs[:, :2] = M.dot(aug_next_obs[:, :2].T).T
+        # rotate velocities
+        aug_obs[:, 2:4] = M.dot(aug_obs[:, 2:4].T).T
+        aug_next_obs[:, 2:4] = M.dot(aug_next_obs[:, 2:4].T).T
 
-            # shift origin back to normal
-            aug_obs[:2] += new_desired_goal[:2]
-            aug_next_obs[:2] += new_desired_goal[:2]
+        # shift origin back to normal
+        aug_obs[:, :2] += new_desired_goal[:2]
+        aug_next_obs[:, :2] += new_desired_goal[:2]
 
-            # rotate heading
-            heading = np.arctan2(aug_obs[5], aug_obs[4])
-            next_heading = np.arctan2(aug_next_obs[5], aug_next_obs[4])
-            aug_heading = heading + theta
-            aug_next_heading = next_heading + theta
-            aug_obs[4] = np.cos(aug_heading)
-            aug_obs[5] = np.sin(aug_heading)
-            aug_next_obs[4] = np.cos(aug_next_heading)
-            aug_next_obs[5] = np.sin(aug_next_heading)
+        # rotate heading
+        heading = np.arctan2(aug_obs[:, 5], aug_obs[:, 4])
+        next_heading = np.arctan2(aug_next_obs[:, 5], aug_next_obs[:, 4])
+        aug_heading = heading + theta
+        aug_next_heading = next_heading + theta
+        aug_obs[:, 4] = np.cos(aug_heading)
+        aug_obs[:, 5] = np.sin(aug_heading)
+        aug_next_obs[:, 4] = np.cos(aug_next_heading)
+        aug_next_obs[:, 5] = np.sin(aug_next_heading)
 
-            # action does not change, since it's defined related to the car's heading.
+        # action does not change, since it's defined related to the car's heading.
 
-            ## TODO how to get achieved goal, reward, and terminal:
-            achieved_goal = aug_next_obs[:6].copy()
-            aug_reward = env.compute_reward(achieved_goal, new_desired_goal, {})
-            # print(aug_reward)
-            aug_action = trajectory['actions'][i]
-            aug_terminal = trajectory['terminals'][i]
+        ## TODO how to get achieved goal, reward, and terminal:
+        achieved_goal = aug_next_obs[:, :6].copy()
+        aug_reward = env.compute_reward(achieved_goal, new_desired_goal, {})
+        # print(aug_reward)
+        aug_action = trajectory['actions'].copy()
+        aug_terminal = trajectory['terminals'].copy()
+        aug_terminal[-1] = True
 
-            # rotate position
-            if (not is_valid(aug_obs)) or (not is_valid(aug_next_obs)):
-                break
+        # rotate position
+        if (not is_valid(aug_obs)) or (not is_valid(aug_next_obs)):
+            success = False
+            break
 
-            aug_trajectory['observations'].append(aug_obs)
-            aug_trajectory['actions'].append(aug_action)
-            aug_trajectory['next_observations'].append(aug_next_obs)
-            aug_trajectory['rewards'].append(aug_reward)
-            aug_trajectory['terminals'].append(aug_terminal)
-            aug_trajectory['desired_goal'].append(new_desired_goal)
-            aug_state = {
-                'observation': aug_obs.copy(),
-                'desired_goal': new_desired_goal.copy(),
-                'achieved_goal': achieved_goal.copy()
-            }
-            env.set_state(aug_state)
-            new_state, _, _, _, _ = env.step(aug_action)
-            true_next_obs = new_state['observation']
-            if len(aug_trajectory['observations']) != 0:
-                if not np.allclose(true_next_obs, aug_next_obs[:6]):
-                    print(f"{i} difference: {true_next_obs - aug_next_obs[:6]}")
-
-        success = (len(aug_trajectory['observations']) == n)
+        aug_trajectory['observations'] = aug_obs
+        aug_trajectory['actions'] = aug_action
+        aug_trajectory['next_observations'] = aug_next_obs
+        aug_trajectory['rewards'] = aug_reward
+        aug_trajectory['terminals'] = aug_terminal
+        success = True
     # print(f'success = {success}')
     if not success:
         return None
@@ -199,7 +187,7 @@ n = len(observed_dataset['observations'])
 aug_trajectories = init_trajectory()
 
 
-max_aug = 1e6
+max_aug = 1e5
 aug_count = 0
 
 while aug_count < max_aug:
@@ -217,6 +205,7 @@ while aug_count < max_aug:
 
 dataset = h5py.File("../../datasets/parking-v0/guided.hdf5", 'w')
 for k in aug_trajectories:
+    aug_trajectories[k] = np.concatenate(aug_trajectories[k])
     dataset.create_dataset(k, data=np.array(aug_trajectories[k]), compression='gzip')
 
 
