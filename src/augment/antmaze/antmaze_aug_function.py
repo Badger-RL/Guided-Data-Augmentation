@@ -418,10 +418,13 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
         l = len(self.env.maze_arr)
         if l == 5:
             self.get_valid_locations = self.valid_locations_umaze
+            self.get_guide_theta = self.get_guide_theta_umaze
         elif l == 8:
             self.get_valid_locations = self.valid_locations_medium
+            self.get_guide_medium = self.get_guide_theta_medium
         else:
             self.get_valid_locations = self.valid_locations_large
+            self.get_guide_large = self.get_guide_theta_large
 
     def _get_location(self, obs):
         #location = (int(np.round(obs[0]+self.agent_offset)), int(np.round(obs[1]+self.agent_offset)))
@@ -478,6 +481,19 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
             valid_locations = []
 
         return valid_locations
+
+    def get_guide_theta_umaze(self, location):
+
+        location = (int(location[0]), int(location[1]))
+        if location in [(1, 3)]:
+            return np.random.uniform(0, 2 * np.pi)
+        elif location in [(1, 1), (2, 1)]: # right
+            return 0
+        elif location in [(3, 1), (3, 2)]: # up
+            return np.pi/2
+        elif location in  [(2, 3), (3, 3)]: # left
+            return np.pi
+
 
     def valid_locations_medium(self, direction):
 
@@ -546,11 +562,11 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
             return 0
         if np.abs(theta - 0) < np.pi/4:
             return 1
-        if np.abs(theta - np.pi/2) < np.pi/4:
+        if np.abs(theta - np.pi/2) < np.pi/2:
             return 2
-        if np.abs(theta - np.pi) < np.pi/4:
+        if np.abs(theta - np.pi) < np.pi/2:
             return 3
-        if np.abs(theta + np.pi/2) < np.pi/4:
+        if np.abs(theta + np.pi/2) < np.pi/2:
             return 4
 
     def augment_trajectory(self, trajectory: dict, direction):
@@ -621,6 +637,108 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
                 i -= 1
         return augmented_trajectory
 
+    # def augment_trajectory(self, trajectory: dict, direction):
+    #     length = len(trajectory['observations'])
+    #
+    #     # print(direction, direction2)
+    #
+    #     augmented_trajectory = {
+    #         'observations': [],
+    #         'actions': [],
+    #         'rewards': [],
+    #         'next_observations': [],
+    #         'terminals': [],
+    #     }
+    #     is_new_trajectory = True
+    #
+    #     for i in range(length):
+    #         observation = trajectory['observations'][i]
+    #         action = trajectory['actions'][i]
+    #         next_observation = trajectory['next_observations'][i]
+    #
+    #
+    #         if is_new_trajectory:
+    #             init_obs = trajectory['observations'][i]
+    #             final_obs = trajectory['next_observations'][-1]
+    #             # direction = self.get_direction(init_obs, final_obs)
+    #             # print(direction)
+    #             new_pos, aug_location = self._sample_pos()
+    #             delta_pos = new_pos - init_obs[:2]
+    #
+    #         augmented_obs = observation.copy()
+    #         augmented_next_obs = next_observation.copy()
+    #         augmented_action = action.copy()
+    #         # augmented_reward = reward.copy()
+    #         # augmented_done = done.copy()
+    #
+    #         augmented_obs[:2] = observation[:2] + delta_pos
+    #         augmented_next_obs[:2] = next_observation[:2] + delta_pos
+    #
+    #         # rotate_alpha = np.random.uniform(0, 2 * np.pi)
+    #         # print(direction)
+    #
+    #         guide_theta = self.get_guide_theta(aug_location)
+    #
+    #         delta = final_obs[:2] - init_obs[:2]
+    #         observed_theta = np.arctan2(delta[1], delta[0])
+    #         rotate_alpha = guide_theta - observed_theta
+    #
+    #         M = np.array([
+    #             [np.cos(-rotate_alpha), -np.sin(-rotate_alpha)],
+    #             [np.sin(-rotate_alpha), np.cos(-rotate_alpha)]
+    #         ])
+    #
+    #         # zero center
+    #         augmented_obs[:2] -= init_obs[:2]
+    #         augmented_next_obs[:2] -= init_obs[:2]
+    #
+    #         augmented_obs[:2] = M.dot(augmented_obs[:2]).T
+    #         augmented_next_obs[:2] = M.dot(augmented_next_obs[:2]).T
+    #
+    #         augmented_obs[:2] += init_obs[:2]
+    #         augmented_next_obs[:2] += init_obs[:2]
+    #
+    #         # corner case (literally): check that the agent isn't inside a wall
+    #         pos_is_valid = self._check_corners(augmented_obs[:2], aug_location)
+    #         next_pos_is_valid = self._check_corners(augmented_next_obs[:2], aug_location)
+    #
+    #         # if new positions are not valid, immediately sample a new position
+    #         if not (pos_is_valid and next_pos_is_valid):
+    #             is_new_trajectory = True
+    #             i -= 1
+    #             continue
+    #
+    #         # mujoco stores quats as (qw, qx, qy, qz) internally but uses (qx, qy, qz, qw) in the observation
+    #         sin = np.sin(rotate_alpha / 2)
+    #         cos = np.cos(rotate_alpha / 2)
+    #         quat_rotate_by = np.array([sin, 0, 0, cos])
+    #         self._rotate_torso(augmented_obs, quat_rotate_by)
+    #         self._rotate_torso(augmented_next_obs, quat_rotate_by)
+    #
+    #         sin = np.sin(-rotate_alpha)
+    #         cos = np.cos(-rotate_alpha)
+    #         self._rotate_vel(augmented_obs, sin, cos)
+    #         self._rotate_vel(augmented_next_obs, sin, cos)
+    #
+    #
+    #         augmented_reward = self._reward(augmented_next_obs)
+    #         augmented_done = augmented_reward > 0  # recompute reward *after* making all changes to observations.
+    #
+    #         aug_location = self._get_location(augmented_obs)
+    #         if aug_location is None:
+    #             is_new_trajectory = True
+    #             i -= 1
+    #             continue
+    #
+    #         is_new_trajectory = False
+    #         augmented_trajectory['observations'].append(augmented_obs)
+    #         augmented_trajectory['actions'].append(augmented_action)
+    #         augmented_trajectory['rewards'].append(augmented_reward)
+    #         augmented_trajectory['next_observations'].append(augmented_next_obs)
+    #         augmented_trajectory['terminals'].append(augmented_done)
+    #
+    #     return augmented_trajectory
+    #
 
 
 class AntMazeTrajectoryRandomAugmentationFunction(AntMazeTrajectoryGuidedAugmentationFunction):

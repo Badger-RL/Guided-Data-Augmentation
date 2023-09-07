@@ -26,7 +26,7 @@ timestamps = {
     }
 }
 
-for maze in ['umaze', 'medium', 'large']:
+for maze in ['umaze',]:
     for aug in ['guided']:
         for demo_size in [50e3]:
             aug_size = int(1e6)
@@ -36,7 +36,7 @@ for maze in ['umaze', 'medium', 'large']:
             d4rl_dataset_path = f"../datasets/antmaze-{maze}-diverse-v1/no_aug_relabeled.hdf5"
             to_aug_dataset_path = f"../datasets/antmaze-{maze}-diverse-v1/no_aug_no_collisions_relabeled.hdf5"
 
-            save_dir = f'../datasets/{env_id}/s_{int(aug_size / 1e3)}k'
+            save_dir = f'../datasets/{env_id}/s_{int(demo_size / 1e3)}k'
             aug_save_path = f"{save_dir}/{aug}.hdf5"
             os.makedirs(save_dir, exist_ok=True)
 
@@ -81,7 +81,7 @@ for maze in ['umaze', 'medium', 'large']:
                         'rewards': to_aug_dataset['rewards'][start_timestamp:end_timestamp],
                         'terminals': to_aug_dataset['terminals'][start_timestamp:end_timestamp]
                     }
-                    augmented_trajectory = f.augment_trajectory(trajectory, 0)
+                    augmented_trajectory = f.augment_trajectory(trajectory, -1)
                     for key in augmented_trajectory:
                         for j in range(len(augmented_trajectory[key])):
                             augmented_trajectories[key].append(augmented_trajectory[key][j])
