@@ -33,37 +33,37 @@ def get_trajectories(dataset, start_timestamp, end_timestamp):
 
 GOALS = [
     # top left
-    [-0.26, -0.14, 0, 0, 1, 0],
-    [-0.22, -0.14, 0, 0, 1, 0],
-    [-0.18, -0.14, 0, 0, 1, 0],
-    [-0.14, -0.14, 0, 0, 1, 0],
-    [-0.10, -0.14, 0, 0, 1, 0],
-    [-0.06, -0.14, 0, 0, 1, 0],
-    [-0.02, -0.14, 0, 0, 1, 0],
+    [-0.26, -0.14, 0, 0, 0, -1],
+    [-0.22, -0.14, 0, 0, 0, -1],
+    [-0.18, -0.14, 0, 0, 0, -1],
+    [-0.14, -0.14, 0, 0, 0, -1],
+    [-0.10, -0.14, 0, 0, 0, -1],
+    [-0.06, -0.14, 0, 0, 0, -1],
+    [-0.02, -0.14, 0, 0, 0, -1],
     # top right
-    [0.26, -0.14, 0, 0, 1, 0],
-    [0.22, -0.14, 0, 0, 1, 0],
-    [0.18, -0.14, 0, 0, 1, 0],
-    [0.14, -0.14, 0, 0, 1, 0],
-    [0.10, -0.14, 0, 0, 1, 0],
-    [0.06, -0.14, 0, 0, 1, 0],
-    [0.02, -0.14, 0, 0, 1, 0],
+    [0.26, -0.14, 0, 0, 0, -1],
+    [0.22, -0.14, 0, 0, 0, -1],
+    [0.18, -0.14, 0, 0, 0, -1],
+    [0.14, -0.14, 0, 0, 0, -1],
+    [0.10, -0.14, 0, 0, 0, -1],
+    [0.06, -0.14, 0, 0, 0, -1],
+    [0.02, -0.14, 0, 0, 0, -1],
     # bottom left
-    [-0.26, 0.14, 0, 0, 0, -1],
-    [-0.22, 0.14, 0, 0, 0, -1],
-    [-0.18, 0.14, 0, 0, 0, -1],
-    [-0.14, 0.14, 0, 0, 0, -1],
-    [-0.10, 0.14, 0, 0, 0, -1],
-    [-0.06, 0.14, 0, 0, 0, -1],
-    [-0.02, 0.14, 0, 0, 0, -1],
+    [-0.26, 0.14, 0, 0, 0, 1],
+    [-0.22, 0.14, 0, 0, 0, 1],
+    [-0.18, 0.14, 0, 0, 0, 1],
+    [-0.14, 0.14, 0, 0, 0, 1],
+    [-0.10, 0.14, 0, 0, 0, 1],
+    [-0.06, 0.14, 0, 0, 0, 1],
+    [-0.02, 0.14, 0, 0, 0, 1],
     # bottom right
-    [0.26, 0.14, 0, 0, 0, -1],
-    [0.22, 0.14, 0, 0, 0, -1],
-    [0.18, 0.14, 0, 0, 0, -1],
-    [0.14, 0.14, 0, 0, 0, -1],
-    [0.10, 0.14, 0, 0, 0, -1],
-    [0.06, 0.14, 0, 0, 0, -1],
-    [0.02, 0.14, 0, 0, 0, -1],
+    [0.26, 0.14, 0, 0, 0, 1],
+    [0.22, 0.14, 0, 0, 0, 1],
+    [0.18, 0.14, 0, 0, 0, 1],
+    [0.14, 0.14, 0, 0, 0, 1],
+    [0.10, 0.14, 0, 0, 0, 1],
+    [0.06, 0.14, 0, 0, 0, 1],
+    [0.02, 0.14, 0, 0, 0, 1],
 ]
 GOALS = np.array(GOALS)
 
@@ -103,8 +103,16 @@ def generate_aug_trajectory(trajectory):
         final_pos = trajectory['observations'][-1, :2]
         delta_to_goal = new_desired_goal[:2] - final_pos
 
+        # compute theta
+        final_heading = np.arctan2(trajectory['observations'][-1, 5], trajectory['observations'][-1, 4])
+        if new_desired_goal[-1] > 0:
+            desired_theta = np.pi/2
+        else:
+            desired_theta = -np.pi/2
+
         # compute rotation matrix
-        theta = np.random.uniform(-np.pi, -np.pi)
+        # theta = np.random.uniform(-np.pi, np.pi)
+        theta = desired_theta - final_heading
         M = np.array([
             [np.cos(theta), -np.sin(theta)],
             [np.sin(theta), np.cos(theta)]
@@ -155,11 +163,14 @@ def generate_aug_trajectory(trajectory):
 
         ## TODO how to get achieved goal, reward, and terminal:
         achieved_goal = aug_next_obs[:, :6].copy()
-        aug_reward = env.compute_reward(achieved_goal, new_desired_goal, {})
+        p = 0.5
+        aug_reward = -np.power(np.dot(np.abs(achieved_goal - new_desired_goal), np.array(env.config["reward_weights"])), p)
+        # aug_reward = env.compute_reward(achieved_goal, new_desired_goal, {})
         # print(aug_reward)
         aug_action = trajectory['actions'].copy()
-        aug_terminal = trajectory['terminals'].copy()
-        aug_terminal[-1] = True
+        # aug_terminal = trajectory['terminals'].copy()
+        aug_terminal = aug_reward > -env.config['success_goal_reward']
+        print(np.any(aug_terminal))
 
         # rotate position
         if (not is_valid(aug_obs)) or (not is_valid(aug_next_obs)):
@@ -187,7 +198,7 @@ n = len(observed_dataset['observations'])
 aug_trajectories = init_trajectory()
 
 
-max_aug = 1e5
+max_aug = 1e4
 aug_count = 0
 
 while aug_count < max_aug:
