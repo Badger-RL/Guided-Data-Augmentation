@@ -22,7 +22,7 @@ class TrainConfig(TrainConfigBase):
     batch_size: int = 256  # Batch size for all networks
     discount: float = 0.99  # Discount factor
     # BC
-    buffer_size: int = 2_000_000  # Replay buffer size
+    buffer_size: int = None  # Replay buffer size
     frac: float = 1  # Best data fraction to use
     max_traj_len: int = 1000  # Max trajectory length
     learning_rate: float = 3e-5
