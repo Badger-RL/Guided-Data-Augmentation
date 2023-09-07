@@ -68,6 +68,11 @@ GOALS = [
 GOALS = np.array(GOALS)
 
 
+def is_valid_mask(obs):
+    x, y = obs[:, 0], obs[:, 1]
+
+    return (x >= -0.26) & (x <= 0.26) & (y >= -0.15) & (y <= 0.15)
+
 def is_valid(obs):
     x, y = obs[:, 0], obs[:, 1]
 
@@ -75,7 +80,27 @@ def is_valid(obs):
         return True
     else:
         return False
-    
+
+
+def get_theta(obs):
+    x, y = obs[:, 0], obs[:, 1]
+
+    agent_pos = obs[:2]
+    goal_pos = obs[6:8]
+    delta = goal_pos - agent_pos
+
+
+    if np.abs(y) < 3:
+        if delta[0] > 0:
+            guide_theta = 0
+        else:
+            guide_theta = np.pi
+
+    return guide_theta + np.random.uniform(-np.pi/12, np.pi/12)
+
+
+
+
 def generate_aug_trajectory(trajectory):
 
 
@@ -90,6 +115,9 @@ def generate_aug_trajectory(trajectory):
     success = False
     max_attempts = 10
     attempts = 0
+
+    # park = np.random.random() < 0.5
+
     while not success and attempts < max_attempts:
         attempts += 1
         env = gym.make('parking-v0', render_mode='rgb_array')
@@ -101,7 +129,13 @@ def generate_aug_trajectory(trajectory):
         # print(new_desired_goal)
 
         final_pos = trajectory['observations'][-1, :2]
-        delta_to_goal = new_desired_goal[:2] - final_pos
+        init_pos = trajectory['observations'][-1, :2]
+
+        # if park:
+        delta = new_desired_goal[:2] - final_pos
+        # else:
+        #     new_pos = np.random.uniform(low=[-0.26, -0.5], high=[0.26, 0.5])
+        #     delta = new_pos - init_pos
 
         # compute theta
         final_heading = np.arctan2(trajectory['observations'][-1, 5], trajectory['observations'][-1, 4])
@@ -112,7 +146,13 @@ def generate_aug_trajectory(trajectory):
 
         # compute rotation matrix
         # theta = np.random.uniform(-np.pi, np.pi)
+        # if park:
         theta = desired_theta - final_heading
+        # else:
+        #     theta = np.pi/2 + np.random.uniform(-np.pi/12, np.pi/12)
+        #     if np.random.random() < 0.5:
+        #         theta *= -1
+
         M = np.array([
             [np.cos(theta), -np.sin(theta)],
             [np.sin(theta), np.cos(theta)]
@@ -130,8 +170,8 @@ def generate_aug_trajectory(trajectory):
         aug_next_obs[:, 6:] = new_desired_goal.copy()
 
         # translate such that final pos is at goal
-        aug_obs[:, :2] += delta_to_goal
-        aug_next_obs[:, :2] += delta_to_goal
+        aug_obs[:, :2] += delta
+        aug_next_obs[:, :2] += delta
 
         # ROTATE
         # set origin to goal, since we are rotating about the goal.
@@ -161,6 +201,9 @@ def generate_aug_trajectory(trajectory):
 
         # action does not change, since it's defined related to the car's heading.
 
+        # mask = is_valid_mask(aug_obs) & is_valid_mask(aug_next_obs)
+
+
         ## TODO how to get achieved goal, reward, and terminal:
         achieved_goal = aug_next_obs[:, :6].copy()
         p = 0.5
@@ -170,9 +213,16 @@ def generate_aug_trajectory(trajectory):
         aug_action = trajectory['actions'].copy()
         # aug_terminal = trajectory['terminals'].copy()
         aug_terminal = aug_reward > -env.config['success_goal_reward']
-        print(np.any(aug_terminal))
+        # print(np.any(aug_terminal))
 
-        # rotate position
+
+        # aug_obs = aug_obs[mask]
+        # aug_next_obs = aug_next_obs[mask]
+        # aug_action = aug_action[mask]
+        # aug_reward = aug_reward[mask]
+        # aug_terminal = aug_terminal[mask]
+
+
         if (not is_valid(aug_obs)) or (not is_valid(aug_next_obs)):
             success = False
             break
@@ -198,7 +248,7 @@ n = len(observed_dataset['observations'])
 aug_trajectories = init_trajectory()
 
 
-max_aug = 1e4
+max_aug = 1e5
 aug_count = 0
 
 while aug_count < max_aug:
@@ -214,7 +264,7 @@ while aug_count < max_aug:
             aug_count += len(aug_trajectory['observations'])
     print(f'aug_count = {aug_count}')
 
-dataset = h5py.File("../../datasets/parking-v0/guided.hdf5", 'w')
+dataset = h5py.File("../../datasets/parking-v0/guided_2.hdf5", 'w')
 for k in aug_trajectories:
     aug_trajectories[k] = np.concatenate(aug_trajectories[k])
     dataset.create_dataset(k, data=np.array(aug_trajectories[k]), compression='gzip')
