@@ -79,7 +79,7 @@ def visualize_recorded_rollout(dataset, save_path, show_actions=False, single_ep
         col = LineCollection(lines)
         ax.add_collection(col)
 
-    plt.xlim(-0, 5000)
+    plt.xlim(-1000, 5000)
     plt.ylim(-4000, 4000)
     plt.xlabel('x position')
     plt.ylabel('y position')
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     # parser.add_argument('--dataset-path', type=str,
     #                     default='/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/datasets/PushBallToGoal-v1/physical/guided_traj.hdf5')
     parser.add_argument('--dataset-path', type=str,
-                        default='../datasets/PushBallToGoalHard-v0/guided_7.hdf5')
+                        default='../datasets/PushBallToGoalHard-v0/guided_10.hdf5')
     parser.add_argument('--save-dir', type=str, default='./figures/PushBallToGoalHard-v0/')
     parser.add_argument('--save-name', type=str, default='tmp1.png')
     parser.add_argument('--single-episode', type=bool, default=False)
