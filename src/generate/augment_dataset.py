@@ -70,7 +70,7 @@ if __name__ == '__main__':
     parser.add_argument('--observed-dataset-size', '-size', type=int, default=10000000)
 
     parser.add_argument('--aug-func', type=str, default='guided')
-    parser.add_argument('--aug-ratio', '-m', type=int, default=99, help='Number of augmentations per observed transition')
+    # parser.add_argument('--aug-ratio', '-m', type=int, default=99, help='Number of augmentations per observed transition')
     parser.add_argument('--aug-size', type=int, default=int(1e6))
     parser.add_argument('--save-dir', '-fd', type=str, default=None)
     parser.add_argument('--save-name', '-fn', type=str, default=None)
@@ -80,12 +80,11 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.save_dir is None:
-        args.save_dir = f'../datasets/{args.env_id}/{args.aug_func}'
+        args.save_dir = f'../datasets/{args.env_id}'
     if args.save_name is None:
-        args.save_name = f'm_{args.aug_ratio}.hdf5'
+        args.save_name = f'{args.aug_func}_{int(args.aug_size/1e3)}k.hdf5'
 
     env = gym.make(args.env_id)
-    m = args.aug_ratio
     np.random.seed(seed=args.seed)
 
     if args.observed_dataset_path:

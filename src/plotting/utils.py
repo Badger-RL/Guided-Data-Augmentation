@@ -29,11 +29,11 @@ def load_data(paths, field_name='return'):
     for path in paths:
 
         data = np.load(path, allow_pickle=True)
-        avg = data[field_name]
+        avg = data[field_name][:49]
         avgs.append(avg)
 
         if t is None:
-            t = data['timestep']
+            t = data['timestep'][:49]
 
     return t, np.array(avgs)
 
