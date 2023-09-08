@@ -28,8 +28,8 @@ timestamps = {
 
 for maze in ['umaze',]:
     for aug in ['guided']:
-        for demo_size in [50e3]:
-            aug_size = int(1e6)
+        for demo_size in [10e3]:
+            aug_size = int(100e3)
             demo_size = int(demo_size)
 
             env_id = f'antmaze-{maze}-diverse-v1'
@@ -48,8 +48,9 @@ for maze in ['umaze',]:
 
             n = len(to_aug_dataset['rewards'])
 
-            start_timestamps = np.arange(0, n - 30, 30)
-            end_timestamps = np.arange(30, n, 30)
+            subtraj_len = 30
+            start_timestamps = np.arange(0, n - subtraj_len, subtraj_len)
+            end_timestamps = np.arange(subtraj_len, n, subtraj_len)
             directions = np.zeros_like(start_timestamps)
 
             num_of_trajectories = len(start_timestamps)

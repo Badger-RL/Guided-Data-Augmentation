@@ -15,7 +15,7 @@ from matplotlib import pyplot as plt
 from src.algorithms.utils import load_dataset
 
 
-for env_id in ['antmaze-medium-diverse-v1']:
+for env_id in ['antmaze-umaze-diverse-v1']:
     for aug in ['guided']:
         plt.figure(figsize=(12, 12))
 

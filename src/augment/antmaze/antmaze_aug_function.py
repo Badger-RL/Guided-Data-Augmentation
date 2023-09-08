@@ -491,7 +491,7 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
             return 0
         elif location in [(3, 1), (3, 2)]: # up
             return np.pi/2
-        elif location in  [(2, 3), (3, 3)]: # left
+        elif location in [(2, 3), (3, 3)]: # left
             return np.pi
 
 
@@ -660,9 +660,18 @@ class AntMazeTrajectoryGuidedAugmentationFunction(AntMazeAugmentationFunction):
             if is_new_trajectory:
                 init_obs = trajectory['observations'][i]
                 final_obs = trajectory['next_observations'][-1]
+                delta = final_obs[:2] - init_obs[:2]
+                if np.linalg.norm(delta) < 2:
+                    valid_locations = self.get_valid_locations(0)
+                    idx = np.random.choice(len(valid_locations))
+                    aug_location = np.array(valid_locations[idx]).astype(self.env.observation_space.dtype)
+                    boundary = self._get_valid_boundaries(*aug_location)
+                    new_pos = self._sample_from_box(*boundary)
+                else:
+                    new_pos, aug_location = self._sample_pos()
+
                 # direction = self.get_direction(init_obs, final_obs)
                 # print(direction)
-                new_pos, aug_location = self._sample_pos()
                 delta_pos = new_pos - init_obs[:2]
 
             augmented_obs = observation.copy()
