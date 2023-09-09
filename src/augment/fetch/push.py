@@ -76,9 +76,11 @@ def translate(obs, action, next_obs, reward, done):
 
     # translate object
     # delta_obj = next_obs[OBJECT_POS] - obs[OBJECT_POS]
-    new_obj_pos = np.random.uniform(-0.15, 0.15, size=(3,)) + INITIAL_GRIPPER_POS[:3]
+    new_obj_pos = np.random.uniform(-0.1, 0.1, size=(3,)) + INITIAL_GRIPPER_POS[:3]
+    # new_obj_pos = obs[:, OBJECT_POS]
     new_obj_pos[-1] = OBJ_HEIGHT_OFFSET # keep z coordinate
     delta_obj = new_obj_pos - obs[-1, OBJECT_POS]
+    # delta_obj = np.zeros(3)
     aug_obs[:, OBJECT_POS] += delta_obj
     aug_next_obs[:, OBJECT_POS] += delta_obj
 
@@ -86,20 +88,16 @@ def translate(obs, action, next_obs, reward, done):
     # translate_obj(aug_next_obs, delta_obj)
 
     # translate robot
-    new_robot_pos = np.random.uniform(-0.15, 0.15, size=(2,)) + INITIAL_GRIPPER_POS[:2]
-    # new_robot_pos[-1] = obs[:, ROBOT_XY] # keep z coordinate
-    # delta_robot = next_obs[ROBOT_POS] - obs[ROBOT_POS]
-    delta_robot = new_robot_pos - obs[-1, ROBOT_XY].copy()
-    aug_obs[:, ROBOT_XY] += delta_robot
-    aug_next_obs[:, ROBOT_XY] += delta_robot
+    aug_obs[:, ROBOT_XY] += delta_obj[:2]
+    aug_next_obs[:, ROBOT_XY] += delta_obj[:2]
     # translate_robot(aug_obs, delta_robot)
     # translate_robot(aug_next_obs, delta_robot)
 
     # zero out relative features to make aug simpler
-    aug_obs[:, OBJECT_RELATIVE_POS] = aug_obs[:, ROBOT_POS] - aug_obs[:, OBJECT_POS]
-    aug_obs[:, OBJECT_RELATIVE_VEL] = aug_obs[:, ROBOT_VEL] - aug_obs[:, OBJECT_VEL]
-    aug_next_obs[:, OBJECT_RELATIVE_POS] = aug_next_obs[:, ROBOT_POS] - aug_next_obs[:, OBJECT_POS]
-    aug_next_obs[:, OBJECT_RELATIVE_VEL] = aug_next_obs[:, ROBOT_VEL] - aug_next_obs[:, OBJECT_VEL]
+    aug_obs[:, OBJECT_RELATIVE_POS] = aug_obs[:, OBJECT_POS] - aug_obs[:, ROBOT_POS]
+    # aug_obs[:, OBJECT_RELATIVE_VEL] = aug_obs[:, OBJECT_VEL] - aug_obs[:, ROBOT_VEL]
+    aug_next_obs[:, OBJECT_RELATIVE_POS] = aug_next_obs[:, OBJECT_POS] - aug_next_obs[:, ROBOT_POS]
+    # aug_next_obs[:, OBJECT_RELATIVE_VEL] = aug_next_obs[:, OBJECT_VEL] - aug_next_obs[:, ROBOT_VEL]
     # aug_obs[:, OBJECT_RELATIVE_POS] = 0
     # aug_obs[:, OBJECT_RELATIVE_VEL] = 0
     # aug_next_obs[:, OBJECT_RELATIVE_POS] = 0
@@ -203,8 +201,14 @@ def gen_aug_dataset():
     rewards = observed_dataset['rewards']
     terminals = observed_dataset['terminals']
 
+    robot_pos = observations[:, ROBOT_POS]
     obj_pos = observations[:, OBJECT_POS]
+    goal_pos = observations[:, GOAL]
+
+    plt.scatter(robot_pos[:, 0], robot_pos[:, 1])
     plt.scatter(obj_pos[:, 0], obj_pos[:, 1])
+    plt.scatter(goal_pos[:, -3], goal_pos[:, -2])
+
     plt.xlim(1, 2)
     plt.ylim(0, 1)
     plt.show()
@@ -214,7 +218,7 @@ def gen_aug_dataset():
     max_aug = 1e6
     aug_count = 0
 
-    max_aug = 100000
+    max_aug = 50000
     while aug_count < max_aug:
         start = 0
         for i in range(n):
@@ -239,9 +243,11 @@ def gen_aug_dataset():
     # rewards = observed_dataset['rewards']
     # terminals = observed_dataset['terminals']
 
+    robot_pos = observations[:, ROBOT_POS]
     obj_pos = observations[:, OBJECT_POS]
     goal_pos = observations[:, GOAL]
 
+    plt.scatter(robot_pos[:, 0], robot_pos[:, 1])
     plt.scatter(obj_pos[:, 0], obj_pos[:, 1])
     plt.scatter(goal_pos[:, -3], goal_pos[:, -2])
 
@@ -252,7 +258,7 @@ def gen_aug_dataset():
 
     dataset = h5py.File("../../datasets/FetchPush-v2/random.hdf5", 'w')
     for k,v in aug_dataset.items():
-        aug_dataset[k] = np.concatenate([observed_dataset[k], v])
+        aug_dataset[k] = np.concatenate([ v])
         dataset.create_dataset(k, data=np.array(aug_dataset[k]), compression='gzip')
 
 
@@ -260,25 +266,25 @@ if __name__ == '__main__':
 
     gen_aug_dataset()
 
-    env_id = 'FetchPush-v2'
-    env = gym.make(env_id, render_mode='human')
-
-    obs, _ = env.reset()
-    action = env.action_space.sample()
-    action = np.zeros_like(action)
-    next_obs, reward, terminated, truncated, info = env.step(action)
-    done = terminated or truncated
-
-    obs = flatten_obs(obs)
-    next_obs = flatten_obs(next_obs)
-
+    # env_id = 'FetchPush-v2'
+    # env = gym.make(env_id, render_mode='human')
+    #
+    # obs, _ = env.reset()
+    # action = env.action_space.sample()
+    # action = np.zeros_like(action)
+    # next_obs, reward, terminated, truncated, info = env.step(action)
+    # done = terminated or truncated
+    #
+    # obs = flatten_obs(obs)
+    # next_obs = flatten_obs(next_obs)
+    #
+    # # env.render()
+    # # time.sleep(1)
+    #
+    # aug_obs, aug_action, aug_next_obs, aug_reward, aug_done = translate(obs, action, next_obs, reward, done)
+    #
+    # sim = env.unwrapped.sim
+    # env.sim.set_state(aug_obs, aug_obs)
     # env.render()
-    # time.sleep(1)
-
-    aug_obs, aug_action, aug_next_obs, aug_reward, aug_done = translate(obs, action, next_obs, reward, done)
-
-    sim = env.unwrapped.sim
-    env.sim.set_state(aug_obs, aug_obs)
-    env.render()
-
-    time.sleep(20)
+    #
+    # time.sleep(20)
