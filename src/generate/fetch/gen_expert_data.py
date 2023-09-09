@@ -85,6 +85,7 @@ def simulate(env, policy, num_episodes, seed=0, render=False, flatten=True, verb
 
             if render: env.render()
 
+        ep_dones[-1] = True
         step_count += ep_step_count
 
         returns.append(sum(ep_rewards))

@@ -16,6 +16,13 @@ def append_data(data, s, a, r, ns, done):
     data['rewards'].append(r)
     data['terminals'].append(done)
 
+def extend_data(data, s, a, r, ns, done):
+    data['observations'].extend(s)
+    data['next_observations'].extend(ns)
+    data['actions'].extend(a)
+    data['rewards'].extend(r)
+    data['terminals'].extend(done)
+
 def npify(data):
     for k in data:
         if k in ['terminals', 'timeouts']:
