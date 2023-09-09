@@ -114,7 +114,6 @@ def simulate(env, policy, num_episodes, seed=0, render=False, flatten=True, verb
         'next_observations': np.array(next_observations),
         'terminals': np.array(dones),
         'infos': np.array(infos),
-
     }
 
 
