@@ -93,14 +93,13 @@ def generate_aug_trajectory(trajectory):
     robot_pos = observations[:, ROBOT_POS]
     obj_pos = observations[:, OBJECT_POS]
     goal_pos = observations[:, GOAL]
+    obj_vel = observations[:, OBJECT_VEL]
 
+    plt.quiver(obj_pos[:, 0], obj_pos[:, 1], obj_vel[:, 0], obj_vel[:, 1], color='k')
     plt.scatter(robot_pos[:, 0], robot_pos[:, 1], label='robot')
     plt.scatter(obj_pos[:, 0], obj_pos[:, 1], label='obj')
     plt.scatter(goal_pos[:, -3], goal_pos[:, -2], label='goal')
 
-
-
-    
 
     aug_observations = observations.copy()
     aug_next_observations = next_observations.copy()
@@ -140,9 +139,12 @@ def generate_aug_trajectory(trajectory):
     obj_pos = aug_observations[:, OBJECT_POS]
     goal_pos = aug_observations[:, GOAL]
 
+    obj_vel = aug_observations[:, OBJECT_VEL]
+    plt.quiver(obj_pos[:, 0], obj_pos[:, 1], obj_vel[:, 0], obj_vel[:, 1], color='k')
     plt.scatter(robot_pos[:, 0], robot_pos[:, 1], label='aug_robot')
     plt.scatter(obj_pos[:, 0], obj_pos[:, 1], label='aug_obj')
     plt.scatter(goal_pos[:, -3], goal_pos[:, -2], label='aug_goal')
+
     plt.legend()
     plt.show()
     plt.close()
@@ -182,7 +184,7 @@ def get_trajectories(dataset, start_timestamp, end_timestamp):
 
 
 if __name__ == '__main__':
-    dataset_path = f"/Users/yxqu/Desktop/Research/GuDA/GuidedDataAugmentationForRobotics/src/datasets/FetchSlide-v2/no_aug.hdf5"
+    dataset_path = f"../../datasets/FetchSlide-v2/no_aug.hdf5"
     observed_dataset = load_dataset(dataset_path)
     n = len(observed_dataset['observations'])
 

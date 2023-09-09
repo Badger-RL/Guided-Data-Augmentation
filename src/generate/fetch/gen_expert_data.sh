@@ -1,4 +1,7 @@
-python3 ./gen_expert_data.py --policy_path ./saved_models/FetchPush-v2/model.pt  --env_id FetchPush-v2 --num_episodes 3 --save_dir ../../datasets/FetchPush-v2 --save_name no_aug.hdf5
-python3 ./gen_expert_data.py --policy_path ./saved_models/FetchSlide-v2/model.pt  --env_id FetchSlide-v2 --num_episodes 3 --save_dir ../../datasets/FetchSlide-v2 --save_name no_aug.hdf5
-python3 ./gen_expert_data.py --policy_path ./saved_models/FetchPush-v2/model.pt  --env_id FetchPush-v2 --num_episodes 100 --save_dir ../../datasets/FetchPush-v2 --save_name no_aug_1k.hdf5
-python3 ./gen_expert_data.py --policy_path ./saved_models/FetchSlide-v2/model.pt  --env_id FetchSlide-v2 --num_episodes 100 --save_dir ../../datasets/FetchSlide-v2 --save_name no_aug_1k.hdf5
+#python3 ./gen_expert_data.py --policy_path ./saved_models/FetchPush-v2/model.pt  --env_id FetchPush-v2 --num_episodes 3 --save_dir ../../datasets/FetchPush-v2 --save_name no_aug.hdf5
+#python3 ./gen_expert_data.py --policy_path ./saved_models/FetchSlide-v2/model.pt  --env_id FetchSlide-v2 --num_episodes 3 --save_dir ../../datasets/FetchSlide-v2 --save_name no_aug.hdf5
+#python3 ./gen_expert_data.py --policy_path ./saved_models/FetchPush-v2/model.pt  --env_id FetchPush-v2 --num_episodes 100 --save_dir ../../datasets/FetchPush-v2 --save_name no_aug_1k.hdf5
+#python3 ./gen_expert_data.py --policy_path ./saved_models/FetchSlide-v2/model.pt  --env_id FetchSlide-v2 --num_episodes 100 --save_dir ../../datasets/FetchSlide-v2 --save_name no_aug_1k.hdf5
+#python3 ./gen_expert_data.py --policy_path ./saved_models/FetchPickAndPlace-v2/model.pt  --env_id FetchPickAndPlace-v2 --num_episodes 100 --save_dir ../../datasets/FetchPickAndPlace-v2 --save_name no_aug_1k.hdf5
+#python3 ./gen_expert_data.py --policy_path ./saved_models/FetchPickAndPlace-v2/model.pt  --env_id FetchPickAndPlace-v2 --num_episodes 3 --save_dir ../../datasets/FetchPickAndPlace-v2 --save_name no_aug.hdf5
+python3 ./gen_expert_data.py --policy_path ./saved_models/FetchReach-v1/model.pt  --env_id FetchReach-v1 --num_episodes 3 --save_dir ../../datasets/FetchReach-v1 --save_name no_aug.hdf5
