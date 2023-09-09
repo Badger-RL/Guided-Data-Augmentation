@@ -32,12 +32,12 @@ BEHAVIORS = {
     #     # 'indices': (1950, 2650),
     #     'max_len': 1,
     # },
-    'curve_to_goal': {
-        'indices': (1950, 2995),
-        # 'indices': (1950, 3295),
-        # 'indices': (1950, 2650),
-        'max_len': 1,
-    },
+    # 'curve_to_goal': {
+    #     'indices': (1950, 2995),
+    #     # 'indices': (1950, 3295),
+    #     # 'indices': (1950, 2650),
+    #     'max_len': 1,
+    # },
     'curve_to_goal_2': {
         'indices': (1900, 2500),
         # 'indices': (1950, 3295),
