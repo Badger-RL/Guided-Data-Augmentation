@@ -16,11 +16,11 @@ PARAMS = {
     #     'random': 3e-6,
     #     'guided': 3e-6,
     # },
-    # 'antmaze-umaze-diverse-v1': {
-    #     'no_aug': 3e-6,
-    #     'random': 3e-6,
-    #     'guided': 3e-6,
-    # },
+    'antmaze-umaze-diverse-v1': {
+        'no_aug': 3e-6,
+        'random': 3e-6,
+        'guided': 3e-6,
+    },
     # 'antmaze-medium-diverse-v1': {
     #     'no_aug': 3e-6,
     #     'random': 3e-6,
@@ -31,11 +31,11 @@ PARAMS = {
     #     'random': 3e-6,
     #     'guided': 3e-6,
     # },
-    'PushBallToGoal-v0': {
-        'no_aug': 3e-6,
-        'random': 3e-6,
-        'guided': 3e-6,
-    },
+    # 'PushBallToGoal-v0': {
+    #     'no_aug': 3e-6,
+    #     'random': 3e-6,
+    #     'guided': 3e-6,
+    # },
 }
 
 if __name__ == "__main__":
@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
             # nl = 2
             # hd = 256
-            bs = 256
+            bs = 64
             lr = PARAMS[env_id][aug]
             max_timesteps = int(1e6)
             eval_freq = int(20e3)
@@ -69,11 +69,11 @@ if __name__ == "__main__":
                       # f' --hidden_dims {hd}'
 
             if 'antmaze-umaze' in env_id:
-                command += '--n_layers 1 --hidden_dims 64'
+                command += ' --n_layers 1 --hidden_dims 64'
 
-            mem, disk = MEMDISK[1][env_id]
+            mem, disk = MEMDISK['small'][env_id]
             memdisk = f'{mem},{disk},'
-            command = memdisk + command.replace(' ', '*')
+            # command = memdisk + command.replace(' ', '*')
             print(command)
             i += 1
             all_commands += command + '\n'
