@@ -179,7 +179,7 @@ class TwinQ(nn.Module):
         return self.q1(sa), self.q2(sa)
 
     def forward(self, state: torch.Tensor, action: torch.Tensor) -> torch.Tensor:
-        return torch.min(*self.both(state, action))
+        return torch.clamp(torch.min(*self.both(state, action)), -0.2, 2)
 
 
 class ValueFunction(nn.Module):
@@ -189,7 +189,7 @@ class ValueFunction(nn.Module):
         self.v = MLP(dims, squeeze_output=True)
 
     def forward(self, state: torch.Tensor) -> torch.Tensor:
-        return self.v(state)
+        return torch.clamp(self.v(state), -0.2, 2)
 
 
 class ImplicitQLearning:
