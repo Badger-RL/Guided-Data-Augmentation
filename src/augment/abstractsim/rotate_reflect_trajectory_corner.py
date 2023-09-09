@@ -203,7 +203,7 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
         aug_abs_next_obs[:, 3] += new_ball_final_pos_y
 
 
-        if np.random.random() < 1-reflect:
+        if np.random.random() < reflect:
             aug_abs_obs[:, 1] *= -1
             aug_abs_next_obs[:, 1] *= -1
             aug_abs_obs[:, 3] *= -1
