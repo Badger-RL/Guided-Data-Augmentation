@@ -23,7 +23,7 @@ from src.algorithms.utils import TrainConfigBase, soft_update, train_base
 TensorBatch = List[torch.Tensor]
 
 
-EXP_ADV_MAX = 100
+EXP_ADV_MAX = 1
 LOG_STD_MIN = -2
 LOG_STD_MAX = 1.0
 

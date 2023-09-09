@@ -296,7 +296,7 @@ def eval_actor(
             action = actor.act(state, device)
             state, reward, done, info = env.step(action)
             episode_reward += reward
-            env.render()
+            # env.render()
         episode_rewards.append(episode_reward)
         if 'is_success' in info:
             successes.append(info['is_success'])
