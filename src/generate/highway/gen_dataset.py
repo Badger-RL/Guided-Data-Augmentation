@@ -98,7 +98,7 @@ def simulate(env, model, num_episodes=None,  seed=0, render=False, flatten=True,
             infos.append(ep_infos)
         if verbose:
             print(f'num_steps: {step_count}, episode {episode_count}, return: {returns[-1]}',)
-
+    print(observations)
     print(f'average return: {np.mean(returns)}')
     return {
         'observations': np.array(observations),
