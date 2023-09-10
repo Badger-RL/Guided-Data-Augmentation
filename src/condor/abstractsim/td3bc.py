@@ -6,14 +6,15 @@ if __name__ == "__main__":
 
     i = 0
     for env_id in ['PushBallToGoal-v0']:
-        for aug in ['guided', 'guided_neg']:
+        for aug in ['random', 'guided']:
+            for aug_size in [10, 100, 1000]:
             # for expert in [50, 85]:
             #     aug = f'{aug}_{expert}'
                 aug = f'{aug}'
                 for alpha in [2.5, 5, 7.5, 10]:
                     for lr in [3e-4, 3e-5]:
-                        for nl in [1,2]:
-                            dataset_name = f'/staging/ncorrado/datasets/{env_id}/{aug}.hdf5'
+                        for nl in [2]:
+                            dataset_name = f'/staging/ncorrado/datasets/{env_id}/{aug}_{aug_size}k.hdf5'
 
                             save_dir = f'results/{env_id}/{aug}/td3bc/nl_{nl}/lr_{lr}/a_{alpha}'
                             hidden_dims = 256
