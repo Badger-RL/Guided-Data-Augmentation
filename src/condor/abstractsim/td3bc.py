@@ -16,7 +16,7 @@ if __name__ == "__main__":
                         for nl in [2]:
                             dataset_name = f'/staging/ncorrado/datasets/{env_id}/{aug}_{aug_size}k.hdf5'
 
-                            save_dir = f'results/{env_id}/{aug}/td3bc/nl_{nl}/lr_{lr}/a_{alpha}'
+                            save_dir = f'results/{env_id}/{aug}/as_{aug_size}/td3bc/nl_{nl}/lr_{lr}/a_{alpha}'
                             hidden_dims = 256
                             tau = 1e-3
                             actor_lr = lr

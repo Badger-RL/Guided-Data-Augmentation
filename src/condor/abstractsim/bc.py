@@ -36,7 +36,7 @@ if __name__ == "__main__":
                     hd = 256
                     bs = 256
 
-                    save_dir = f'results/{env_id}/{aug}/bc/bs_{bs}/lr_{lr}'
+                    save_dir = f'results/{env_id}/{aug}/as_{aug_size}/bc/bs_{bs}/lr_{lr}'
 
 
                     max_timesteps = int(1e6)

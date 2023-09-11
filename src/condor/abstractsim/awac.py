@@ -16,7 +16,7 @@ if __name__ == "__main__":
                             for hidden_dims in [256]:
 
                                 dataset_name = f'/staging/ncorrado/datasets/{env_id}/{aug}_{aug_size}k.hdf5'
-                                save_dir = f'results/{env_id}/{aug}/awac/nl_{n_layers}/lr_{lr}/l_{lmbda}'
+                                save_dir = f'results/{env_id}/{aug}/as_{aug_size}/awac/nl_{n_layers}/lr_{lr}/l_{lmbda}'
 
                                 max_timesteps = int(1e6) if n_layers == 2 else int(1e6)
                                 eval_freq = int(20e3)
