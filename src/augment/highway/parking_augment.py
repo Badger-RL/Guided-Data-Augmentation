@@ -2,7 +2,6 @@ import gymnasium as gym
 import numpy as np
 from matplotlib import pyplot as plt
 
-from augment.highway.parking_augment_transition import aug_middle
 from src.generate.utils import reset_data, append_data, load_dataset, npify
 import time
 import h5py
@@ -256,6 +255,7 @@ aug_trajectories = init_trajectory()
 
 max_aug = 1e6
 aug_count = 0
+random = True
 
 while aug_count < max_aug:
     start_timestamp = 0
@@ -263,23 +263,23 @@ while aug_count < max_aug:
         if observed_dataset['terminals'][i]:
             trajectory = get_trajectories(observed_dataset, start_timestamp, i)
             start_timestamp = (i + 1)
-            aug_trajectory = generate_aug_trajectory(trajectory)
+            aug_trajectory = generate_aug_trajectory(trajectory, random=random)
             if aug_trajectory is None:
                 continue
             append_trajectory(aug_trajectories, aug_trajectory)
             aug_count += len(aug_trajectory['observations'])
     start_timestamp = 0
-    for i in range(5, n, 5):
-        trajectory = get_trajectories(observed_dataset, start_timestamp, i)
-        start_timestamp = (i + 1)
-        aug_trajectory = aug_middle(trajectory)
-        if aug_trajectory is None:
-            continue
-        append_trajectory(aug_trajectories, aug_trajectory)
-        aug_count += len(aug_trajectory['observations'])
+    # for i in range(5, n, 5):
+    #     trajectory = get_trajectories(observed_dataset, start_timestamp, i)
+    #     start_timestamp = (i + 1)
+    #     aug_trajectory = aug_middle(trajectory)
+    #     if aug_trajectory is None:
+    #         continue
+    #     append_trajectory(aug_trajectories, aug_trajectory)
+    #     aug_count += len(aug_trajectory['observations'])
     print(f'aug_count = {aug_count}')
 
-dataset = h5py.File("../../datasets/parking-v0/guided_2.hdf5", 'w')
+dataset = h5py.File("../../datasets/parking-v0/random.hdf5", 'w')
 for k in aug_trajectories:
     aug_trajectories[k] = np.concatenate(aug_trajectories[k])
     dataset.create_dataset(k, data=np.array(aug_trajectories[k]), compression='gzip')
