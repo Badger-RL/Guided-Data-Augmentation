@@ -133,7 +133,11 @@ def generate_aug_trajectory(trajectory, random=False):
         init_pos = trajectory['observations'][-1, :2]
 
         # if park:
-        delta = new_desired_goal[:2] - final_pos
+        if random:
+            new_pos = np.random.uniform(low=[-0.26, -0.5], high=[0.26, 0.5])
+            delta = new_pos - init_pos
+        else:
+            delta = new_desired_goal[:2] - final_pos
         # else:
         #     new_pos = np.random.uniform(low=[-0.26, -0.5], high=[0.26, 0.5])
         #     delta = new_pos - init_pos
@@ -148,7 +152,7 @@ def generate_aug_trajectory(trajectory, random=False):
         if random:
             theta = np.random.uniform(-np.pi, np.pi)
         else:
-            theta = desired_theta - final_heading
+            theta = desired_theta - final_heading + np.random.uniform(-np.pi/4, +np.pi/4)
 
         # if park:
         #     theta = desired_theta - final_heading
@@ -250,39 +254,40 @@ observed_dataset = load_dataset(dataset_path)
 
 n = len(observed_dataset['observations'])
 
-aug_trajectories = init_trajectory()
+for aug_size in [10, 100, 1000]:
+    for aug in ['guided', 'random']:
+        aug_trajectories = init_trajectory()
 
+        max_aug = int(aug_size*1e3)
+        aug_count = 0
+        random = aug == 'random'
 
-max_aug = 1e6
-aug_count = 0
-random = True
+        while aug_count < max_aug:
+            start_timestamp = 0
+            for i in range(n):
+                if observed_dataset['terminals'][i]:
+                    trajectory = get_trajectories(observed_dataset, start_timestamp, i)
+                    start_timestamp = (i + 1)
+                    aug_trajectory = generate_aug_trajectory(trajectory, random=random)
+                    if aug_trajectory is None:
+                        continue
+                    append_trajectory(aug_trajectories, aug_trajectory)
+                    aug_count += len(aug_trajectory['observations'])
+            start_timestamp = 0
+            # for i in range(5, n, 5):
+            #     trajectory = get_trajectories(observed_dataset, start_timestamp, i)
+            #     start_timestamp = (i + 1)
+            #     aug_trajectory = aug_middle(trajectory)
+            #     if aug_trajectory is None:
+            #         continue
+            #     append_trajectory(aug_trajectories, aug_trajectory)
+            #     aug_count += len(aug_trajectory['observations'])
+            print(f'aug_count = {aug_count}')
 
-while aug_count < max_aug:
-    start_timestamp = 0
-    for i in range(n):
-        if observed_dataset['terminals'][i]:
-            trajectory = get_trajectories(observed_dataset, start_timestamp, i)
-            start_timestamp = (i + 1)
-            aug_trajectory = generate_aug_trajectory(trajectory, random=random)
-            if aug_trajectory is None:
-                continue
-            append_trajectory(aug_trajectories, aug_trajectory)
-            aug_count += len(aug_trajectory['observations'])
-    start_timestamp = 0
-    # for i in range(5, n, 5):
-    #     trajectory = get_trajectories(observed_dataset, start_timestamp, i)
-    #     start_timestamp = (i + 1)
-    #     aug_trajectory = aug_middle(trajectory)
-    #     if aug_trajectory is None:
-    #         continue
-    #     append_trajectory(aug_trajectories, aug_trajectory)
-    #     aug_count += len(aug_trajectory['observations'])
-    print(f'aug_count = {aug_count}')
-
-dataset = h5py.File("../../datasets/parking-v0/random.hdf5", 'w')
-for k in aug_trajectories:
-    aug_trajectories[k] = np.concatenate(aug_trajectories[k])
-    dataset.create_dataset(k, data=np.array(aug_trajectories[k]), compression='gzip')
+        dataset = h5py.File(f"../../datasets/parking-v0/{aug}_{aug_size}k.hdf5", 'w')
+        for k in aug_trajectories:
+            aug_trajectories[k] = np.concatenate(aug_trajectories[k])
+            dataset.create_dataset(k, data=np.array(aug_trajectories[k]), compression='gzip')
 
 
 

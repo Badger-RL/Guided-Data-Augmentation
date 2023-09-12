@@ -41,6 +41,7 @@ def simulate(env, model, num_episodes=None,  seed=0, render=False, flatten=True,
             else:
                 action = env.action_space.sample() # np.random.uniform(-1, +1, size=env.action_space.shape)
 
+            action += np.random.normal(0, 1, size=(2,))
             if isinstance(obs, dict):
                 ep_observations.append(np.concatenate([obs['observation'], obs['desired_goal']]))
                 ep_desired_goal.append(obs['desired_goal'])
