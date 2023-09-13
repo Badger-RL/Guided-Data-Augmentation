@@ -99,7 +99,7 @@ def simulate(env, model, num_episodes=None,  seed=0, render=False, flatten=True,
             infos.append(ep_infos)
         if verbose:
             print(f'num_steps: {step_count}, episode {episode_count}, return: {returns[-1]}',)
-
+    print(observations)
     print(f'average return: {np.mean(returns)}')
     return {
         'observations': np.array(observations),
@@ -123,7 +123,7 @@ if __name__ == "__main__":
     parser.add_argument('--save_name', type=str, default='tmp_name.hdf5')
     parser.add_argument('--render', type=bool, default=False)
     parser.add_argument('--skip_terminated_episodes', type=int, default=False)
-    parser.add_argument('--random', type=int, default=False)
+    parser.add_argument('--random', type=bool, default=False)
 
     # -7.208478687392141
     # -23.28337497722764
@@ -141,10 +141,14 @@ if __name__ == "__main__":
         'dqn': DQN,
     }
     algo_class = ALGOS[args.algo]
-    args.policy_path = f'../../policies/{args.env_id}/{args.algo}/best_model.zip'
-    model = algo_class.load(args.policy_path, env)
+    
     if args.random:
+        args.policy_path = None
         model = None
+    else:
+        args.policy_path = f'../../policies/{args.env_id}/{args.algo}/best_model.zip'
+        model = algo_class.load(args.policy_path, env)
+
 
     data = simulate(env=env, model=model, num_episodes=args.num_episodes, render=False, skip_terminated_episodes=args.skip_terminated_episodes)
 

@@ -55,7 +55,6 @@ class ChangeLane(AugmentationFunctionBase):
 
         aug_obs = obs.copy()
         aug_next_obs = next_obs.copy()
-
         aug_obs = aug_obs.reshape(8, 5)
         aug_next_obs = aug_next_obs.reshape(8, 5)
 
@@ -251,9 +250,74 @@ class TranslateAllVehicles(AugmentationFunctionBase):
         aug_obs = aug_obs.reshape(-1)
         aug_next_obs = aug_next_obs.reshape(-1)
 
-
         return aug_obs, aug_action, aug_reward, aug_next_obs, aug_done
 
+class ChangeLaneAllVehicles(AugmentationFunctionBase):
+    def __init__(self, env, **kwargs):
+        super().__init__(env=env, **kwargs)
+
+    def augment(self,
+                obs: np.ndarray,
+                action: np.ndarray,
+                next_obs: np.ndarray,
+                reward: np.ndarray,
+                done: np.ndarray,
+                **kwargs,):
+
+        if reward < 0:
+            return None, None, None, None, None
+
+        aug_obs = obs.copy()
+        aug_next_obs = next_obs.copy()
+
+        aug_obs = aug_obs.reshape(8, 5)
+        aug_next_obs = aug_next_obs.reshape(8, 5)
+
+        collision = False
+
+        # Move other vehicles randomly over the entire valid vertical range
+        for i in range(1, 8):
+            aug_obs[i, 1] = np.random.uniform(-0.1, 0.85)
+        
+        # Move the ego vehicle vertically to the best lane
+        lanes = [0, 0.25, 0.5, 0.75]
+        tolerance = 0.05
+        distances = []
+
+        for lane in lanes:
+            # Calculate x-distances of vehicles in the same lane as the ego vehicle
+            d = [abs(aug_obs[i, 0]) for i in range(1, 8) if abs(aug_obs[i, 1] - lane) <= tolerance]
+            # Take the minimum distance if there are vehicles in the lane, otherwise set to a high value
+            distances.append(min(d) if d else float('inf'))
+        best_lane = lanes[np.argmax(distances)]
+        aug_obs[0, 1] = best_lane + np.random.uniform(-0.01, 0.01)
+
+        # Update the relative positions of the other vehicles
+        for i in range(1, 8):
+            aug_obs[i, 1] -= aug_obs[0, 1]
+            new_y = aug_obs[i, 1]
+            new_x = aug_obs[i, 0]
+            # Check collision
+            if new_x < 0.035 and np.abs(new_y) < 0.1:
+                collision = True
+
+        if collision:
+            aug_reward = reward - 1
+            aug_action = action.copy()
+            aug_done = True
+        else:
+            aug_reward = reward
+            aug_action = action.copy()
+            aug_done = done
+
+        aug_obs = aug_obs.reshape(-1)
+        aug_next_obs = aug_next_obs.reshape(-1)
+        aug_reward = np.array([aug_reward])
+        aug_done = np.array([aug_done])
+
+
+        return aug_obs, aug_action, aug_reward, aug_next_obs, aug_done
+    
 class TranslateAllVehiclesWithCollision(AugmentationFunctionBase):
     def __init__(self, env, **kwargs):
         super().__init__(env=env, **kwargs)
