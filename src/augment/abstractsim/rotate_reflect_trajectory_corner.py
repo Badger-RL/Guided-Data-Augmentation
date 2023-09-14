@@ -6,9 +6,9 @@ from src.augment.utils import convert_to_absolute_obs, calculate_reward, convert
 
 
 BEHAVIORS = {
-    'curve_around_ball_easy': {
-        'indices': (0, 1000),
-    },
+    # 'curve_around_ball_easy': {
+    #     'indices': (0, 1000),
+    # },
     'curve_around_ball': {
         'indices': (0, 800),
     },
