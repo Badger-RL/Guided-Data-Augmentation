@@ -98,7 +98,7 @@ if __name__ == "__main__":
     # parser.add_argument('--dataset-path', type=str,
     #                     default='/Users/nicholascorrado/code/offlinerl/GuidedDataAugmentationForRobotics/src/datasets/PushBallToGoal-v1/physical/guided_traj.hdf5')
     parser.add_argument('--dataset-path', type=str,
-                        default='../datasets/PushBallToGoalHard-v0/guided_13.hdf5')
+                        default='../datasets/PushBallToGoalHard-v0/guided_18.hdf5')
     parser.add_argument('--save-dir', type=str, default='./figures/PushBallToGoalHard-v0/')
     parser.add_argument('--save-name', type=str, default='tmp1.png')
     parser.add_argument('--single-episode', type=bool, default=False)
@@ -112,7 +112,7 @@ if __name__ == "__main__":
     data_hdf5 = h5py.File(args.dataset_path, "r")
     for key in data_hdf5.keys():
         # curve
-        start = 000
+        start = 0
         end = 200000
         # straight 1 ehhh
         # start = 800
