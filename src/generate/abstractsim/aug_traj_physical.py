@@ -4,14 +4,14 @@ if __name__ == "__main__":
 
 
     for env_id in ['PushBallToGoalHard-v0']:
-        for aug_size in [200e3]:
+        for aug_size in [1e6]:
             for aug in ['guided']:
                 os.system(
                     f'python ./aug_traj.py --seed {0} --aug-size {int(aug_size)} --validate 0'
                     f' --observed-dataset-path ../../datasets/{env_id}/no_aug.hdf5'
                     f' --aug-func {aug}'
                     f' --save-dir ../../datasets/{env_id}'
-                    f' --save-name {aug}_16.hdf5')
+                    f' --save-name {aug}_17.hdf5')
 
     # for aug_size in [300e3]:
     #     for aug in ['guided_traj']:

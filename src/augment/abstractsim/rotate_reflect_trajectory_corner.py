@@ -6,50 +6,28 @@ from src.augment.utils import convert_to_absolute_obs, calculate_reward, convert
 
 
 BEHAVIORS = {
-    # 'fish_out_ball': {
-    #     # 'indices': (0, 1170),
-    #     # 'indices': (350, 1170),
-    #     'indices': (350, 1170),
-    #     'max_len': 1,
-    # },
+    'curve_around_ball_easy': {
+        'indices': (0, 1000),
+    },
     'curve_around_ball': {
-        # 'indices': (0, 1170),
-        # 'indices': (350, 1170),
         'indices': (0, 800),
+    },
+    'fish_out_ball_tight': {
+        'indices': (1370, 1570),
+    },
+    'curve_to_goal_2': {
+        'indices': (1900, 2500),
+    },
+    'straight': {
+        'indices': (2200, 2995),
         'max_len': 1,
     },
-    # 'fish_out_ball_goal': {
-    #     'indices': (600, 1170),
-    #     'max_len': 1,
-    # },
-    'fish_out_ball_tight': {
-        # 'indices': (1170, 1700),
-        'indices': (1370, 1570),
+    'straight_2': {
+        'indices': (1530, 2200),
         'max_len': 1,
     },
     # 'curve_before_goal': {
     #     'indices': (1950, 2995),
-    #     # 'indices': (1950, 2650),
-    #     'max_len': 1,
-    # },
-    # 'curve_to_goal': {
-    #     'indices': (1950, 2995),
-    #     'max_len': 1,
-    # },
-    'curve_to_goal_2': {
-        'indices': (1600, 2500),
-        # 'indices': (1950, 3295),
-        # 'indices': (1950, 2650),
-        'max_len': 1,
-    },
-    # 'turnaround': {
-    #     'indices': (1250, 1800),
-    #     'max_len': 1,
-    # },
-    # 'curve_to_goal_2': {
-    #     # 'indices': (1950, 2995),
-    #     'indices': (1950, 2650),
-    #     'max_len': 1,
     # },
     # 'straight_1': {
     #     'indices': (0, 400),
@@ -60,19 +38,12 @@ BEHAVIORS = {
     #     'indices': (0, 400),
     #     'max_len': 1,
     # },
-    # 'out_of_bounds': {
-    #     'indices': (2600, 2650),
-    #     'max_len': 1,
-    # },
-
     # 'straight_2': {
     #     'indices': (1530, 2200),
     #     'max_len': 1,
     # },
-    # 'straight_2': {
-    #     'indices': (2200, 2995),
-    #     'max_len': 1,
-    # },
+
+
 }
 
 def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
@@ -93,9 +64,8 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
         behavior = keys[idx]
         behavior_dict = BEHAVIORS[behavior]
         start_idx, end_idx = behavior_dict['indices']
-        max_len = behavior_dict['max_len']
 
-        k = np.random.randint(1,max_len+1)  # 6 also cut off at 100 attempts
+        k = 1  # 6 also cut off at 100 attempts
         disp = aug_abs_next_obs[end_idx-1, :2] - aug_abs_obs[start_idx, :2]
 
         aug_abs_obs = np.concatenate(
@@ -117,26 +87,8 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             aug_abs_obs[:, 2:4] = ball_init
             aug_abs_next_obs[:, 2:4] = ball_init
 
-        for i in range(1,k):
-            diff = end_idx - start_idx + 1
-            start = diff * i
-            end = diff * (i+1)
-            # disp = aug_abs_next_obs[start-400, :2] - aug_abs_obs[start, :2]
-
-            aug_abs_obs[start:end, :2] += disp*i
-            aug_abs_next_obs[start:end, :2] += disp*i
-            aug_abs_obs[start:end, 2:4] += disp*i
-            aug_abs_next_obs[start:end, 2:4] += disp*i
-            # if start_idx == 1300:
-            #     aug_abs_obs[start:end, 0] += 200
-            #     aug_abs_next_obs[start:end, 0] += 200
-
     aug_abs_obs_original = aug_abs_obs.copy()
     aug_abs_next_obs_original = aug_abs_next_obs.copy()
-
-
-    ball_init_hard_x = (4200, 4400)
-    ball_init_hard_y = (-2700, -2300)
 
 
     attempts = 0
@@ -144,21 +96,47 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
     while attempts < max_attempts:
         attempts += 1
 
-        if guided:
+        if behavior is None:
             new_ball_final_pos_x = np.random.uniform(4500, 4700)
-            new_ball_final_pos_y = np.random.uniform(-10, 10)
+            new_ball_final_pos_y = np.random.uniform(-100, 100)
 
+            ball_at_goal_x = aug_abs_obs[-1, 2].copy()
+            ball_at_goal_y = aug_abs_obs[-1, 3].copy()
+            reflect = 0.5
+            theta_range = (-60, 60)
 
-        if behavior == 'turnaround':
+        if behavior == 'curve_around_ball_easy':
             # new_ball_final_pos_x = np.random.uniform(3200, 4200)
             # new_ball_final_pos_y = np.random.uniform(-1500, -1300)
-            new_ball_final_pos_x = np.random.uniform(4501, 4510)
-            new_ball_final_pos_y = np.random.uniform(-300, 300)
-            theta_range = (60,120)
+            new_ball_final_pos_x = np.random.uniform(1500, 2500)
+            new_ball_final_pos_y = np.random.uniform(-2500, -1800)
+            theta_range = (-60,0)
+            reflect = 0
+
+            ball_at_goal_x = aug_abs_obs[0, 2].copy()
+            ball_at_goal_y = aug_abs_obs[0, 3].copy()
+
+        if behavior == 'straight':
+            # new_ball_final_pos_x = np.random.uniform(3200, 4200)
+            # new_ball_final_pos_y = np.random.uniform(-1500, -1300)
+            new_ball_final_pos_x = np.random.uniform(4000, 4500)
+            new_ball_final_pos_y = np.random.uniform(0, 300)
+            theta_range = (-45, 0)
             reflect = 0
 
             ball_at_goal_x = aug_abs_obs[-1, 2].copy()
             ball_at_goal_y = aug_abs_obs[-1, 3].copy()
+
+        if behavior == 'straight_2':
+            # new_ball_final_pos_x = np.random.uniform(3200, 4200)
+            # new_ball_final_pos_y = np.random.uniform(-1500, -1300)
+            new_ball_final_pos_x = np.random.uniform(-500, 100)
+            new_ball_final_pos_y = np.random.uniform(-750, 750)
+            theta_range = (80, 100)
+            reflect = 0
+
+            ball_at_goal_x = aug_abs_obs[0, 0].copy()
+            ball_at_goal_y = aug_abs_obs[0, 1].copy()
 
         if behavior == 'fish_out_ball':
             # new_ball_final_pos_x = np.random.uniform(3200, 4200)
@@ -222,40 +200,6 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             ball_at_goal_x = aug_abs_obs[-1, 2].copy()
             ball_at_goal_y = aug_abs_obs[-1, 3].copy()
 
-        if behavior == 'straight_1':
-            # new_ball_final_pos_x = np.random.uniform(1000, 2000)
-            # new_ball_final_pos_y = np.random.uniform(-2800, -2300)
-            new_ball_final_pos_x = np.random.uniform(3900, 4100)
-            new_ball_final_pos_y = np.random.uniform(3500, 2000)
-            theta_range = (15, 30)
-            reflect = 1
-
-            ball_at_goal_x = aug_abs_obs[-1, 0].copy()
-            ball_at_goal_y = aug_abs_obs[-1, 0].copy()
-
-        if behavior == 'straight_2':
-            # new_ball_final_pos_x = np.random.uniform(100, 800)
-            # new_ball_final_pos_y = np.random.uniform(-1200, -500)
-            new_ball_final_pos_x = np.random.uniform(3000, 3700)
-            new_ball_final_pos_y = np.random.uniform(4200, 4500)
-            theta_range = (15, 30)
-            # theta_range = (90, 120)
-            reflect = 1
-
-            ball_at_goal_x = aug_abs_obs[0, 0].copy()
-            ball_at_goal_y = aug_abs_obs[0, 0].copy()
-
-        if behavior == 'out_of_bounds':
-            new_ball_final_pos_x = np.random.uniform(4500, 4505)
-            new_ball_final_pos_y = np.random.uniform(-3000, -751)
-            theta_range = (15, 80)
-            reflect = 0
-
-            ball_at_goal_x = aug_abs_obs[-1, 2].copy()
-            ball_at_goal_y = aug_abs_obs[-1, 3].copy()
-
-        # new_ball_final_pos_x = ball_at_goal_x
-        # new_ball_final_pos_y = ball_at_goal_y
 
         traj_delta_x = new_ball_final_pos_x - ball_at_goal_x
         traj_delta_y = new_ball_final_pos_y - ball_at_goal_y
@@ -306,6 +250,8 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
         aug_abs_next_obs[:, 3] += new_ball_final_pos_y
 
 
+        if np.random.random() < 0.5:
+            reflect = not reflect
         if np.random.random() < reflect:
             aug_abs_obs[:, 1] *= -1
             aug_abs_next_obs[:, 1] *= -1
@@ -318,14 +264,14 @@ def rotate_reflect_traj(env, obs, action, next_obs, reward, done, guided):
             aug_action[:, 1] *= 1
             aug_action[:, 2] *= -1
 
-        if behavior in ['straight_1', 'straight_2']:
-            origin_x = np.random.uniform(4300, 4400)
-            origin_y = np.random.uniform(-3000, -2000) + 300
-            ball_init = np.array([origin_x, origin_y])
-            noise = np.random.uniform(-50, 50, size=(len(aug_abs_obs), 2))
-            aug_abs_obs[:, 2:4] = ball_init + noise
-            aug_abs_next_obs[:, 2:4] = ball_init + noise
-
+        # if behavior in ['straight_1', 'straight_2']:
+        #     origin_x = np.random.uniform(4300, 4400)
+        #     origin_y = np.random.uniform(-3000, -2000) + 300
+        #     ball_init = np.array([origin_x, origin_y])
+        #     noise = np.random.uniform(-50, 50, size=(len(aug_abs_obs), 2))
+        #     aug_abs_obs[:, 2:4] = ball_init + noise
+        #     aug_abs_next_obs[:, 2:4] = ball_init + noise
+        #
 
 
 
