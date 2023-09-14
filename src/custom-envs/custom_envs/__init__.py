@@ -87,3 +87,19 @@ register(
         "init_ball_y_range": [-2700, -2300],
     }
 )
+
+register(
+    id="PushBallToGoalHard-v1",
+    entry_point="custom_envs.push_ball_to_goal:PushBallToGoalEnv",
+    max_episode_steps=1500,
+    kwargs={
+        'sparse': True,
+        # 'stochastic': True,
+        # 'realistic': True,
+        'displacement_coef': 0.06,
+        "init_robot_x_range": [-500, 500],
+        "init_robot_y_range": [-500,500],
+        "init_ball_x_range": [3800, 4200],
+        "init_ball_y_range": [-2700, -2200],
+    }
+)
