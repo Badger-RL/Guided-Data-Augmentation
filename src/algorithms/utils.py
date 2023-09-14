@@ -83,7 +83,7 @@ def wandb_init(config):
 
 def set_seed(seed: int, env: Optional[gym.Env] = None, deterministic_torch: bool = False):
     if env is not None:
-        env.seed(seed)
+        # env.seed(seed)
         env.action_space.seed(seed)
     os.environ["PYTHONHASHSEED"] = str(seed)
     np.random.seed(seed)
@@ -390,6 +390,138 @@ def train_base(config, env, trainer):
                 normalized_eval_score = env.get_normalized_score(eval_score) * 100.0
             except:
                 normalized_eval_score = eval_score
+            print("---------------------------------------", file=sys.stderr)
+            print(
+                f"Iteration {t}: "
+                f"Return: {eval_score:.3f}, "
+                f"Normalized return: {normalized_eval_score:.3f}, "
+                f"Success rate: {eval_success_rate:.3f}",
+                file=sys.stderr
+            )
+            print("---------------------------------------", file=sys.stderr)
+
+            # log evaluations
+            log_evaluations['timestep'].append(t)
+            log_evaluations['return'].append(eval_score)
+            log_evaluations['normalized_return'].append(normalized_eval_score)
+            log_evaluations['success_rate'].append(eval_success_rate)
+            np.savez(os.path.join(config.save_dir, "evaluations.npz"), **log_evaluations)
+
+            # log training stats
+            log_stats['timestep'].append(t)
+            for key, val in stats_dict.items():
+                log_stats[key].append(val)
+            np.savez(os.path.join(config.save_dir, "stats.npz"), **log_stats)
+
+            if config.save_policy:
+                # save current model
+                torch.save(
+                    trainer.state_dict(),
+                    os.path.join(config.save_dir, f"model.pt"),
+                )
+
+                # save best model
+                if eval_score > best_eval_score:
+                    best_eval_score = eval_score
+                    torch.save(
+                        trainer.state_dict(),
+                        os.path.join(config.save_dir, f"best_model.pt"),
+                    )
+
+            if config.use_wandb:
+                wandb.log(
+                    {"return": eval_score,
+                     "normalized_return": normalized_eval_score,
+                     "success_rate": eval_success_rate
+                     },
+                    step=t,
+                )
+
+def bc_train_base(config, env, trainer):
+
+    # create save directories
+    make_save_dir(config=config)
+
+    # setup wandb logging
+    if config.use_wandb:
+        wandb_init(config)
+
+    # load dataset
+    dataset, state_mean, state_std = load_dataset(config=config, env=env)
+    # keep_best_trajectories(dataset, config.frac, config.discount)
+    # wrap env
+    env = wrap_env(env, state_mean=state_mean, state_std=state_std)
+    if 'antmaze-umaze' in config.env:
+        target_location = np.array([0.75, 8.5])
+        env.set_target_goal(target_location)
+    if 'antmaze-medium' in config.env:
+        target_location = np.array([20.5, 20.5])
+        env.set_target_goal(target_location)
+    if 'antmaze-large' in config.env:
+        target_location = np.array([32.5, 24.5])
+        env.set_target_goal(target_location)
+    # create replay buffer
+    if isinstance(env.observation_space, gym.spaces.Dict):
+        state_dim = env.observation_space.spaces['observation'].shape[0] + env.observation_space.spaces['desired_goal'].shape[0]
+    else:
+        state_dim = env.observation_space.shape[0]
+    action_dim = env.action_space.shape[0]
+    if config.buffer_size is None:
+        config.buffer_size = len(dataset['observations'])
+    replay_buffer = ReplayBuffer(
+        state_dim,
+        action_dim,
+        config.buffer_size,
+        config.device,
+    )
+    replay_buffer.load_d4rl_dataset(dataset)
+
+    # Set seeds
+    seed = config.seed
+    set_seed(seed, env)
+
+    # load policy if applicable
+    if config.load_model != "":
+        policy_file = Path(config.load_model)
+        trainer.load_state_dict(torch.load(policy_file))
+    actor = trainer.actor
+
+    # local logging
+    log_evaluations = defaultdict(lambda: [])
+    log_stats = defaultdict(lambda: [])
+    best_eval_score = -np.inf
+
+    print("---------------------------------------")
+    print(f"Training {trainer}, Env: {config.env}, Seed: {seed}")
+    print("---------------------------------------")
+
+    # f = PointMazeGuidedAugmentationFunction(env)
+
+    # for t in trange(int(config.max_timesteps), ncols=100):
+    for t in range(int(config.max_timesteps)):
+        batch = replay_buffer.sample(config.batch_size)
+        stats_dict = trainer.train(batch)
+
+        # log training statistics
+        if config.use_wandb and t % 100 == 0:
+            wandb.log(stats_dict, step=t)
+
+        # evalutate agent
+        if (t) % config.eval_freq == 0 or t == 0:
+            print(f"Time steps: {t}")
+            eval_scores, eval_successes = eval_actor(
+                env,
+                actor,
+                device=config.device,
+                n_episodes=config.n_episodes,
+                seed=config.seed,
+            )
+            eval_score = eval_scores.mean()
+            if len(eval_successes) > 0:
+                eval_success_rate = eval_successes.mean()
+            else:
+                eval_success_rate = -np.inf
+            normalized_eval_score = env.get_normalized_score(eval_score) * 100.0
             print("---------------------------------------", file=sys.stderr)
             print(
                 f"Iteration {t}: "
