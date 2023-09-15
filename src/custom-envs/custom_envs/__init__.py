@@ -99,7 +99,7 @@ register(
         'displacement_coef': 0.06,
         "init_robot_x_range": [-500, 500],
         "init_robot_y_range": [-500,500],
-        "init_ball_x_range": [3800, 4200],
-        "init_ball_y_range": [-2700, -2200],
+        "init_ball_x_range": [3000, 4200],
+        "init_ball_y_range": [-2700, -1500],
     }
 )
