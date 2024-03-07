@@ -33,7 +33,7 @@ def gen_td3_bc(
         alpha=2.5,
         tau=5e-3,
         n_layers=1,
-        hidden_dims=2,
+        hidden_dims=256,
         batch_size=256,
 ):
     command = f'python -u algorithms/td3_bc.py --max_timesteps {max_timesteps} --eval_freq {eval_freq}' \
