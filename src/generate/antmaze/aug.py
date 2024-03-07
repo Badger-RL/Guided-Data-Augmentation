@@ -8,12 +8,12 @@ import os
 #
 #     import os
 
-for maze in ['umaze']:
+for maze in ['umaze', 'medium', 'large']:
     for goal_type in ['diverse']:
         env_id = f'antmaze-{maze}-{goal_type}-v1'
         for aug_func in ['guided']:
             for m in [1000]:
                 os.system(
-                    f'python ../augment_dataset.py --env-id {env_id} --aug-func {aug_func} -m {m} '
-                    f' --observed-dataset-path ../../generate/no_aug.hdf5'
+                    f'python ../augment_dataset.py --env-id {env_id} --aug-func {aug_func}'
+                    f' --observed-dataset-path ../../datasets/{env_id}/no_aug.hdf5'
                     f' --save-dir ../../datasets/{env_id}/{aug_func}')

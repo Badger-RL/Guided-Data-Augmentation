@@ -38,14 +38,15 @@ timestamps = {
     }
 }
 
-for maze in ['umaze']:
-    for aug in ['guided', 'random']:
-        for aug_size in [10e3, 25e3, 50e3, 100e3, 250e3]:
+for maze in ['large']:
+    for aug in ['guided']:
+        # for aug_size in [10e3, 25e3, 50e3, 100e3, 250e3]:
+        for aug_size in [1e6]:
 
             env_id = f'antmaze-{maze}-diverse-v1'
             dataset_path = f"../datasets/antmaze-{maze}-diverse-v1/no_aug_no_collisions_relabeled.hdf5"
             select_trajectories_save_path = f"../datasets/{env_id}/no_aug.hdf5"
-            generate_trajectories_save_path = f"../datasets/{env_id}/{aug}_{int(aug_size/1e3)}k.hdf5"
+            generate_trajectories_save_path = f"../datasets/{env_id}/{aug}.hdf5"
             # generate_trajectories_save_path = f"../datasets/{env_id}/{aug}_{int(generate_num_of_transitions/1e3)}k.hdf5"
 
             start_timestamps = timestamps[env_id]['start']
