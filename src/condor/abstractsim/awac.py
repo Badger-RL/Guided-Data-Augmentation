@@ -5,9 +5,7 @@ if __name__ == "__main__":
 
     env_id = 'PushBallToGoal-v1'
     for env_id in ['PushBallToGoal-v0']:
-        for aug in ['random', 'guided']:
-            for aug_size in [10, 100, 1000]:
-
+        for aug in ['mocoda']:
                 aug = f'{aug}'
                 # for aug in ['guided_transition']:
                 for lr in [3e-4, 3e-5]:
@@ -15,8 +13,8 @@ if __name__ == "__main__":
                         for n_layers in [2]:
                             for hidden_dims in [256]:
 
-                                dataset_name = f'/staging/ncorrado/datasets/{env_id}/{aug}_{aug_size}k.hdf5'
-                                save_dir = f'results/{env_id}/{aug}/as_{aug_size}/awac/nl_{n_layers}/lr_{lr}/l_{lmbda}'
+                                dataset_name = f'/staging/ncorrado/datasets/{env_id}/{aug}.hdf5'
+                                save_dir = f'results/{env_id}/{aug}/awac/nl_{n_layers}/lr_{lr}/l_{lmbda}'
 
                                 max_timesteps = int(1e6) if n_layers == 2 else int(1e6)
                                 eval_freq = int(20e3)
